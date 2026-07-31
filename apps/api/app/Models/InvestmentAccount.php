@@ -1,0 +1,49 @@
+<?php
+
+namespace App\Models;
+
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+class InvestmentAccount extends Model
+{
+    protected $fillable = [
+        'user_id',
+        'brokerage_connection_id',
+        'institution_id',
+        'name',
+        'account_type',
+        'account_number_mask',
+        'currency',
+        'current_value',
+        'cash_value',
+        'status',
+        'last_synced_at',
+        'metadata',
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'current_value' => 'decimal:2',
+            'cash_value' => 'decimal:2',
+            'last_synced_at' => 'datetime',
+            'metadata' => 'array',
+        ];
+    }
+
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function institution(): BelongsTo
+    {
+        return $this->belongsTo(Institution::class);
+    }
+
+    public function brokerageConnection(): BelongsTo
+    {
+        return $this->belongsTo(BrokerageConnection::class);
+    }
+}

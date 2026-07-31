@@ -1,4 +1,13 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
 
-:root { color-scheme: light; }
-html { background: #f8fafc; }
-body { background: #f8fafc; }
+@layer base {
+    html {
+        background: #f8fafc;
+    }
+
+    body {
+        background: #f8fafc;
+    }
+}

@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\InvestmentAccountController;
 
 Route::get('/', function () {
     return view('welcome');
@@ -18,3 +19,14 @@ Route::middleware('auth')->group(function () {
 });
 
 require __DIR__.'/auth.php';
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get('/accounts', [\App\Http\Controllers\InvestmentAccountController::class, 'index'])
+        ->name('accounts.index');
+
+    Route::get('/accounts/connect', [\App\Http\Controllers\InvestmentAccountController::class, 'create'])
+        ->name('accounts.create');
+
+    Route::post('/accounts', [\App\Http\Controllers\InvestmentAccountController::class, 'store'])
+        ->name('accounts.store');
+});
