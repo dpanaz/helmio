@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class InvestmentAccount extends Model
 {
@@ -45,5 +46,10 @@ class InvestmentAccount extends Model
     public function brokerageConnection(): BelongsTo
     {
         return $this->belongsTo(BrokerageConnection::class);
+    }
+
+    public function holdings(): HasMany
+    {
+    return $this->hasMany(Holding::class);
     }
 }

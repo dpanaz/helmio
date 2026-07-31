@@ -83,7 +83,12 @@
                                     </div>
 
                                     <div>
-                                        <h4 class="font-semibold text-slate-900">{{ $account->name }}</h4>
+                                        <a
+    href="{{ route('accounts.holdings.index', $account) }}"
+    class="font-semibold text-slate-900 hover:text-blue-600"
+>
+    {{ $account->name }}
+</a>
                                         <p class="mt-1 text-sm text-slate-500">
                                             {{ $account->institution?->name ?? 'Manual account' }}
                                             · {{ str($account->account_type)->replace('_', ' ')->title() }}

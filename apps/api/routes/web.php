@@ -30,3 +30,20 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::post('/accounts', [\App\Http\Controllers\InvestmentAccountController::class, 'store'])
         ->name('accounts.store');
 });
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/accounts/{investmentAccount}/holdings',
+        [\App\Http\Controllers\HoldingController::class, 'index'],
+    )->name('accounts.holdings.index');
+
+    Route::get(
+        '/accounts/{investmentAccount}/holdings/create',
+        [\App\Http\Controllers\HoldingController::class, 'create'],
+    )->name('accounts.holdings.create');
+
+    Route::post(
+        '/accounts/{investmentAccount}/holdings',
+        [\App\Http\Controllers\HoldingController::class, 'store'],
+    )->name('accounts.holdings.store');
+});
