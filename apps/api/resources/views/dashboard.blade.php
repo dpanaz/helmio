@@ -1,62 +1,113 @@
 <x-app-layout>
-    <div class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
-        <div class="mb-8 flex flex-col justify-between gap-4 sm:flex-row sm:items-end">
-            <div>
-                <p class="text-sm font-semibold uppercase tracking-[0.18em] text-blue-600">Account overview</p>
-                <h1 class="mt-2 text-3xl font-bold tracking-tight text-slate-950">Welcome back, {{ explode(' ', Auth::user()->name)[0] }}</h1>
-                <p class="mt-2 text-slate-600">Your independent investment-monitoring dashboard is ready.</p>
-            </div>
-            <button class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">Connect an account</button>
+    <x-slot name="header">
+        <div>
+            <p class="text-sm font-medium text-blue-600">Independent investment oversight</p>
+            <h2 class="mt-1 text-2xl font-semibold text-slate-900">
+                Welcome back, {{ auth()->user()->name }}
+            </h2>
         </div>
+    </x-slot>
 
-        <section class="grid gap-6 lg:grid-cols-[1.1fr_2fr]">
-            <div class="overflow-hidden rounded-3xl bg-slate-950 p-7 text-white shadow-xl shadow-slate-200">
-                <div class="flex items-start justify-between">
-                    <div>
-                        <p class="text-sm font-medium text-slate-300">Helm Score</p>
-                        <p class="mt-3 text-6xl font-extrabold tracking-tight">—</p>
+    <div class="py-10">
+        <div class="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
+            <section class="grid gap-6 lg:grid-cols-3">
+                <div class="rounded-3xl bg-slate-950 p-8 text-white shadow-xl lg:col-span-2">
+                    <div class="flex flex-wrap items-start justify-between gap-6">
+                        <div>
+                            <p class="text-sm text-slate-400">Current Helm Score</p>
+                            <div class="mt-3 flex items-end gap-4">
+                                <span class="text-6xl font-semibold">—</span>
+                                <span class="pb-2 text-slate-400">Awaiting account data</span>
+                            </div>
+                        </div>
+
+                        <span class="rounded-full border border-blue-400/30 bg-blue-400/10 px-4 py-2 text-sm text-blue-200">
+                            Setup required
+                        </span>
                     </div>
-                    <span class="rounded-full border border-white/15 bg-white/10 px-3 py-1 text-xs font-semibold text-slate-200">Awaiting data</span>
-                </div>
-                <p class="mt-8 max-w-sm text-sm leading-6 text-slate-300">Connect a brokerage account to calculate cost, performance, diversification, trading, risk, tax-efficiency, and compliance-indicator scores.</p>
-                <div class="mt-7 h-2 overflow-hidden rounded-full bg-white/10"><div class="h-full w-1/6 rounded-full bg-blue-500"></div></div>
-            </div>
 
-            <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    <div class="mt-10 h-2 overflow-hidden rounded-full bg-white/10">
+                        <div class="h-full w-0 rounded-full bg-blue-500"></div>
+                    </div>
+
+                    <p class="mt-5 max-w-2xl text-sm leading-6 text-slate-400">
+                        Connect an investment account to calculate your cost,
+                        performance, diversification, risk and trading scores.
+                    </p>
+                </div>
+
+                <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                    <p class="text-sm font-medium text-slate-500">Next step</p>
+                    <h3 class="mt-3 text-xl font-semibold text-slate-900">
+                        Connect your first account
+                    </h3>
+                    <p class="mt-3 text-sm leading-6 text-slate-600">
+                        Helmio will use read-only access. It will never place trades or move money.
+                    </p>
+
+                    <button
+                        type="button"
+                        class="mt-8 w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-500"
+                    >
+                        Connect account
+                    </button>
+                </div>
+            </section>
+
+            <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
                 @foreach ([
-                    ['Portfolio value', '$0.00', 'No accounts connected'],
-                    ['Annual fees', '$0.00', 'Estimated all-in cost'],
-                    ['Net return', '—', 'Trailing 12 months'],
-                    ['Open alerts', '0', 'No concerns detected'],
-                ] as [$label, $value, $note])
-                    <article class="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+                    ['Portfolio value', '—'],
+                    ['Annual fees', '—'],
+                    ['Potential savings', '—'],
+                    ['Open alerts', '0'],
+                ] as [$label, $value])
+                    <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                         <p class="text-sm font-medium text-slate-500">{{ $label }}</p>
-                        <p class="mt-3 text-2xl font-bold tracking-tight text-slate-950">{{ $value }}</p>
-                        <p class="mt-2 text-xs text-slate-500">{{ $note }}</p>
-                    </article>
+                        <p class="mt-3 text-3xl font-semibold text-slate-900">{{ $value }}</p>
+                    </div>
                 @endforeach
-            </div>
-        </section>
+            </section>
 
-        <section class="mt-6 grid gap-6 lg:grid-cols-3">
-            <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm lg:col-span-2">
-                <div class="flex items-center justify-between">
-                    <div><h2 class="text-lg font-bold text-slate-950">Portfolio performance</h2><p class="mt-1 text-sm text-slate-500">Performance will appear after your first account sync.</p></div>
-                    <span class="rounded-lg bg-slate-100 px-3 py-2 text-xs font-semibold text-slate-600">12 months</span>
-                </div>
-                <div class="mt-8 flex h-56 items-center justify-center rounded-2xl border border-dashed border-slate-300 bg-slate-50">
-                    <div class="text-center"><p class="font-semibold text-slate-700">No portfolio data yet</p><p class="mt-2 text-sm text-slate-500">Connect an account to begin monitoring.</p></div>
-                </div>
-            </article>
+            <section class="grid gap-6 lg:grid-cols-2">
+                <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <p class="text-sm font-medium text-slate-500">Account monitoring</p>
+                            <h3 class="mt-1 text-xl font-semibold text-slate-900">Recent alerts</h3>
+                        </div>
 
-            <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                <h2 class="text-lg font-bold text-slate-950">Monitoring areas</h2>
-                <div class="mt-5 space-y-4">
-                    @foreach (['Fees and expenses','Trading activity','Performance','Diversification','Risk indicators'] as $item)
-                        <div class="flex items-center gap-3"><span class="h-2.5 w-2.5 rounded-full bg-blue-500"></span><span class="text-sm font-medium text-slate-700">{{ $item }}</span></div>
-                    @endforeach
+                        <span class="rounded-full bg-slate-100 px-3 py-1 text-sm text-slate-600">
+                            No alerts
+                        </span>
+                    </div>
+
+                    <div class="mt-10 rounded-2xl border border-dashed border-slate-300 p-8 text-center">
+                        <p class="font-medium text-slate-900">No investment data yet</p>
+                        <p class="mt-2 text-sm text-slate-500">
+                            Alerts will appear after your first account analysis.
+                        </p>
+                    </div>
                 </div>
-            </article>
-        </section>
+
+                <div class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
+                    <p class="text-sm font-medium text-slate-500">What Helmio monitors</p>
+
+                    <div class="mt-6 space-y-5">
+                        @foreach ([
+                            'Advisory, brokerage and product expenses',
+                            'Mutual fund and ETF expense ratios',
+                            'Turnover and excessive-trading indicators',
+                            'Performance relative to appropriate benchmarks',
+                            'Concentration, overlap and cash drag',
+                        ] as $item)
+                            <div class="flex gap-3">
+                                <div class="mt-1 h-5 w-5 flex-none rounded-full bg-blue-100"></div>
+                                <p class="text-sm leading-6 text-slate-700">{{ $item }}</p>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            </section>
+        </div>
     </div>
 </x-app-layout>
