@@ -1,0 +1,15 @@
+
+# Python uv
+services/analytics/.venv/
+services/analytics/.python-version
+
+# Laravel generated files
+apps/api/.env
+apps/api/vendor/
+apps/api/storage/logs/*
+apps/api/bootstrap/cache/*.php
+
+# Next.js generated files
+apps/web/.env.local
+apps/web/.next/
+apps/web/node_modules/
