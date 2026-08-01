@@ -24,6 +24,7 @@ class InvestmentAccount extends Model
     'status',
     'last_synced_at',
     'metadata',
+    'benchmark_id',
     ];
 
     protected function casts(): array
@@ -61,5 +62,14 @@ class InvestmentAccount extends Model
     public function transactions(): HasMany
 {
     return $this->hasMany(InvestmentTransaction::class);
+}
+public function benchmark(): BelongsTo
+{
+    return $this->belongsTo(Benchmark::class);
+}
+
+public function portfolioSnapshots(): HasMany
+{
+    return $this->hasMany(PortfolioSnapshot::class);
 }
 }

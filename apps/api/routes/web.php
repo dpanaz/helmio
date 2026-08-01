@@ -107,3 +107,30 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         [\App\Http\Controllers\TradingDisciplineAnalyticsController::class, 'index'],
     )->name('analytics.trading-discipline');
 });
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/accounts/{investmentAccount}/performance-data',
+        [\App\Http\Controllers\PerformanceDataController::class, 'index'],
+    )->name('accounts.performance-data.index');
+
+    Route::post(
+        '/accounts/{investmentAccount}/portfolio-snapshots',
+        [\App\Http\Controllers\PerformanceDataController::class, 'storeSnapshot'],
+    )->name('accounts.portfolio-snapshots.store');
+
+    Route::put(
+        '/accounts/{investmentAccount}/benchmark',
+        [\App\Http\Controllers\PerformanceDataController::class, 'assignBenchmark'],
+    )->name('accounts.benchmark.update');
+
+    Route::post(
+        '/benchmarks',
+        [\App\Http\Controllers\PerformanceDataController::class, 'storeBenchmark'],
+    )->name('benchmarks.store');
+
+    Route::post(
+        '/benchmarks/{benchmark}/returns',
+        [\App\Http\Controllers\PerformanceDataController::class, 'storeBenchmarkReturn'],
+    )->name('benchmarks.returns.store');
+});

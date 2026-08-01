@@ -115,11 +115,15 @@
                         Transactions
                     </a>
 
-                    <button
-                        class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
-                    >
-                        Performance
-                    </button>
+                    <a
+    href="{{ route(
+        'accounts.performance-data.index',
+        $account
+    ) }}"
+    class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+>
+    Performance
+</a>
 
                     <button
                         class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
