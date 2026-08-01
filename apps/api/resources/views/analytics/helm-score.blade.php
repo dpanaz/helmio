@@ -112,6 +112,17 @@
                                 View cost analysis →
                             </a>
                         @endif
+                        @if (
+                            $key === 'diversification'
+                            && $category['score'] !== null
+                        )
+                            <a
+                                href="{{ route('analytics.diversification') }}"
+                                class="mt-6 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-500"
+                            >
+                                View diversification analysis →
+                            </a>
+                        @endif
                     </article>
                 @endforeach
             </section>

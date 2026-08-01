@@ -32,6 +32,12 @@
 >
     {{ __('Helm Score') }}
 </x-nav-link>
+<x-nav-link
+    :href="route('analytics.diversification')"
+    :active="request()->routeIs('analytics.diversification')"
+>
+    {{ __('Diversification') }}
+</x-nav-link>
 <span class="rounded-lg px-3 py-2 text-sm text-slate-400">Portfolio</span>
                     <span class="rounded-lg px-3 py-2 text-sm text-slate-400">Alerts</span>
                 </div>
@@ -80,6 +86,12 @@
     :active="request()->routeIs('analytics.helm-score')"
 >
     {{ __('Helm Score') }}
+</x-responsive-nav-link>
+<x-responsive-nav-link
+    :href="route('analytics.diversification')"
+    :active="request()->routeIs('analytics.diversification')"
+>
+    {{ __('Diversification') }}
 </x-responsive-nav-link>
         </div>
     </div>

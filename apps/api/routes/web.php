@@ -93,3 +93,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         [\App\Http\Controllers\HelmScoreController::class, 'index'],
     )->name('analytics.helm-score');
 });
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/analytics/diversification',
+        [\App\Http\Controllers\DiversificationAnalyticsController::class, 'index'],
+    )->name('analytics.diversification');
+});

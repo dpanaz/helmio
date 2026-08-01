@@ -37,7 +37,7 @@ class HelmScoreController extends Controller
                 'overall_score' => $score['overall_score'],
                 'cost_score' =>
                     $score['categories']['cost']['score'],
-                'diversification_score' => null,
+                'diversification_score' => $score['categories']['diversification']['score'],
                 'performance_score' => null,
                 'risk_score' => null,
                 'trading_score' => null,
