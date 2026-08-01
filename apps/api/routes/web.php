@@ -134,3 +134,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         [\App\Http\Controllers\PerformanceDataController::class, 'storeBenchmarkReturn'],
     )->name('benchmarks.returns.store');
 });
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/analytics/performance',
+        [\App\Http\Controllers\PerformanceAnalyticsController::class, 'index'],
+    )->name('analytics.performance');
+});
