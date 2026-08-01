@@ -69,6 +69,13 @@ class HoldingController extends Controller
             'quantity' => ['required', 'numeric', 'min:0'],
             'price' => ['required', 'numeric', 'min:0'],
             'cost_basis' => ['nullable', 'numeric', 'min:0'],
+            'category' => ['nullable', 'string', 'max:100'],
+'comparison_group' => ['nullable', 'string', 'max:100'],
+'benchmark_name' => ['nullable', 'string', 'max:100'],
+'is_index_fund' => ['nullable', 'boolean'],
+'trailing_1y_return' => ['nullable', 'numeric'],
+'trailing_3y_annualized_return' => ['nullable', 'numeric'],
+'trailing_5y_annualized_return' => ['nullable', 'numeric'],
         ]);
 
         $symbol = filled($validated['symbol'] ?? null)
@@ -87,6 +94,25 @@ class HoldingController extends Controller
                 'expense_ratio' => $validated['expense_ratio'] ?? null,
                 'last_price' => $validated['price'],
                 'price_as_of' => now(),
+                'category' => $validated['category'] ?? null,
+'comparison_group' => $validated['comparison_group'] ?? null,
+'benchmark_name' => $validated['benchmark_name'] ?? null,
+'is_index_fund' => $request->boolean('is_index_fund'),
+
+'trailing_1y_return' =>
+    isset($validated['trailing_1y_return'])
+        ? (float) $validated['trailing_1y_return'] / 100
+        : null,
+
+'trailing_3y_annualized_return' =>
+    isset($validated['trailing_3y_annualized_return'])
+        ? (float) $validated['trailing_3y_annualized_return'] / 100
+        : null,
+
+'trailing_5y_annualized_return' =>
+    isset($validated['trailing_5y_annualized_return'])
+        ? (float) $validated['trailing_5y_annualized_return'] / 100
+        : null,
             ],
         );
 

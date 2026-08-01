@@ -21,6 +21,12 @@ class Security extends Model
         'last_price',
         'price_as_of',
         'metadata',
+        'comparison_group',
+'benchmark_name',
+'is_index_fund',
+'trailing_1y_return',
+'trailing_3y_annualized_return',
+'trailing_5y_annualized_return',
     ];
 
     protected function casts(): array
@@ -30,6 +36,10 @@ class Security extends Model
             'last_price' => 'decimal:6',
             'price_as_of' => 'datetime',
             'metadata' => 'array',
+            'is_index_fund' => 'boolean',
+'trailing_1y_return' => 'decimal:6',
+'trailing_3y_annualized_return' => 'decimal:6',
+'trailing_5y_annualized_return' => 'decimal:6',
         ];
     }
 

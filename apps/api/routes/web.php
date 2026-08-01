@@ -79,3 +79,17 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         [\App\Http\Controllers\CostAnalyticsController::class, 'index'],
     )->name('analytics.costs');
 });
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/analytics/fund-expenses',
+        [\App\Http\Controllers\FundExpenseAnalyticsController::class, 'index'],
+    )->name('analytics.fund-expenses');
+});
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/analytics/helm-score',
+        [\App\Http\Controllers\HelmScoreController::class, 'index'],
+    )->name('analytics.helm-score');
+});

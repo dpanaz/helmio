@@ -79,6 +79,131 @@
                         >
                     </div>
                 </div>
+                <div class="grid gap-6 sm:grid-cols-2">
+    <div>
+        <label
+            for="category"
+            class="block text-sm font-medium text-slate-700"
+        >
+            Fund category
+        </label>
+
+        <input
+            id="category"
+            name="category"
+            value="{{ old('category') }}"
+            placeholder="Large Blend"
+            class="mt-2 block w-full rounded-xl border-slate-300"
+        >
+
+        <p class="mt-1 text-xs text-slate-500">
+            Examples: Large Blend, Large Growth, Intermediate Bond.
+        </p>
+    </div>
+
+    <div>
+        <label
+            for="comparison_group"
+            class="block text-sm font-medium text-slate-700"
+        >
+            Comparison group
+        </label>
+
+        <input
+            id="comparison_group"
+            name="comparison_group"
+            value="{{ old('comparison_group') }}"
+            placeholder="us-large-blend"
+            class="mt-2 block w-full rounded-xl border-slate-300"
+        >
+
+        <p class="mt-1 text-xs text-slate-500">
+            Funds are compared only within the same group.
+        </p>
+    </div>
+</div>
+
+<div class="grid gap-6 sm:grid-cols-2">
+    <div>
+        <label
+            for="benchmark_name"
+            class="block text-sm font-medium text-slate-700"
+        >
+            Benchmark
+        </label>
+
+        <input
+            id="benchmark_name"
+            name="benchmark_name"
+            value="{{ old('benchmark_name') }}"
+            placeholder="S&P 500"
+            class="mt-2 block w-full rounded-xl border-slate-300"
+        >
+    </div>
+
+    <label class="flex items-center gap-3 pt-8">
+        <input
+            type="checkbox"
+            name="is_index_fund"
+            value="1"
+            @checked(old('is_index_fund'))
+            class="rounded border-slate-300 text-blue-600"
+        >
+
+        <span class="text-sm font-medium text-slate-700">
+            Index fund
+        </span>
+    </label>
+</div>
+
+<div class="grid gap-6 sm:grid-cols-3">
+    <div>
+        <label class="block text-sm font-medium text-slate-700">
+            1-year return
+        </label>
+
+        <input
+            type="number"
+            step="0.001"
+            name="trailing_1y_return"
+            value="{{ old('trailing_1y_return') }}"
+            placeholder="12.50"
+            class="mt-2 block w-full rounded-xl border-slate-300"
+        >
+
+        <p class="mt-1 text-xs text-slate-500">
+            Enter 12.50 for 12.50%.
+        </p>
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-slate-700">
+            3-year annualized
+        </label>
+
+        <input
+            type="number"
+            step="0.001"
+            name="trailing_3y_annualized_return"
+            value="{{ old('trailing_3y_annualized_return') }}"
+            class="mt-2 block w-full rounded-xl border-slate-300"
+        >
+    </div>
+
+    <div>
+        <label class="block text-sm font-medium text-slate-700">
+            5-year annualized
+        </label>
+
+        <input
+            type="number"
+            step="0.001"
+            name="trailing_5y_annualized_return"
+            value="{{ old('trailing_5y_annualized_return') }}"
+            class="mt-2 block w-full rounded-xl border-slate-300"
+        >
+    </div>
+</div>
 
                 <div class="grid gap-6 sm:grid-cols-3">
                     <div>
