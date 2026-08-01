@@ -100,3 +100,10 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         [\App\Http\Controllers\DiversificationAnalyticsController::class, 'index'],
     )->name('analytics.diversification');
 });
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/analytics/trading-discipline',
+        [\App\Http\Controllers\TradingDisciplineAnalyticsController::class, 'index'],
+    )->name('analytics.trading-discipline');
+});

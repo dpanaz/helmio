@@ -1,3 +1,4 @@
+
 <x-app-layout>
     <x-slot name="header">
         <div>
@@ -36,9 +37,9 @@
                             </p>
 
                             <p class="mt-3 max-w-xl text-sm leading-6 text-slate-400">
-                                Helmio will publish an overall score after at
-                                least four analytics categories have sufficient
-                                supporting data.
+                                Helmio will publish an overall score after at least
+                                four analytics categories have sufficient supporting
+                                data.
                             </p>
                         @endif
                     </div>
@@ -58,7 +59,7 @@
                         <div class="mt-4 h-2 overflow-hidden rounded-full bg-white/10">
                             <div
                                 class="h-full rounded-full bg-blue-500"
-                                style="width: {{ $helmScore['data_completeness'] * 100 }}%"
+                                style="width: {{ min(100, $helmScore['data_completeness'] * 100) }}%"
                             ></div>
                         </div>
                     </div>
@@ -71,7 +72,7 @@
                         <div class="flex items-start justify-between gap-4">
                             <div>
                                 <p class="text-sm font-medium text-slate-500">
-                                    {{ str($key)->title() }}
+                                    {{ str($key)->replace('_', ' ')->title() }}
                                 </p>
 
                                 <p class="mt-2 text-lg font-semibold text-slate-900">
@@ -79,7 +80,27 @@
                                 </p>
                             </div>
 
-                            <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-xl font-semibold text-slate-900">
+                            <div
+                                @class([
+                                    'flex h-14 w-14 items-center justify-center rounded-2xl text-xl font-semibold',
+                                    'bg-emerald-100 text-emerald-800' =>
+                                        $category['score'] !== null
+                                        && $category['score'] >= 80,
+                                    'bg-blue-100 text-blue-800' =>
+                                        $category['score'] !== null
+                                        && $category['score'] >= 60
+                                        && $category['score'] < 80,
+                                    'bg-amber-100 text-amber-800' =>
+                                        $category['score'] !== null
+                                        && $category['score'] >= 40
+                                        && $category['score'] < 60,
+                                    'bg-red-100 text-red-800' =>
+                                        $category['score'] !== null
+                                        && $category['score'] < 40,
+                                    'bg-slate-100 text-slate-500' =>
+                                        $category['score'] === null,
+                                ])
+                            >
                                 {{ $category['score'] ?? '—' }}
                             </div>
                         </div>
@@ -112,6 +133,7 @@
                                 View cost analysis →
                             </a>
                         @endif
+
                         @if (
                             $key === 'diversification'
                             && $category['score'] !== null
@@ -123,28 +145,104 @@
                                 View diversification analysis →
                             </a>
                         @endif
+
+                        @if (
+                            $key === 'trading'
+                            && $category['score'] !== null
+                        )
+                            <a
+                                href="{{ route('analytics.trading-discipline') }}"
+                                class="mt-6 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-500"
+                            >
+                                View trading analysis →
+                            </a>
+                        @endif
                     </article>
                 @endforeach
             </section>
 
+            <section class="grid gap-6 lg:grid-cols-3">
+                <article class="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+                    <p class="text-sm font-medium text-slate-500">
+                        Cost score
+                    </p>
+
+                    <p class="mt-3 text-3xl font-semibold text-slate-900">
+                        {{ $helmScore['categories']['cost']['score'] ?? '—' }}
+                    </p>
+
+                    <a
+                        href="{{ route('analytics.costs') }}"
+                        class="mt-5 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-500"
+                    >
+                        Review fees and costs →
+                    </a>
+                </article>
+
+                <article class="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+                    <p class="text-sm font-medium text-slate-500">
+                        Diversification score
+                    </p>
+
+                    <p class="mt-3 text-3xl font-semibold text-slate-900">
+                        {{ $helmScore['categories']['diversification']['score'] ?? '—' }}
+                    </p>
+
+                    <a
+                        href="{{ route('analytics.diversification') }}"
+                        class="mt-5 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-500"
+                    >
+                        Review concentration →
+                    </a>
+                </article>
+
+                <article class="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+                    <p class="text-sm font-medium text-slate-500">
+                        Trading score
+                    </p>
+
+                    <p class="mt-3 text-3xl font-semibold text-slate-900">
+                        {{ $helmScore['categories']['trading']['score'] ?? '—' }}
+                    </p>
+
+                    <a
+                        href="{{ route('analytics.trading-discipline') }}"
+                        class="mt-5 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-500"
+                    >
+                        Review trading activity →
+                    </a>
+                </article>
+            </section>
+
             <section class="rounded-3xl border border-slate-200 bg-white p-8 shadow-sm">
-                <h3 class="text-lg font-semibold text-slate-900">
-                    How the Helm Score works
-                </h3>
+                <div class="flex flex-wrap items-start justify-between gap-6">
+                    <div>
+                        <h3 class="text-lg font-semibold text-slate-900">
+                            How the Helm Score works
+                        </h3>
 
-                <p class="mt-4 max-w-4xl text-sm leading-7 text-slate-600">
-                    Each category is calculated from deterministic portfolio
-                    data and versioned formulas. Helmio does not use artificial
-                    intelligence to calculate scores. AI may later explain the
-                    results, but every score must remain reproducible from the
-                    stored account data.
-                </p>
+                        <p class="mt-4 max-w-4xl text-sm leading-7 text-slate-600">
+                            Each category is calculated from deterministic
+                            portfolio data and versioned formulas. Helmio does
+                            not use artificial intelligence to calculate
+                            scores. AI may later explain the results, but every
+                            score must remain reproducible from stored account
+                            data.
+                        </p>
+                    </div>
 
-                <p class="mt-4 text-xs text-slate-400">
-                    Formula version:
-                    {{ $helmScore['formula_version'] }}
-                </p>
+                    <div class="rounded-2xl bg-slate-50 px-5 py-4">
+                        <p class="text-xs uppercase tracking-wide text-slate-400">
+                            Formula version
+                        </p>
+
+                        <p class="mt-2 text-sm font-semibold text-slate-700">
+                            {{ $helmScore['formula_version'] }}
+                        </p>
+                    </div>
+                </div>
             </section>
         </div>
     </div>
 </x-app-layout>
+```

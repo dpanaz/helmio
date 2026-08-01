@@ -9,13 +9,13 @@ class HelmScoreService
 {
     public const FORMULA_VERSION = 'helm-score-0.1.0';
 
-   public function __construct(
+public function __construct(
     private readonly CostAnalyticsService $costAnalytics,
     private readonly FundExpenseAnalyticsService $fundAnalytics,
     private readonly DiversificationAnalyticsService $diversificationAnalytics,
+    private readonly TradingDisciplineAnalyticsService $tradingAnalytics,
 ) {
 }
-
     /**
      * @param Collection<int, InvestmentAccount> $accounts
      * @return array<string, mixed>
@@ -26,7 +26,9 @@ class HelmScoreService
         $funds = $this->fundAnalytics->calculate($accounts);
         $diversification =
             $this->diversificationAnalytics->calculate($accounts);
-        $costResult = $this->calculateCostScore($costs, $funds);
+        $trading =
+    $this->tradingAnalytics->calculate($accounts);
+            $costResult = $this->calculateCostScore($costs, $funds);
 
         $categories = [
             'cost' => $costResult,
@@ -43,9 +45,13 @@ class HelmScoreService
             'risk' => $this->pendingCategory(
                 'Risk analysis has not been calculated yet.',
             ),
-            'trading' => $this->pendingCategory(
-                'Trading-discipline analysis has not been calculated yet.',
-            ),
+            'trading' => [
+    'score' => $trading['score'],
+    'label' => $trading['label'],
+    'reasons' => $trading['reasons'],
+    'recommendations' => $trading['recommendations'],
+    'metrics' => $trading['metrics'],
+],
             'tax' => $this->pendingCategory(
                 'Tax-efficiency analysis has not been calculated yet.',
             ),
@@ -78,6 +84,7 @@ class HelmScoreService
             'formula_version' => self::FORMULA_VERSION,
             'calculated_for_date' => now()->toDateString(),
             'diversification_analytics' => $diversification,
+            'trading_analytics' => $trading,
         ];
     }
 

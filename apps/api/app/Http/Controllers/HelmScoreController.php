@@ -25,28 +25,45 @@ class HelmScoreController extends Controller
 
         $score = $helmScoreService->calculate($accounts);
 
-        HelmScoreSnapshot::updateOrCreate(
-            [
+        $snapshot = HelmScoreSnapshot::query()
+            ->where('user_id', $request->user()->id)
+            ->whereDate(
+                'calculated_for_date',
+                $score['calculated_for_date'],
+            )
+            ->where(
+                'formula_version',
+                $score['formula_version'],
+            )
+            ->first();
+
+        if ($snapshot === null) {
+            $snapshot = new HelmScoreSnapshot([
                 'user_id' => $request->user()->id,
                 'calculated_for_date' =>
                     $score['calculated_for_date'],
                 'formula_version' =>
                     $score['formula_version'],
-            ],
-            [
-                'overall_score' => $score['overall_score'],
-                'cost_score' =>
-                    $score['categories']['cost']['score'],
-                'diversification_score' => $score['categories']['diversification']['score'],
-                'performance_score' => null,
-                'risk_score' => null,
-                'trading_score' => null,
-                'tax_score' => null,
-                'data_completeness' =>
-                    $score['data_completeness'],
-                'score_details' => $score,
-            ],
-        );
+            ]);
+        }
+
+        $snapshot->fill([
+            'overall_score' => $score['overall_score'],
+            'cost_score' =>
+                $score['categories']['cost']['score'],
+            'diversification_score' =>
+                $score['categories']['diversification']['score'],
+            'performance_score' => null,
+            'risk_score' => null,
+            'trading_score' =>
+    $score['categories']['trading']['score'],
+            'tax_score' => null,
+            'data_completeness' =>
+                $score['data_completeness'],
+            'score_details' => $score,
+        ]);
+
+        $snapshot->save();
 
         return view('analytics.helm-score', [
             'helmScore' => $score,
