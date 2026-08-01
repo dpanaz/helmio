@@ -9,27 +9,33 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class InvestmentAccount extends Model
 {
     protected $fillable = [
-        'user_id',
-        'brokerage_connection_id',
-        'institution_id',
-        'name',
-        'account_type',
-        'account_number_mask',
-        'currency',
-        'current_value',
-        'cash_value',
-        'status',
-        'last_synced_at',
-        'metadata',
+          'user_id',
+    'brokerage_connection_id',
+    'institution_id',
+    'name',
+    'account_type',
+    'account_number_mask',
+    'currency',
+    'current_value',
+    'cash_value',
+    'annual_advisory_fee_rate',
+    'annual_account_fee',
+    'advisory_fee_applies_to_cash',
+    'status',
+    'last_synced_at',
+    'metadata',
     ];
 
     protected function casts(): array
     {
         return [
-            'current_value' => 'decimal:2',
-            'cash_value' => 'decimal:2',
-            'last_synced_at' => 'datetime',
-            'metadata' => 'array',
+             'current_value' => 'decimal:2',
+        'cash_value' => 'decimal:2',
+        'annual_advisory_fee_rate' => 'decimal:6',
+        'annual_account_fee' => 'decimal:2',
+        'advisory_fee_applies_to_cash' => 'boolean',
+        'last_synced_at' => 'datetime',
+        'metadata' => 'array',
         ];
     }
 
@@ -52,4 +58,8 @@ class InvestmentAccount extends Model
     {
     return $this->hasMany(Holding::class);
     }
+    public function transactions(): HasMany
+{
+    return $this->hasMany(InvestmentTransaction::class);
+}
 }

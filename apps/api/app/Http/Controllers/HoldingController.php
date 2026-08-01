@@ -115,12 +115,16 @@ class HoldingController extends Controller
             ],
         );
 
-        $investmentAccount->update([
-            'current_value' => $investmentAccount
-                ->holdings()
-                ->whereDate('as_of_date', now()->toDateString())
-                ->sum('market_value'),
-        ]);
+        $updatedAccountValue = Holding::query()
+    ->where('investment_account_id', $investmentAccount->id)
+    ->whereDate('as_of_date', now()->toDateString())
+    ->sum('market_value');
+
+$investmentAccount->forceFill([
+    'current_value' => $updatedAccountValue,
+])->save();
+
+$investmentAccount->refresh();
 
         return redirect()
             ->route('accounts.holdings.index', $investmentAccount)

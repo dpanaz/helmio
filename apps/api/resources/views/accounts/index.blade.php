@@ -76,41 +76,76 @@
 
                     <div class="divide-y divide-slate-200">
                         @foreach ($accounts as $account)
-                            <article class="flex flex-wrap items-center justify-between gap-5 px-6 py-6">
-                                <div class="flex items-center gap-4">
-                                    <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 font-semibold text-slate-700">
-                                        {{ strtoupper(substr($account->institution?->name ?? 'H', 0, 1)) }}
-                                    </div>
+    <article class="flex flex-col gap-6 px-6 py-6 lg:flex-row lg:items-center lg:justify-between">
+        <div class="flex items-start gap-4">
+            <div class="flex h-12 w-12 items-center justify-center rounded-2xl bg-slate-100 font-semibold text-slate-700">
+                {{ strtoupper(substr($account->institution?->name ?? 'H', 0, 1)) }}
+            </div>
 
-                                    <div>
-                                        <a
-    href="{{ route('accounts.holdings.index', $account) }}"
-    class="font-semibold text-slate-900 hover:text-blue-600"
->
-    {{ $account->name }}
-</a>
-                                        <p class="mt-1 text-sm text-slate-500">
-                                            {{ $account->institution?->name ?? 'Manual account' }}
-                                            · {{ str($account->account_type)->replace('_', ' ')->title() }}
+            <div>
+                <a
+                    href="{{ route('accounts.holdings.index', $account) }}"
+                    class="text-lg font-semibold text-slate-900 hover:text-blue-600"
+                >
+                    {{ $account->name }}
+                </a>
 
-                                            @if ($account->account_number_mask)
-                                                · •••• {{ $account->account_number_mask }}
-                                            @endif
-                                        </p>
-                                    </div>
-                                </div>
+                <p class="mt-1 text-sm text-slate-500">
+                    {{ $account->institution?->name ?? 'Manual account' }}
+                    •
+                    {{ str($account->account_type)->replace('_', ' ')->title() }}
 
-                                <div class="text-right">
-                                    <p class="text-lg font-semibold text-slate-900">
-                                        ${{ number_format($account->current_value, 2) }}
-                                    </p>
+                    @if ($account->account_number_mask)
+                        •••• {{ $account->account_number_mask }}
+                    @endif
+                </p>
 
-                                    <p class="mt-1 text-sm text-emerald-600">
-                                        Active
-                                    </p>
-                                </div>
-                            </article>
-                        @endforeach
+                <div class="mt-4 flex flex-wrap gap-3">
+                    <a
+                        href="{{ route('accounts.holdings.index', $account) }}"
+                        class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                    >
+                        Holdings
+                    </a>
+
+                    <a
+                        href="{{ route('accounts.transactions.index', $account) }}"
+                        class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                    >
+                        Transactions
+                    </a>
+
+                    <button
+                        class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                    >
+                        Performance
+                    </button>
+
+                    <button
+                        class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100"
+                    >
+                        Fees
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <div class="text-right">
+            <div class="text-3xl font-bold text-slate-900">
+                ${{ number_format($account->current_value, 2) }}
+            </div>
+
+            <div class="mt-2 text-sm text-slate-500">
+                Cash:
+                ${{ number_format($account->cash_value, 2) }}
+            </div>
+
+            <span class="mt-4 inline-flex rounded-full bg-emerald-100 px-3 py-1 text-sm font-medium text-emerald-700">
+                Active
+            </span>
+        </div>
+    </article>
+@endforeach
                     </div>
                 </section>
             @endif

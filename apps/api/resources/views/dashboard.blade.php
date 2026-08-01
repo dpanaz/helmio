@@ -45,22 +45,22 @@
                         Helmio will use read-only access. It will never place trades or move money.
                     </p>
 
-                    <button
-                        type="button"
-                        class="mt-8 w-full rounded-xl bg-blue-600 px-4 py-3 font-semibold text-white hover:bg-blue-500"
-                    >
-                        Connect account
-                    </button>
+                    <a
+    href="{{ route('accounts.create') }}"
+    class="mt-8 block w-full rounded-xl bg-blue-600 px-4 py-3 text-center font-semibold text-white hover:bg-blue-500"
+>
+    Connect account
+</a>
                 </div>
             </section>
 
             <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
                 @foreach ([
-                    ['Portfolio value', '—'],
-                    ['Annual fees', '—'],
-                    ['Potential savings', '—'],
-                    ['Open alerts', '0'],
-                ] as [$label, $value])
+    ['Portfolio value', '$'.number_format($portfolioValue, 2)],
+    ['Cash balance', '$'.number_format($cashValue, 2)],
+    ['Connected accounts', $accountCount],
+    ['Open alerts', '0'],
+] as [$label, $value])
                     <div class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                         <p class="text-sm font-medium text-slate-500">{{ $label }}</p>
                         <p class="mt-3 text-3xl font-semibold text-slate-900">{{ $value }}</p>

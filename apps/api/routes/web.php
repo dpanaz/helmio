@@ -8,10 +8,18 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
+    $accounts = \App\Models\InvestmentAccount::query()
+        ->where('user_id', $request->user()->id)
+        ->get();
 
+    return view('dashboard', [
+        'accounts' => $accounts,
+        'portfolioValue' => $accounts->sum('current_value'),
+        'cashValue' => $accounts->sum('cash_value'),
+        'accountCount' => $accounts->count(),
+    ]);
+})->middleware(['auth', 'verified'])->name('dashboard');
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -46,4 +54,28 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         '/accounts/{investmentAccount}/holdings',
         [\App\Http\Controllers\HoldingController::class, 'store'],
     )->name('accounts.holdings.store');
+});
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/accounts/{investmentAccount}/transactions',
+        [\App\Http\Controllers\InvestmentTransactionController::class, 'index'],
+    )->name('accounts.transactions.index');
+
+    Route::get(
+        '/accounts/{investmentAccount}/transactions/create',
+        [\App\Http\Controllers\InvestmentTransactionController::class, 'create'],
+    )->name('accounts.transactions.create');
+
+    Route::post(
+        '/accounts/{investmentAccount}/transactions',
+        [\App\Http\Controllers\InvestmentTransactionController::class, 'store'],
+    )->name('accounts.transactions.store');
+});
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/analytics/costs',
+        [\App\Http\Controllers\CostAnalyticsController::class, 'index'],
+    )->name('analytics.costs');
 });

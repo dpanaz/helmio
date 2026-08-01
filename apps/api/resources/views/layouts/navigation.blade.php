@@ -12,8 +12,15 @@
 
                 <div class="hidden items-center gap-1 sm:flex">
                     <x-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">Dashboard</x-nav-link>
-                    <span class="rounded-lg px-3 py-2 text-sm text-slate-400">Accounts</span>
-                    <span class="rounded-lg px-3 py-2 text-sm text-slate-400">Portfolio</span>
+                    <x-nav-link :href="route('accounts.index')" :active="request()->routeIs('accounts.*')">{{ __('Accounts') }}</x-nav-link>
+                    
+                    <x-nav-link
+    :href="route('analytics.costs')"
+    :active="request()->routeIs('analytics.costs')"
+>
+    {{ __('Fees') }}
+</x-nav-link>
+<span class="rounded-lg px-3 py-2 text-sm text-slate-400">Portfolio</span>
                     <span class="rounded-lg px-3 py-2 text-sm text-slate-400">Alerts</span>
                 </div>
             </div>
@@ -44,6 +51,12 @@
         <div class="space-y-1 px-4 py-3">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">Dashboard</x-responsive-nav-link>
             <x-responsive-nav-link :href="route('profile.edit')">Profile</x-responsive-nav-link>
+            <x-responsive-nav-link
+    :href="route('analytics.costs')"
+    :active="request()->routeIs('analytics.costs')"
+>
+    {{ __('Fees') }}
+</x-responsive-nav-link>
         </div>
     </div>
 </nav>

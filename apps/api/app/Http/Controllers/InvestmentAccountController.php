@@ -48,6 +48,21 @@ class InvestmentAccountController extends Controller
             'account_number_mask' => ['nullable', 'string', 'max:8'],
             'current_value' => ['required', 'numeric', 'min:0'],
             'cash_value' => ['nullable', 'numeric', 'min:0'],
+            'annual_advisory_fee_rate' => [
+    'nullable',
+    'numeric',
+    'min:0',
+    'max:100',
+],
+'annual_account_fee' => [
+    'nullable',
+    'numeric',
+    'min:0',
+],
+'advisory_fee_applies_to_cash' => [
+    'nullable',
+    'boolean',
+],
         ]);
 
         $institutionId = $validated['institution_id'] ?? null;
@@ -77,6 +92,16 @@ class InvestmentAccountController extends Controller
             'metadata' => [
                 'entry_method' => 'manual',
             ],
+            'annual_advisory_fee_rate' =>
+    isset($validated['annual_advisory_fee_rate'])
+        ? (float) $validated['annual_advisory_fee_rate'] / 100
+        : null,
+
+'annual_account_fee' =>
+    $validated['annual_account_fee'] ?? 0,
+
+'advisory_fee_applies_to_cash' =>
+    $request->boolean('advisory_fee_applies_to_cash'),
         ]);
 
         return redirect()
