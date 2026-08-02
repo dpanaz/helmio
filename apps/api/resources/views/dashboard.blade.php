@@ -83,6 +83,51 @@
             'risk' => 'analytics.risk',
             'tax' => 'analytics.tax-efficiency',
         ];
+        $auditGrade =
+    $advisorAudit['audit_grade'] ?? '—';
+
+$auditScore =
+    $advisorAudit['audit_score'] ?? null;
+
+$auditLabel =
+    $advisorAudit['audit_label']
+    ?? 'Insufficient data';
+
+$openFindingCount =
+    $findingCounts['open'] ?? 0;
+
+$reviewedFindingCount =
+    $findingCounts['reviewed'] ?? 0;
+
+$resolvedFindingCount =
+    $findingCounts['resolved'] ?? 0;
+
+$newFindingCount =
+    $auditComparison !== null
+    && ($auditComparison['has_previous'] ?? false)
+        ? $auditComparison['new_findings']->count()
+        : 0;
+
+$improvedFindingCount =
+    $auditComparison !== null
+    && ($auditComparison['has_previous'] ?? false)
+        ? $auditComparison['improved_findings']->count()
+        : 0;
+
+$worsenedFindingCount =
+    $auditComparison !== null
+    && ($auditComparison['has_previous'] ?? false)
+        ? $auditComparison['worsened_findings']->count()
+        : 0;
+
+$resolvedChangeCount =
+    $auditComparison !== null
+    && ($auditComparison['has_previous'] ?? false)
+        ? $auditComparison['resolved_findings']->count()
+        : 0;
+
+$auditScoreChange =
+    $auditComparison['score_change'] ?? null;
     @endphp
 
     <div class="py-10">
@@ -324,7 +369,170 @@
                     </a>
                 </article>
             </section>
+            <section class="grid gap-6 xl:grid-cols-3">
+    <article class="overflow-hidden rounded-3xl bg-indigo-950 p-8 text-white shadow-xl xl:col-span-2">
+        <div class="flex flex-wrap items-start justify-between gap-8">
+            <div>
+                <p class="text-sm font-medium text-indigo-300">
+                    Advisor Audit
+                </p>
 
+                <div class="mt-4 flex flex-wrap items-end gap-5">
+                    <span class="text-7xl font-semibold tracking-tight">
+                        {{ $auditGrade }}
+                    </span>
+
+                    <div class="pb-2">
+                        <p class="text-xl font-semibold text-white">
+                            {{ $auditScore ?? '—' }}
+
+                            @if ($auditScore !== null)
+                                / 100
+                            @endif
+                        </p>
+
+                        <p class="mt-1 text-sm text-indigo-200">
+                            {{ $auditLabel }}
+                        </p>
+                    </div>
+                </div>
+
+                @if ($auditScoreChange !== null)
+                    <p class="mt-5 text-sm text-indigo-200">
+                        Change since prior audit:
+
+                        <span
+                            @class([
+                                'font-semibold',
+                                'text-emerald-300' =>
+                                    $auditScoreChange > 0,
+                                'text-red-300' =>
+                                    $auditScoreChange < 0,
+                                'text-indigo-200' =>
+                                    $auditScoreChange === 0,
+                            ])
+                        >
+                            {{ $auditScoreChange > 0 ? '+' : '' }}
+                            {{ $auditScoreChange }}
+                        </span>
+                    </p>
+                @elseif ($currentAuditRun !== null)
+                    <p class="mt-5 text-sm text-indigo-200">
+                        First recorded audit:
+                        {{ $currentAuditRun
+                            ->calculated_for_date
+                            ->format('M j, Y') }}
+                    </p>
+                @else
+                    <p class="mt-5 max-w-xl text-sm leading-6 text-indigo-200">
+                        Open Advisor Audit to create your first recorded review.
+                    </p>
+                @endif
+            </div>
+
+            <div class="min-w-56 rounded-2xl border border-white/10 bg-white/5 p-5">
+                <p class="text-sm text-indigo-200">
+                    Open findings
+                </p>
+
+                <p class="mt-2 text-4xl font-semibold">
+                    {{ $openFindingCount }}
+                </p>
+
+                <p class="mt-3 text-sm text-indigo-300">
+                    {{ $reviewedFindingCount }} reviewed ·
+                    {{ $resolvedFindingCount }} resolved
+                </p>
+            </div>
+        </div>
+
+        <div class="mt-8 flex flex-wrap gap-3">
+            <a
+                href="{{ route('advisor-audit.index') }}"
+                class="rounded-xl bg-white px-5 py-3 text-sm font-semibold text-indigo-950 hover:bg-indigo-50"
+            >
+                Open Advisor Audit
+            </a>
+
+            <a
+                href="{{ route('advisor-audit.history') }}"
+                class="rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold text-white hover:bg-white/5"
+            >
+                View audit history
+            </a>
+
+            <a
+                href="{{ route('advisor-audit.report') }}"
+                class="rounded-xl border border-white/20 px-5 py-3 text-sm font-semibold text-white hover:bg-white/5"
+            >
+                View report
+            </a>
+        </div>
+    </article>
+
+    <article class="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+        <p class="text-sm font-medium text-slate-500">
+            Changes since prior audit
+        </p>
+
+        @if (
+            $auditComparison !== null
+            && ($auditComparison['has_previous'] ?? false)
+        )
+            <div class="mt-6 grid grid-cols-2 gap-4">
+                <div class="rounded-2xl bg-violet-50 p-4">
+                    <p class="text-xs font-medium text-violet-700">
+                        New
+                    </p>
+
+                    <p class="mt-2 text-2xl font-semibold text-violet-900">
+                        {{ $newFindingCount }}
+                    </p>
+                </div>
+
+                <div class="rounded-2xl bg-emerald-50 p-4">
+                    <p class="text-xs font-medium text-emerald-700">
+                        Improved
+                    </p>
+
+                    <p class="mt-2 text-2xl font-semibold text-emerald-900">
+                        {{ $improvedFindingCount }}
+                    </p>
+                </div>
+
+                <div class="rounded-2xl bg-red-50 p-4">
+                    <p class="text-xs font-medium text-red-700">
+                        Worsened
+                    </p>
+
+                    <p class="mt-2 text-2xl font-semibold text-red-900">
+                        {{ $worsenedFindingCount }}
+                    </p>
+                </div>
+
+                <div class="rounded-2xl bg-blue-50 p-4">
+                    <p class="text-xs font-medium text-blue-700">
+                        Resolved
+                    </p>
+
+                    <p class="mt-2 text-2xl font-semibold text-blue-900">
+                        {{ $resolvedChangeCount }}
+                    </p>
+                </div>
+            </div>
+        @else
+            <div class="mt-6 rounded-2xl border border-dashed border-slate-300 p-6 text-center">
+                <p class="font-medium text-slate-900">
+                    No prior audit to compare
+                </p>
+
+                <p class="mt-2 text-sm leading-6 text-slate-500">
+                    Changes will appear after a later dated audit is recorded.
+                </p>
+            </div>
+        @endif
+    </article>
+</section>
             <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
                 @foreach ([
                     'cost' => 'Cost',
@@ -471,7 +679,99 @@
                     </div>
                 </article>
             </section>
+<section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
+    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-6 py-5">
+        <div>
+            <p class="text-sm font-medium text-slate-500">
+                Advisor Audit
+            </p>
 
+            <h3 class="mt-1 text-lg font-semibold text-slate-900">
+                Priority review items
+            </h3>
+        </div>
+
+        <a
+            href="{{ route('advisor-audit.index') }}"
+            class="text-sm font-semibold text-blue-600 hover:text-blue-500"
+        >
+            Review all findings →
+        </a>
+    </div>
+
+    <div class="divide-y divide-slate-200">
+        @forelse ($openFindings as $finding)
+            @php
+                $severityClasses = match (
+                    $finding->severity
+                ) {
+                    'critical' =>
+                        'bg-red-100 text-red-800',
+
+                    'high' =>
+                        'bg-orange-100 text-orange-800',
+
+                    'medium' =>
+                        'bg-amber-100 text-amber-800',
+
+                    'low' =>
+                        'bg-blue-100 text-blue-800',
+
+                    'positive' =>
+                        'bg-emerald-100 text-emerald-800',
+
+                    default =>
+                        'bg-slate-100 text-slate-700',
+                };
+            @endphp
+
+            <article class="flex flex-wrap items-start justify-between gap-5 px-6 py-5">
+                <div class="max-w-4xl">
+                    <div class="flex flex-wrap items-center gap-3">
+                        <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $severityClasses }}">
+                            {{ str($finding->severity)->title() }}
+                        </span>
+
+                        <span class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                            {{ str($finding->category)
+                                ->replace('_', ' ')
+                                ->title() }}
+                        </span>
+                    </div>
+
+                    <h4 class="mt-3 font-semibold text-slate-900">
+                        {{ $finding->title }}
+                    </h4>
+
+                    <p class="mt-2 text-sm leading-6 text-slate-600">
+                        {{ $finding->description }}
+                    </p>
+                </div>
+
+                @if ($finding->route_name)
+                    <a
+                        href="{{ route(
+                            $finding->route_name
+                        ) }}"
+                        class="text-sm font-semibold text-blue-600 hover:text-blue-500"
+                    >
+                        Open analysis →
+                    </a>
+                @endif
+            </article>
+        @empty
+            <div class="p-10 text-center">
+                <p class="font-semibold text-slate-900">
+                    No open audit findings
+                </p>
+
+                <p class="mt-2 text-sm text-slate-500">
+                    Current findings have been reviewed, dismissed, or resolved.
+                </p>
+            </div>
+        @endforelse
+    </div>
+</section>
             <section class="grid gap-6 lg:grid-cols-3">
                 <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:col-span-2">
                     <div class="border-b border-slate-200 px-6 py-5">

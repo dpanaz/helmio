@@ -192,4 +192,20 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 'show',
             ],
         )->name('advisor-audit.history.show');
+
+        Route::get(
+    '/advisor-audit/monthly-report',
+    [
+        \App\Http\Controllers\MonthlyAuditSettingsController::class,
+        'edit',
+    ],
+)->name('advisor-audit.monthly-settings');
+
+Route::put(
+    '/advisor-audit/monthly-report',
+    [
+        \App\Http\Controllers\MonthlyAuditSettingsController::class,
+        'update',
+    ],
+)->name('advisor-audit.monthly-settings.update');
 });

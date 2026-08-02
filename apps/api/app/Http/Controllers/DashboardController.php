@@ -19,15 +19,41 @@ class DashboardController extends Controller
         return view('dashboard', [
             'dashboard' => $dashboard,
 
-            // Existing dashboard Blade variables
-            'accounts' => $dashboard['accounts'],
-            'portfolioValue' => $dashboard['portfolioValue'],
-            'cashValue' => $dashboard['cashValue'],
-            'accountCount' => $dashboard['accountCount'],
+            'accounts' =>
+                $dashboard['accounts'],
 
-            // New live Helm Score data
-            'helmScore' => $dashboard['helm'],
-            'largestAccount' => $dashboard['largestAccount'],
+            'portfolioValue' =>
+                $dashboard['portfolioValue'],
+
+            'cashValue' =>
+                $dashboard['cashValue'],
+
+            'accountCount' =>
+                $dashboard['accountCount'],
+
+            'helmScore' =>
+                $dashboard['helm'],
+
+            'largestAccount' =>
+                $dashboard['largestAccount'],
+
+            'advisorAudit' =>
+                $dashboard['advisorAudit'],
+
+            'currentAuditRun' =>
+                $dashboard['currentAuditRun'],
+
+            'previousAuditRun' =>
+                $dashboard['previousAuditRun'],
+
+            'auditComparison' =>
+                $dashboard['auditComparison'],
+
+            'openFindings' =>
+                $dashboard['openFindings'],
+
+            'findingCounts' =>
+                $dashboard['findingCounts'],
         ]);
     }
 }
