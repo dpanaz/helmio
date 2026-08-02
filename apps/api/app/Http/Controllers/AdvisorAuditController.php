@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\AuditFinding;
+use App\Models\AuditRun;
 use App\Models\InvestmentAccount;
 use App\Services\Audit\AdvisorAuditService;
 use App\Services\Audit\AuditFindingSyncService;
+use App\Services\Audit\AuditNotificationService;
 use App\Services\Audit\AuditRunRecorderService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -17,6 +19,7 @@ class AdvisorAuditController extends Controller
         AdvisorAuditService $auditService,
         AuditFindingSyncService $syncService,
         AuditRunRecorderService $runRecorder,
+        AuditNotificationService $notificationService,
     ): View {
         $user = $request->user();
 
@@ -34,19 +37,11 @@ class AdvisorAuditController extends Controller
 
         $audit = $auditService->build($accounts);
 
-        /*
-         * Synchronize the latest calculated findings with the
-         * persistent audit_findings table.
-         */
         $syncService->sync(
             $user,
             $audit['findings'],
         );
 
-        /*
-         * Reload all persistent findings after synchronization so the
-         * page shows current statuses, timestamps and review notes.
-         */
         $persistentFindings = AuditFinding::query()
             ->where('user_id', $user->id)
             ->orderByRaw(
@@ -73,50 +68,41 @@ class AdvisorAuditController extends Controller
             ->orderByDesc('id')
             ->get();
 
-        /*
-         * Record or refresh today's audit snapshot. The recorder uses
-         * user, date and formula version to avoid duplicate daily runs.
-         */
         $currentRun = $runRecorder->record(
             $user,
             $audit,
             $persistentFindings,
         );
 
-        $openFindingCount = $persistentFindings
-            ->where(
-                'status',
-                AuditFinding::STATUS_OPEN,
-            )
-            ->count();
+        $previousRun = AuditRun::query()
+            ->where('user_id', $user->id)
+            ->where('id', '!=', $currentRun->id)
+            ->where(function ($query) use ($currentRun): void {
+                $query
+                    ->where(
+                        'calculated_for_date',
+                        '<',
+                        $currentRun->calculated_for_date,
+                    )
+                    ->orWhere(function ($query) use ($currentRun): void {
+                        $query
+                            ->whereDate(
+                                'calculated_for_date',
+                                $currentRun->calculated_for_date,
+                            )
+                            ->where('id', '<', $currentRun->id);
+                    });
+            })
+            ->with('findings')
+            ->orderByDesc('calculated_for_date')
+            ->orderByDesc('id')
+            ->first();
 
-        $reviewedFindingCount = $persistentFindings
-            ->where(
-                'status',
-                AuditFinding::STATUS_REVIEWED,
-            )
-            ->count();
-
-        $dismissedFindingCount = $persistentFindings
-            ->where(
-                'status',
-                AuditFinding::STATUS_DISMISSED,
-            )
-            ->count();
-
-        $resolvedFindingCount = $persistentFindings
-            ->where(
-                'status',
-                AuditFinding::STATUS_RESOLVED,
-            )
-            ->count();
-
-        $activeFindingCount = $persistentFindings
-            ->whereIn('status', [
-                AuditFinding::STATUS_OPEN,
-                AuditFinding::STATUS_REVIEWED,
-            ])
-            ->count();
+        $notificationService->generate(
+            $user,
+            $currentRun,
+            $previousRun,
+        );
 
         return view('audit.advisor', [
             'audit' => $audit,
@@ -127,19 +113,44 @@ class AdvisorAuditController extends Controller
                 $persistentFindings,
 
             'openFindingCount' =>
-                $openFindingCount,
+                $persistentFindings
+                    ->where(
+                        'status',
+                        AuditFinding::STATUS_OPEN,
+                    )
+                    ->count(),
 
             'reviewedFindingCount' =>
-                $reviewedFindingCount,
+                $persistentFindings
+                    ->where(
+                        'status',
+                        AuditFinding::STATUS_REVIEWED,
+                    )
+                    ->count(),
 
             'dismissedFindingCount' =>
-                $dismissedFindingCount,
+                $persistentFindings
+                    ->where(
+                        'status',
+                        AuditFinding::STATUS_DISMISSED,
+                    )
+                    ->count(),
 
             'resolvedFindingCount' =>
-                $resolvedFindingCount,
+                $persistentFindings
+                    ->where(
+                        'status',
+                        AuditFinding::STATUS_RESOLVED,
+                    )
+                    ->count(),
 
             'activeFindingCount' =>
-                $activeFindingCount,
+                $persistentFindings
+                    ->whereIn('status', [
+                        AuditFinding::STATUS_OPEN,
+                        AuditFinding::STATUS_REVIEWED,
+                    ])
+                    ->count(),
         ]);
     }
 }

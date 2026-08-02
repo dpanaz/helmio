@@ -208,4 +208,35 @@ Route::put(
         'update',
     ],
 )->name('advisor-audit.monthly-settings.update');
+Route::get(
+    '/notifications',
+    [
+        \App\Http\Controllers\NotificationCenterController::class,
+        'index',
+    ],
+)->name('notifications.index');
+
+Route::patch(
+    '/notifications/{notification}/read',
+    [
+        \App\Http\Controllers\NotificationCenterController::class,
+        'read',
+    ],
+)->name('notifications.read');
+
+Route::patch(
+    '/notifications/read-all',
+    [
+        \App\Http\Controllers\NotificationCenterController::class,
+        'markAllRead',
+    ],
+)->name('notifications.read-all');
+
+Route::delete(
+    '/notifications/{notification}',
+    [
+        \App\Http\Controllers\NotificationCenterController::class,
+        'destroy',
+    ],
+)->name('notifications.destroy');
 });

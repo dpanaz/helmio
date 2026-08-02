@@ -142,7 +142,34 @@
                         </svg>
                     </button>
                 </div>
+                <a
+                    href="{{ route('notifications.index') }}"
+                    class="relative ml-4 inline-flex h-11 w-11 items-center justify-center rounded-xl text-slate-500 transition hover:bg-slate-100 hover:text-slate-900"
+                    aria-label="Notifications"
+                >
+                    <svg
+                        class="h-6 w-6"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="1.8"
+                    >
+                        <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M14.857 17.082A3.001 3.001 0 0 1 9.143 17.082M18 8.25a6 6 0 1 0-12 0c0 7.5-3 7.5-3 7.5h18s-3 0-3-7.5Z"
+                        />
+                    </svg>
 
+                    @if (auth()->user()->unreadNotifications()->count() > 0)
+                        <span class="absolute right-1 top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-600 px-1 text-[10px] font-bold text-white">
+                            {{ min(
+                                auth()->user()->unreadNotifications()->count(),
+                                99
+                            ) }}
+                        </span>
+                    @endif
+                </a>
                 <div class="ml-5 border-l border-slate-200 pl-5">
                     <x-dropdown
                         align="right"
@@ -519,6 +546,18 @@
             </div>
 
             <div class="mt-3 space-y-1">
+                <x-responsive-nav-link
+                    :href="route('notifications.index')"
+                    :active="request()->routeIs('notifications.*')"
+                >
+                    {{ __('Notifications') }}
+
+                    @if (auth()->user()->unreadNotifications()->count() > 0)
+                        <span class="ml-2 rounded-full bg-red-600 px-2 py-0.5 text-xs font-semibold text-white">
+                            {{ auth()->user()->unreadNotifications()->count() }}
+                        </span>
+                    @endif
+                </x-responsive-nav-link>
                 <x-responsive-nav-link :href="route('profile.edit')">
                     {{ __('Profile') }}
                 </x-responsive-nav-link>
