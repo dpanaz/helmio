@@ -159,5 +159,21 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         \App\Http\Controllers\AuditFindingController::class,
         'update',
     ],
-)->name('audit-findings.update');
+        )->name('audit-findings.update');
+
+        Route::get(
+            '/advisor-audit/report',
+            [
+                \App\Http\Controllers\AdvisorAuditReportController::class,
+                'show',
+            ],
+        )->name('advisor-audit.report');
+
+        Route::get(
+            '/advisor-audit/report/pdf',
+            [
+                \App\Http\Controllers\AdvisorAuditReportController::class,
+                'download',
+            ],
+        )->name('advisor-audit.report.pdf');
 });

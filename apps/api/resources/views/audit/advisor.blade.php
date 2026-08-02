@@ -17,6 +17,19 @@
             >
                 View Helm Score
             </a>
+            <a
+                href="{{ route('advisor-audit.report') }}"
+                class="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+            >
+                View report
+            </a>
+
+            <a
+                href="{{ route('advisor-audit.report.pdf') }}"
+                class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500"
+            >
+                Download PDF
+            </a>
         </div>
     </x-slot>
 
