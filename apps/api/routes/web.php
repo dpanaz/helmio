@@ -153,4 +153,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         '/advisor-audit',
         [\App\Http\Controllers\AdvisorAuditController::class, 'index'],
     )->name('advisor-audit.index');
+    Route::patch(
+    '/audit-findings/{auditFinding}',
+    [
+        \App\Http\Controllers\AuditFindingController::class,
+        'update',
+    ],
+)->name('audit-findings.update');
 });

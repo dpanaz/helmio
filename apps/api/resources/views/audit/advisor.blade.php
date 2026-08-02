@@ -60,7 +60,11 @@
             ],
         ];
     @endphp
-
+    @if (session('success'))
+        <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-medium text-emerald-800">
+            {{ session('success') }}
+        </div>
+    @endif
     <div class="py-10">
         <div class="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
             <section class="grid gap-6 xl:grid-cols-3">
@@ -201,99 +205,240 @@
             </section>
 
             <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-6 py-5">
-                    <div>
-                        <h3 class="text-lg font-semibold text-slate-900">
-                            Audit findings
-                        </h3>
+    <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-200 px-6 py-5">
+        <div>
+            <h3 class="text-lg font-semibold text-slate-900">
+                Persistent audit findings
+            </h3>
 
-                        <p class="mt-1 text-sm text-slate-500">
-                            Findings are ordered by review priority.
+            <p class="mt-1 text-sm text-slate-500">
+                Track when issues appear, change status or become resolved.
+            </p>
+        </div>
+
+        <div class="flex flex-wrap gap-2">
+            <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-800">
+                {{ $openFindingCount }} open
+            </span>
+
+            <span class="rounded-full bg-blue-100 px-3 py-1 text-xs font-semibold text-blue-800">
+                {{ $reviewedFindingCount }} reviewed
+            </span>
+
+            <span class="rounded-full bg-emerald-100 px-3 py-1 text-xs font-semibold text-emerald-800">
+                {{ $resolvedFindingCount }} resolved
+            </span>
+        </div>
+    </div>
+
+    <div class="divide-y divide-slate-200">
+        @forelse ($persistentFindings as $finding)
+            @php
+                $severityClasses = match ($finding->severity) {
+                    'critical' =>
+                        'bg-red-100 text-red-800',
+
+                    'high' =>
+                        'bg-orange-100 text-orange-800',
+
+                    'medium' =>
+                        'bg-amber-100 text-amber-800',
+
+                    'low' =>
+                        'bg-blue-100 text-blue-800',
+
+                    'positive' =>
+                        'bg-emerald-100 text-emerald-800',
+
+                    default =>
+                        'bg-slate-100 text-slate-700',
+                };
+
+                $statusClasses = match ($finding->status) {
+                    'open' =>
+                        'bg-red-50 text-red-700',
+
+                    'reviewed' =>
+                        'bg-blue-50 text-blue-700',
+
+                    'dismissed' =>
+                        'bg-slate-100 text-slate-600',
+
+                    'resolved' =>
+                        'bg-emerald-50 text-emerald-700',
+
+                    default =>
+                        'bg-slate-100 text-slate-600',
+                };
+            @endphp
+
+            <article class="p-6">
+                <div class="flex flex-wrap items-start justify-between gap-6">
+                    <div class="max-w-3xl">
+                        <div class="flex flex-wrap items-center gap-2">
+                            <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $severityClasses }}">
+                                {{ str($finding->severity)->title() }}
+                            </span>
+
+                            <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $statusClasses }}">
+                                {{ str($finding->status)->title() }}
+                            </span>
+
+                            @if (
+                                $finding->first_detected_at
+                                && $finding->first_detected_at->isToday()
+                            )
+                                <span class="rounded-full bg-violet-100 px-3 py-1 text-xs font-semibold text-violet-800">
+                                    New
+                                </span>
+                            @endif
+                        </div>
+
+                        <h4 class="mt-4 font-semibold text-slate-900">
+                            {{ $finding->title }}
+                        </h4>
+
+                        <p class="mt-2 text-sm leading-6 text-slate-600">
+                            {{ $finding->description }}
                         </p>
+
+                        @if ($finding->recommendation)
+                            <div class="mt-4 rounded-2xl bg-slate-50 p-4">
+                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
+                                    Suggested review
+                                </p>
+
+                                <p class="mt-2 text-sm leading-6 text-slate-700">
+                                    {{ $finding->recommendation }}
+                                </p>
+                            </div>
+                        @endif
+
+                        <div class="mt-4 flex flex-wrap gap-x-6 gap-y-2 text-xs text-slate-400">
+                            <span>
+                                First detected:
+                                {{ $finding->first_detected_at?->format(
+                                    'M j, Y'
+                                ) }}
+                            </span>
+
+                            <span>
+                                Last detected:
+                                {{ $finding->last_detected_at?->format(
+                                    'M j, Y g:i A'
+                                ) }}
+                            </span>
+                        </div>
                     </div>
 
-                    <span class="rounded-full bg-slate-100 px-3 py-1 text-sm font-semibold text-slate-700">
-                        {{ $audit['findings']->count() }} findings
-                    </span>
-                </div>
+                    <div class="w-full max-w-sm">
+                        @if (
+                            $finding->status !== 'resolved'
+                        )
+                            <form
+                                method="POST"
+                                action="{{ route(
+                                    'audit-findings.update',
+                                    $finding
+                                ) }}"
+                                class="space-y-3 rounded-2xl border border-slate-200 p-4"
+                            >
+                                @csrf
+                                @method('PATCH')
 
-                <div class="divide-y divide-slate-200">
-                    @forelse ($audit['findings'] as $finding)
-                        @php
-                            $style = $severityStyles[
-                                $finding['severity']
-                            ] ?? $severityStyles['information'];
-                        @endphp
+                                <label class="block text-sm font-medium text-slate-700">
+                                    Finding status
+                                </label>
 
-                        <article class="p-6">
-                            <div class="flex flex-wrap items-start justify-between gap-5">
-                                <div class="flex max-w-4xl gap-4">
-                                    <span class="mt-2 h-3 w-3 shrink-0 rounded-full {{ $style['dot'] }}"></span>
+                                <select
+                                    name="status"
+                                    class="block w-full rounded-xl border-slate-300"
+                                >
+                                    <option
+                                        value="open"
+                                        @selected(
+                                            $finding->status === 'open'
+                                        )
+                                    >
+                                        Open
+                                    </option>
 
-                                    <div>
-                                        <div class="flex flex-wrap items-center gap-3">
-                                            <h4 class="font-semibold text-slate-900">
-                                                {{ $finding['title'] }}
-                                            </h4>
+                                    <option
+                                        value="reviewed"
+                                        @selected(
+                                            $finding->status === 'reviewed'
+                                        )
+                                    >
+                                        Reviewed
+                                    </option>
 
-                                            <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $style['badge'] }}">
-                                                {{ $style['label'] }}
-                                            </span>
-                                        </div>
+                                    <option
+                                        value="dismissed"
+                                        @selected(
+                                            $finding->status === 'dismissed'
+                                        )
+                                    >
+                                        Dismissed
+                                    </option>
+                                </select>
 
-                                        <p class="mt-3 text-sm leading-6 text-slate-600">
-                                            {{ $finding['description'] }}
-                                        </p>
+                                <textarea
+                                    name="review_notes"
+                                    rows="3"
+                                    placeholder="Optional review notes"
+                                    class="block w-full rounded-xl border-slate-300 text-sm"
+                                >{{ old(
+                                    'review_notes',
+                                    $finding->review_notes
+                                ) }}</textarea>
 
-                                        @if ($finding['recommendation'])
-                                            <div class="mt-4 rounded-2xl bg-slate-50 p-4">
-                                                <p class="text-xs font-semibold uppercase tracking-wide text-slate-400">
-                                                    Suggested review
-                                                </p>
+                                <button
+                                    class="w-full rounded-xl bg-slate-900 px-4 py-3 text-sm font-semibold text-white hover:bg-slate-700"
+                                >
+                                    Save status
+                                </button>
+                            </form>
+                        @else
+                            <div class="rounded-2xl border border-emerald-200 bg-emerald-50 p-4">
+                                <p class="font-semibold text-emerald-900">
+                                    Issue resolved
+                                </p>
 
-                                                <p class="mt-2 text-sm leading-6 text-slate-700">
-                                                    {{ $finding['recommendation'] }}
-                                                </p>
-                                            </div>
-                                        @endif
-                                    </div>
-                                </div>
-
-                                <div class="text-right">
-                                    @if ($finding['score'] !== null)
-                                        <p class="text-2xl font-semibold text-slate-900">
-                                            {{ $finding['score'] }}
-                                        </p>
-
-                                        <p class="text-xs text-slate-400">
-                                            Category score
-                                        </p>
-                                    @endif
-
-                                    @if ($finding['route'])
-                                        <a
-                                            href="{{ route($finding['route']) }}"
-                                            class="mt-4 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-500"
-                                        >
-                                            Open analysis →
-                                        </a>
-                                    @endif
-                                </div>
+                                <p class="mt-2 text-sm text-emerald-700">
+                                    No longer detected as of
+                                    {{ $finding->resolved_at?->format(
+                                        'M j, Y'
+                                    ) }}.
+                                </p>
                             </div>
-                        </article>
-                    @empty
-                        <div class="p-12 text-center">
-                            <p class="font-semibold text-slate-900">
-                                No findings available
-                            </p>
+                        @endif
 
-                            <p class="mt-2 text-sm text-slate-500">
-                                Add portfolio data to begin the audit.
-                            </p>
-                        </div>
-                    @endforelse
+                        @if ($finding->route_name)
+                            <a
+                                href="{{ route(
+                                    $finding->route_name
+                                ) }}"
+                                class="mt-4 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-500"
+                            >
+                                Open supporting analysis →
+                            </a>
+                        @endif
+                    </div>
                 </div>
-            </section>
+            </article>
+        @empty
+            <div class="p-12 text-center">
+                <p class="font-semibold text-slate-900">
+                    No persistent findings yet
+                </p>
+
+                <p class="mt-2 text-sm text-slate-500">
+                    Findings will appear after the Advisor Audit runs.
+                </p>
+            </div>
+        @endforelse
+    </div>
+</section>
 
             <section class="rounded-3xl bg-slate-950 p-8 text-white">
                 <p class="text-sm font-medium text-blue-300">
