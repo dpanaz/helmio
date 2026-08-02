@@ -30,6 +30,12 @@
             >
                 Download PDF
             </a>
+            <a
+    href="{{ route('advisor-audit.history') }}"
+    class="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+>
+    View history
+</a>
         </div>
     </x-slot>
 

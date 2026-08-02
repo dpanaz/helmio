@@ -176,4 +176,20 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
                 'download',
             ],
         )->name('advisor-audit.report.pdf');
+
+        Route::get(
+    '/advisor-audit/history',
+    [
+        \App\Http\Controllers\AdvisorAuditHistoryController::class,
+        'index',
+    ],
+        )->name('advisor-audit.history');
+
+        Route::get(
+            '/advisor-audit/history/{auditRun}',
+            [
+                \App\Http\Controllers\AdvisorAuditHistoryController::class,
+                'show',
+            ],
+        )->name('advisor-audit.history.show');
 });
