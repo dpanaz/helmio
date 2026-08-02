@@ -59,7 +59,8 @@ class HelmScoreController extends Controller
     $score['categories']['risk']['score'],
             'trading_score' =>
     $score['categories']['trading']['score'],
-            'tax_score' => null,
+            'tax_score' =>
+    $score['categories']['tax']['score'],
             'data_completeness' =>
                 $score['data_completeness'],
             'score_details' => $score,

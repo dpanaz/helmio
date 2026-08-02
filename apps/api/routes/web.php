@@ -140,3 +140,17 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         [\App\Http\Controllers\RiskAnalyticsController::class, 'index'],
     )->name('analytics.risk');
 });
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/analytics/tax-efficiency',
+        [\App\Http\Controllers\TaxEfficiencyAnalyticsController::class, 'index'],
+    )->name('analytics.tax-efficiency');
+});
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/advisor-audit',
+        [\App\Http\Controllers\AdvisorAuditController::class, 'index'],
+    )->name('advisor-audit.index');
+});

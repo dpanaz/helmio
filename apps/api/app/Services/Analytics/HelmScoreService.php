@@ -16,6 +16,7 @@ public function __construct(
     private readonly TradingDisciplineAnalyticsService $tradingAnalytics,
     private readonly PerformanceAnalyticsService $performanceAnalytics,
     private readonly RiskAnalyticsService $riskAnalytics,
+    private readonly TaxEfficiencyAnalyticsService $taxAnalytics,
 ) {
 }
     /**
@@ -35,6 +36,8 @@ $performance =
     $this->performanceAnalytics->calculate($accounts);
     $risk =
     $this->riskAnalytics->calculate($accounts);
+    $tax =
+    $this->taxAnalytics->calculate($accounts);
         $categories = [
             'cost' => $costResult,
             'diversification' => [
@@ -65,9 +68,13 @@ $performance =
     'recommendations' => $trading['recommendations'],
     'metrics' => $trading['metrics'],
 ],
-            'tax' => $this->pendingCategory(
-                'Tax-efficiency analysis has not been calculated yet.',
-            ),
+  'tax' => [
+    'score' => $tax['score'],
+    'label' => $tax['label'],
+    'reasons' => $tax['reasons'],
+    'recommendations' => $tax['recommendations'],
+    'metrics' => $tax['metrics'],
+],
         ];
 
         $completedCategories = collect($categories)
@@ -100,6 +107,7 @@ $performance =
             'trading_analytics' => $trading,
             'performance_analytics' => $performance,
             'risk_analytics' => $risk,
+            'tax_analytics' => $tax,
         ];
     }
 

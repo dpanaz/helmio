@@ -22,6 +22,11 @@ class InvestmentTransaction extends Model
         'description',
         'provider_transaction_id',
         'metadata',
+        'realized_gain_loss',
+        'holding_period_days',
+        'is_qualified_dividend',
+        'is_tax_exempt',
+        'tax_withheld',
     ];
 
     protected function casts(): array
@@ -35,6 +40,11 @@ class InvestmentTransaction extends Model
             'fees' => 'decimal:2',
             'net_amount' => 'decimal:2',
             'metadata' => 'array',
+            'realized_gain_loss' => 'decimal:2',
+            'holding_period_days' => 'integer',
+            'is_qualified_dividend' => 'boolean',
+            'is_tax_exempt' => 'boolean',
+            'tax_withheld' => 'decimal:2',
         ];
     }
 

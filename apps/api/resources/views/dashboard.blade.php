@@ -1,4 +1,3 @@
-
 <x-app-layout>
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-4">
@@ -36,6 +35,8 @@
             $helmScore['performance_analytics'] ?? [];
         $riskAnalytics =
             $helmScore['risk_analytics'] ?? [];
+        $taxAnalytics =
+            $helmScore['tax_analytics'] ?? [];
 
         $annualCost =
             $costAnalytics['total_annual_cost'] ?? 0;
@@ -60,6 +61,10 @@
             $riskAnalytics['metrics']['maximum_drawdown']
             ?? null;
 
+        $shortTermGains =
+            $taxAnalytics['metrics']['short_term_gains']
+            ?? 0;
+
         $recommendations = collect($categories)
             ->flatMap(
                 fn ($category) =>
@@ -67,7 +72,7 @@
             )
             ->filter()
             ->unique()
-            ->take(5)
+            ->take(6)
             ->values();
 
         $scoreRoutes = [
@@ -76,6 +81,7 @@
             'trading' => 'analytics.trading-discipline',
             'performance' => 'analytics.performance',
             'risk' => 'analytics.risk',
+            'tax' => 'analytics.tax-efficiency',
         ];
     @endphp
 
@@ -102,8 +108,8 @@
 
                                 <p class="mt-4 max-w-xl text-sm leading-6 text-slate-400">
                                     Your score reflects the completed cost,
-                                    diversification, trading, performance and
-                                    risk analyses.
+                                    diversification, trading, performance, risk
+                                    and tax analyses.
                                 </p>
                             @else
                                 <p class="mt-4 text-3xl font-semibold">
@@ -195,7 +201,7 @@
                 </article>
             </section>
 
-            <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-5">
+            <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
                 <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
                     <p class="text-sm font-medium text-slate-500">
                         Estimated annual cost
@@ -226,7 +232,7 @@
                         href="{{ route('analytics.fund-expenses') }}"
                         class="mt-5 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-500"
                     >
-                        Review fund costs →
+                        Fund costs →
                     </a>
                 </article>
 
@@ -300,15 +306,33 @@
                         Risk analysis →
                     </a>
                 </article>
+
+                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                    <p class="text-sm font-medium text-slate-500">
+                        Short-term gains
+                    </p>
+
+                    <p class="mt-3 text-3xl font-semibold text-slate-900">
+                        ${{ number_format($shortTermGains, 2) }}
+                    </p>
+
+                    <a
+                        href="{{ route('analytics.tax-efficiency') }}"
+                        class="mt-5 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-500"
+                    >
+                        Tax analysis →
+                    </a>
+                </article>
             </section>
 
-            <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-5">
+            <section class="grid gap-6 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-6">
                 @foreach ([
                     'cost' => 'Cost',
                     'diversification' => 'Diversification',
                     'trading' => 'Trading',
                     'performance' => 'Performance',
                     'risk' => 'Risk',
+                    'tax' => 'Tax',
                 ] as $key => $label)
                     @php
                         $category = $categories[$key] ?? [
@@ -333,7 +357,7 @@
 
                             <div
                                 @class([
-                                    'flex h-12 w-12 items-center justify-center rounded-2xl text-lg font-semibold',
+                                    'flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl text-lg font-semibold',
                                     'bg-emerald-100 text-emerald-800' =>
                                         $score !== null && $score >= 80,
                                     'bg-blue-100 text-blue-800' =>
@@ -439,10 +463,10 @@
                         </a>
 
                         <a
-                            href="{{ route('analytics.risk') }}"
+                            href="{{ route('analytics.tax-efficiency') }}"
                             class="block rounded-xl border border-slate-300 px-4 py-3 text-center text-sm font-semibold text-slate-700 hover:bg-slate-50"
                         >
-                            Review risk
+                            Review taxes
                         </a>
                     </div>
                 </article>
@@ -622,10 +646,11 @@
                         </h3>
 
                         <p class="mt-4 max-w-3xl text-sm leading-7 text-slate-300">
-                            Helmio calculates analytics using versioned formulas.
-                            The dashboard summarizes those calculations but does
-                            not determine whether an adviser, transaction or
-                            investment is legally improper.
+                            Helmio calculates analytics using versioned
+                            formulas. The dashboard summarizes those
+                            calculations but does not determine whether an
+                            adviser, transaction or investment is legally
+                            improper.
                         </p>
                     </div>
 
@@ -643,4 +668,3 @@
         </div>
     </div>
 </x-app-layout>
-```
