@@ -15,6 +15,7 @@ public function __construct(
     private readonly DiversificationAnalyticsService $diversificationAnalytics,
     private readonly TradingDisciplineAnalyticsService $tradingAnalytics,
     private readonly PerformanceAnalyticsService $performanceAnalytics,
+    private readonly RiskAnalyticsService $riskAnalytics,
 ) {
 }
     /**
@@ -32,6 +33,8 @@ public function __construct(
             $costResult = $this->calculateCostScore($costs, $funds);
 $performance =
     $this->performanceAnalytics->calculate($accounts);
+    $risk =
+    $this->riskAnalytics->calculate($accounts);
         $categories = [
             'cost' => $costResult,
             'diversification' => [
@@ -48,9 +51,13 @@ $performance =
     'recommendations' => $performance['recommendations'],
     'metrics' => $performance['metrics'],
 ],
-            'risk' => $this->pendingCategory(
-                'Risk analysis has not been calculated yet.',
-            ),
+            'risk' => [
+    'score' => $risk['score'],
+    'label' => $risk['label'],
+    'reasons' => $risk['reasons'],
+    'recommendations' => $risk['recommendations'],
+    'metrics' => $risk['metrics'],
+],
             'trading' => [
     'score' => $trading['score'],
     'label' => $trading['label'],
@@ -92,6 +99,7 @@ $performance =
             'diversification_analytics' => $diversification,
             'trading_analytics' => $trading,
             'performance_analytics' => $performance,
+            'risk_analytics' => $risk,
         ];
     }
 

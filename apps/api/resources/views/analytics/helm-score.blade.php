@@ -29,6 +29,10 @@
                 'route' => 'analytics.performance',
                 'label' => 'View performance analysis',
             ],
+            'risk' => [
+    'route' => 'analytics.risk',
+    'label' => 'View risk analysis',
+],
         ];
     @endphp
 
@@ -208,6 +212,11 @@
                         $helmScore['categories']['performance']['score'] ?? null,
                         'analytics.performance',
                     ],
+                    [
+    'Risk',
+    $helmScore['categories']['risk']['score'] ?? null,
+    'analytics.risk',
+],
                 ] as [$label, $score, $routeName])
                     <article class="rounded-3xl border border-slate-200 bg-white p-6 shadow-sm">
                         <p class="text-sm font-medium text-slate-500">

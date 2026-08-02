@@ -3,23 +3,15 @@
 use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\InvestmentAccountController;
+use App\Http\Controllers\DashboardController;
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', function (\Illuminate\Http\Request $request) {
-    $accounts = \App\Models\InvestmentAccount::query()
-        ->where('user_id', $request->user()->id)
-        ->get();
-
-    return view('dashboard', [
-        'accounts' => $accounts,
-        'portfolioValue' => $accounts->sum('current_value'),
-        'cashValue' => $accounts->sum('cash_value'),
-        'accountCount' => $accounts->count(),
-    ]);
-})->middleware(['auth', 'verified'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])
+    ->middleware(['auth', 'verified'])
+    ->name('dashboard');
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
@@ -140,4 +132,11 @@ Route::middleware(['auth', 'verified'])->group(function (): void {
         '/analytics/performance',
         [\App\Http\Controllers\PerformanceAnalyticsController::class, 'index'],
     )->name('analytics.performance');
+});
+
+Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/analytics/risk',
+        [\App\Http\Controllers\RiskAnalyticsController::class, 'index'],
+    )->name('analytics.risk');
 });

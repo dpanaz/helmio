@@ -1,3 +1,4 @@
+
 <nav
     x-data="{ open: false }"
     class="border-b border-slate-200 bg-white"
@@ -81,6 +82,13 @@
                         :active="request()->routeIs('analytics.performance')"
                     >
                         {{ __('Performance') }}
+                    </x-nav-link>
+
+                    <x-nav-link
+                        :href="route('analytics.risk')"
+                        :active="request()->routeIs('analytics.risk')"
+                    >
+                        {{ __('Risk') }}
                     </x-nav-link>
                 </div>
             </div>
@@ -240,6 +248,13 @@
             >
                 {{ __('Performance') }}
             </x-responsive-nav-link>
+
+            <x-responsive-nav-link
+                :href="route('analytics.risk')"
+                :active="request()->routeIs('analytics.risk')"
+            >
+                {{ __('Risk') }}
+            </x-responsive-nav-link>
         </div>
 
         <div class="border-t border-slate-200 px-4 pb-4 pt-4">
@@ -281,3 +296,4 @@
         </div>
     </div>
 </nav>
+
