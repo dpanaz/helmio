@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Attributes\Hidden;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 #[Fillable(['name', 'email', 'password', 'monthly_audit_enabled',
 'monthly_audit_email',
@@ -36,5 +37,18 @@ class User extends Authenticatable
             'monthly_audit_day' => 'integer',
             'last_monthly_audit_sent_at' => 'datetime',
         ];
+    }
+    public function brokerageConnections(): HasMany
+    {
+        return $this->hasMany(
+            BrokerageConnection::class,
+        );
+    }
+
+    public function brokerageProviderUsers(): HasMany
+    {
+        return $this->hasMany(
+            BrokerageProviderUser::class,
+        );
     }
 }

@@ -27,6 +27,9 @@ class InvestmentTransaction extends Model
         'is_qualified_dividend',
         'is_tax_exempt',
         'tax_withheld',
+        'provider_transaction_id',
+        'provider_synced_at',
+        'provider_metadata',
     ];
 
     protected function casts(): array
@@ -45,6 +48,8 @@ class InvestmentTransaction extends Model
             'is_qualified_dividend' => 'boolean',
             'is_tax_exempt' => 'boolean',
             'tax_withheld' => 'decimal:2',
+            'provider_synced_at' => 'datetime',
+            'provider_metadata' => 'array',
         ];
     }
 

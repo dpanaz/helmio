@@ -18,6 +18,9 @@ class Holding extends Model
         'portfolio_weight',
         'as_of_date',
         'metadata',
+        'provider_position_id',
+        'provider_synced_at',
+        'provider_metadata',
     ];
 
     protected function casts(): array
@@ -31,6 +34,8 @@ class Holding extends Model
             'portfolio_weight' => 'decimal:6',
             'as_of_date' => 'date',
             'metadata' => 'array',
+            'provider_synced_at' => 'datetime',
+            'provider_metadata' => 'array',
         ];
     }
 

@@ -25,6 +25,11 @@ class InvestmentAccount extends Model
     'last_synced_at',
     'metadata',
     'benchmark_id',
+    'brokerage_connection_id',
+    'provider_account_id',
+    'provider',
+    'provider_synced_at',
+    'provider_metadata',
     ];
 
     protected function casts(): array
@@ -37,6 +42,8 @@ class InvestmentAccount extends Model
         'advisory_fee_applies_to_cash' => 'boolean',
         'last_synced_at' => 'datetime',
         'metadata' => 'array',
+        'provider_synced_at' => 'datetime',
+        'provider_metadata' => 'array',
         ];
     }
 

@@ -10,22 +10,43 @@ return new class extends Migration
     {
         Schema::create('brokerage_connections', function (Blueprint $table): void {
             $table->id();
-            $table->foreignId('user_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('institution_id')
-                ->nullable()
-                ->constrained()
-                ->nullOnDelete();
 
-            $table->string('provider')->default('manual');
-            $table->string('provider_connection_id')->nullable()->unique();
-            $table->string('status')->default('pending');
+            $table->foreignId('user_id')
+                ->constrained()
+                ->cascadeOnDelete();
+
+            $table->string('provider', 50);
+            $table->string('provider_connection_id')->nullable();
+
+            $table->string('brokerage_name')->nullable();
+            $table->string('brokerage_slug')->nullable();
+
+            $table->string('status', 30)->default('pending');
+
+            $table->boolean('read_only')->default(true);
+
+            $table->timestamp('connected_at')->nullable();
+            $table->timestamp('last_sync_started_at')->nullable();
             $table->timestamp('last_synced_at')->nullable();
-            $table->timestamp('requires_attention_at')->nullable();
-            $table->text('status_message')->nullable();
+            $table->timestamp('last_successful_sync_at')->nullable();
+            $table->timestamp('disabled_at')->nullable();
+
+            $table->text('last_error')->nullable();
+
+            $table->json('capabilities')->nullable();
             $table->json('metadata')->nullable();
+
             $table->timestamps();
 
-            $table->index(['user_id', 'status']);
+            $table->unique([
+                'provider',
+                'provider_connection_id',
+            ]);
+
+            $table->index([
+                'user_id',
+                'status',
+            ]);
         });
     }
 
