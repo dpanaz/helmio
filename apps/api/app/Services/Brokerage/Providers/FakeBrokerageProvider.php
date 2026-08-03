@@ -40,18 +40,25 @@ class FakeBrokerageProvider implements BrokerageProviderInterface
             );
     }
 
-    public function createConnectionUrl(
-        User $user,
-        string $redirectUrl,
-        ?string $brokerageSlug = null,
-        ?BrokerageConnection $reconnect = null,
-    ): string {
-        $this->registerUser($user);
+   public function createConnectionUrl(
+    User $user,
+    string $redirectUrl,
+    ?string $brokerageSlug = null,
+    ?BrokerageConnection $reconnect = null,
+): string {
+    $this->registerUser($user);
 
-        return route('brokerage-connections.fake-complete', [
-            'redirect' => $redirectUrl,
-        ]);
+    if ($reconnect === null) {
+        throw new \InvalidArgumentException(
+            'A pending connection is required.',
+        );
     }
+
+    return route(
+        'brokerage-connections.fake-complete',
+        $reconnect,
+    );
+}
 
     public function listConnections(
         User $user,

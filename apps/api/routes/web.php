@@ -239,4 +239,51 @@ Route::delete(
         'destroy',
     ],
 )->name('notifications.destroy');
+Route::get(
+    '/brokerage-connections',
+    [
+        \App\Http\Controllers\BrokerageConnectionController::class,
+        'index',
+    ],
+)->name('brokerage-connections.index');
+
+Route::get(
+    '/brokerage-connections/create',
+    [
+        \App\Http\Controllers\BrokerageConnectionController::class,
+        'create',
+    ],
+)->name('brokerage-connections.create');
+
+Route::post(
+    '/brokerage-connections',
+    [
+        \App\Http\Controllers\BrokerageConnectionController::class,
+        'connect',
+    ],
+)->name('brokerage-connections.connect');
+
+Route::get(
+    '/brokerage-connections/{brokerageConnection}/fake-complete',
+    [
+        \App\Http\Controllers\BrokerageConnectionController::class,
+        'fakeComplete',
+    ],
+)->name('brokerage-connections.fake-complete');
+
+Route::post(
+    '/brokerage-connections/{brokerageConnection}/sync',
+    [
+        \App\Http\Controllers\BrokerageConnectionController::class,
+        'sync',
+    ],
+)->name('brokerage-connections.sync');
+
+Route::delete(
+    '/brokerage-connections/{brokerageConnection}',
+    [
+        \App\Http\Controllers\BrokerageConnectionController::class,
+        'disconnect',
+    ],
+)->name('brokerage-connections.disconnect');
 });
