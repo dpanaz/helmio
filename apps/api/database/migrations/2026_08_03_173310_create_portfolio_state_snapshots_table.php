@@ -67,10 +67,13 @@ return new class extends Migration
                     'captured_at',
                 ]);
 
-                $table->index([
-                    'brokerage_connection_id',
-                    'captured_at',
-                ]);
+                $table->index(
+    [
+        'brokerage_connection_id',
+        'captured_at',
+    ],
+    'ix_port_state_conn_captured',
+);
 
                 $table->unique([
                     'brokerage_sync_run_id',
