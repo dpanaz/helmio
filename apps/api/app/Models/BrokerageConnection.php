@@ -54,7 +54,16 @@ class BrokerageConnection extends Model
 
     public function investmentAccounts(): HasMany
     {
-        return $this->hasMany(InvestmentAccount::class);
+        return $this->hasMany(
+            InvestmentAccount::class,
+        );
+    }
+
+    public function syncRuns(): HasMany
+    {
+        return $this->hasMany(
+            BrokerageSyncRun::class,
+        );
     }
 
     public function isActive(): bool
@@ -72,5 +81,54 @@ class BrokerageConnection extends Model
             ],
             true,
         );
+    }
+
+    public function isStale(): bool
+    {
+        if ($this->last_successful_sync_at === null) {
+            return true;
+        }
+
+        return $this->last_successful_sync_at->lt(
+            now()->subHours(
+                (int) config(
+                    'brokerage.stale_after_hours',
+                    24,
+                ),
+            ),
+        );
+    }
+    public function portfolioStateSnapshots(): HasMany
+    {
+        return $this->hasMany(
+            PortfolioStateSnapshot::class,
+        );
+    }
+
+    public function healthStatus(): string
+    {
+        if (
+            in_array(
+                $this->status,
+                [
+                    self::STATUS_ERROR,
+                    self::STATUS_DISABLED,
+                    self::STATUS_DISCONNECTED,
+                ],
+                true,
+            )
+        ) {
+            return 'attention';
+        }
+
+        if ($this->status === self::STATUS_SYNCING) {
+            return 'syncing';
+        }
+
+        if ($this->isStale()) {
+            return 'stale';
+        }
+
+        return 'healthy';
     }
 }

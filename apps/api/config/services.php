@@ -14,6 +14,37 @@ return [
     |
     */
 
+    'stripe' => [
+    'key' => env('STRIPE_KEY'),
+
+    'secret' => env('STRIPE_SECRET'),
+
+    'webhook_secret' =>
+        env('STRIPE_WEBHOOK_SECRET'),
+
+    'prices' => [
+        'monthly' =>
+            env('STRIPE_PRICE_MONTHLY'),
+
+        'annual' =>
+            env('STRIPE_PRICE_ANNUAL'),
+    ],
+
+    'trial_days' =>
+        (int) env(
+            'HELMIO_TRIAL_DAYS',
+            14
+        ),
+],
+
+    'snaptrade' => [
+    'client_id' =>
+        env('SNAPTRADE_CLIENT_ID'),
+
+    'consumer_key' =>
+        env('SNAPTRADE_CONSUMER_KEY'),
+],
+
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

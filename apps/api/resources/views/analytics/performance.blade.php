@@ -1,331 +1,578 @@
 <x-app-layout>
     <x-slot name="header">
-        <div>
-            <p class="text-sm font-medium text-blue-600">
-                Phase 2 analytics
-            </p>
+        <div class="flex items-center justify-between">
+            <div>
+                <h2 class="text-xl font-semibold text-gray-900">
+                    Performance Analytics
+                </h2>
 
-            <h2 class="mt-1 text-2xl font-semibold text-slate-900">
-                Performance analysis
-            </h2>
+                <p class="mt-1 text-sm text-gray-500">
+                    Compare your portfolio against a market benchmark.
+                </p>
+            </div>
         </div>
     </x-slot>
 
-    <div class="py-10">
-        <div class="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
-            <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <p class="text-sm font-medium text-slate-500">
-                        Performance score
-                    </p>
+    <div class="py-8">
+        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
 
-                    <p class="mt-3 text-4xl font-semibold text-slate-900">
-                        {{ $analytics['score'] ?? '—' }}
-                    </p>
+            <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+                <form
+                    id="performance-form"
+                    class="grid gap-4 md:grid-cols-4"
+                >
+                    <div>
+                        <label
+                            for="start_date"
+                            class="block text-sm font-medium text-gray-700"
+                        >
+                            Start date
+                        </label>
 
-                    <p class="mt-2 text-sm text-slate-500">
-                        {{ $analytics['label'] }}
-                    </p>
-                </article>
-
-                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <p class="text-sm font-medium text-slate-500">
-                        Portfolio return
-                    </p>
-
-                    <p class="mt-3 text-3xl font-semibold text-slate-900">
-                        @if ($analytics['metrics']['portfolio_return'] !== null)
-                            {{ number_format(
-                                $analytics['metrics']['portfolio_return'] * 100,
-                                2
-                            ) }}%
-                        @else
-                            —
-                        @endif
-                    </p>
-                </article>
-
-                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <p class="text-sm font-medium text-slate-500">
-                        Benchmark return
-                    </p>
-
-                    <p class="mt-3 text-3xl font-semibold text-slate-900">
-                        @if ($analytics['metrics']['benchmark_return'] !== null)
-                            {{ number_format(
-                                $analytics['metrics']['benchmark_return'] * 100,
-                                2
-                            ) }}%
-                        @else
-                            —
-                        @endif
-                    </p>
-                </article>
-
-                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <p class="text-sm font-medium text-slate-500">
-                        Excess return
-                    </p>
-
-                    <p
-                        @class([
-                            'mt-3 text-3xl font-semibold',
-                            'text-emerald-700' =>
-                                ($analytics['metrics']['excess_return'] ?? 0) > 0,
-                            'text-red-700' =>
-                                ($analytics['metrics']['excess_return'] ?? 0) < 0,
-                            'text-slate-900' =>
-                                ($analytics['metrics']['excess_return'] ?? null) === null
-                                || ($analytics['metrics']['excess_return'] ?? 0) === 0,
-                        ])
-                    >
-                        @if ($analytics['metrics']['excess_return'] !== null)
-                            {{ $analytics['metrics']['excess_return'] >= 0 ? '+' : '' }}
-                            {{ number_format(
-                                $analytics['metrics']['excess_return'] * 100,
-                                2
-                            ) }}%
-                        @else
-                            —
-                        @endif
-                    </p>
-                </article>
-            </section>
-
-            <section class="grid gap-6 lg:grid-cols-2">
-                <article class="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
-                    <h3 class="text-lg font-semibold text-slate-900">
-                        Findings
-                    </h3>
-
-                    <div class="mt-5 space-y-3">
-                        @foreach ($analytics['reasons'] as $reason)
-                            <p class="text-sm leading-6 text-slate-600">
-                                {{ $reason }}
-                            </p>
-                        @endforeach
+                        <input
+                            id="start_date"
+                            name="start_date"
+                            type="date"
+                            value="{{ now()->subYear()->format('Y-m-d') }}"
+                            class="mt-1 block w-full rounded-lg border-gray-300"
+                            required
+                        >
                     </div>
-                </article>
 
-                <article class="rounded-3xl border border-blue-200 bg-blue-50 p-7">
-                    <h3 class="text-lg font-semibold text-blue-950">
-                        Recommended review
-                    </h3>
+                    <div>
+                        <label
+                            for="end_date"
+                            class="block text-sm font-medium text-gray-700"
+                        >
+                            End date
+                        </label>
 
-                    <div class="mt-5 space-y-3">
-                        @foreach ($analytics['recommendations'] as $recommendation)
-                            <p class="text-sm leading-6 text-blue-900">
-                                {{ $recommendation }}
-                            </p>
-                        @endforeach
+                        <input
+                            id="end_date"
+                            name="end_date"
+                            type="date"
+                            value="{{ now()->format('Y-m-d') }}"
+                            class="mt-1 block w-full rounded-lg border-gray-300"
+                            required
+                        >
                     </div>
-                </article>
-            </section>
 
-            <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                @foreach ([
-                    [
-                        'Beginning value',
-                        '$'.number_format(
-                            $analytics['metrics']['beginning_value'],
-                            2
-                        ),
-                    ],
-                    [
-                        'Ending value',
-                        '$'.number_format(
-                            $analytics['metrics']['ending_value'],
-                            2
-                        ),
-                    ],
-                    [
-                        'External cash flows',
-                        '$'.number_format(
-                            $analytics['metrics']['external_cash_flows'],
-                            2
-                        ),
-                    ],
-                    [
-                        'Net investment growth',
-                        '$'.number_format(
-                            $analytics['metrics']['net_growth'],
-                            2
-                        ),
-                    ],
-                ] as [$label, $value])
-                    <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                        <p class="text-sm font-medium text-slate-500">
-                            {{ $label }}
-                        </p>
+                    <div>
+                        <label
+                            for="benchmark_id"
+                            class="block text-sm font-medium text-gray-700"
+                        >
+                            Benchmark
+                        </label>
 
-                        <p class="mt-3 text-2xl font-semibold text-slate-900">
-                            {{ $value }}
-                        </p>
-                    </article>
-                @endforeach
-            </section>
+                        <select
+                            id="benchmark_id"
+                            name="benchmark_id"
+                            class="mt-1 block w-full rounded-lg border-gray-300"
+                        >
+                            @foreach ($benchmarks as $benchmark)
+                                <option
+                                    value="{{ $benchmark->id }}"
+                                    @selected($benchmark->symbol === 'SPY')
+                                >
+                                    {{ $benchmark->name }}
+                                    ({{ $benchmark->symbol }})
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
 
-            <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-slate-200 px-6 py-5">
-                    <h3 class="font-semibold text-slate-900">
-                        Performance by account
-                    </h3>
+                    <div class="flex items-end">
+                        <button
+                            type="submit"
+                            class="w-full rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-700"
+                        >
+                            Analyze Performance
+                        </button>
+                    </div>
+                </form>
+            </div>
 
-                    <p class="mt-1 text-sm text-slate-500">
-                        Time-weighted return estimates based on entered snapshots.
-                    </p>
+            <div
+                id="loading-state"
+                class="hidden rounded-xl bg-white p-8 text-center shadow-sm ring-1 ring-gray-200"
+            >
+                <p class="text-sm text-gray-600">
+                    Calculating performance…
+                </p>
+            </div>
+
+            <div
+                id="error-state"
+                class="hidden rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+            ></div>
+
+            <div
+                id="insufficient-state"
+                class="hidden rounded-xl border border-amber-200 bg-amber-50 p-6"
+            >
+                <h3 class="font-semibold text-amber-900">
+                    More performance history is needed
+                </h3>
+
+                <p
+                    id="insufficient-message"
+                    class="mt-2 text-sm text-amber-800"
+                ></p>
+            </div>
+
+            <div
+                id="results"
+                class="hidden space-y-6"
+            >
+                <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div>
+                            <h3 class="text-lg font-semibold text-gray-900">
+                                Portfolio vs Benchmark
+                            </h3>
+
+                            <p class="mt-1 text-sm text-gray-500">
+                                Indexed growth beginning at 100.
+                            </p>
+                        </div>
+
+                        <div class="text-sm">
+                            <p class="text-gray-500">
+                                Benchmark
+                            </p>
+
+                            <p
+                                id="benchmark-name"
+                                class="mt-1 font-semibold text-gray-900"
+                            >
+                                —
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-6 h-80">
+                        <canvas id="performance-chart"></canvas>
+                    </div>
                 </div>
 
-                <div class="divide-y divide-slate-200">
-                    @foreach ($analytics['accounts'] as $account)
-                        <article class="p-6">
-                            <div class="flex flex-wrap items-start justify-between gap-6">
-                                <div>
-                                    <h4 class="font-semibold text-slate-900">
-                                        {{ $account['account_name'] }}
-                                    </h4>
+                <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 
-                                    <p class="mt-1 text-sm text-slate-500">
-                                        {{ $account['benchmark_name'] ?? 'No benchmark selected' }}
-                                    </p>
+                    <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
+                        <p class="text-sm text-gray-500">
+                            Portfolio return
+                        </p>
 
-                                    @if ($account['data_warning'])
-                                        <p class="mt-3 text-sm text-amber-700">
-                                            {{ $account['data_warning'] }}
-                                        </p>
-                                    @endif
-                                </div>
+                        <p
+                            id="portfolio-return"
+                            class="mt-2 text-3xl font-bold text-gray-900"
+                        >
+                            —
+                        </p>
+                    </div>
 
-                                <div class="grid grid-cols-2 gap-x-10 gap-y-4 text-right sm:grid-cols-3">
-                                    <div>
-                                        <p class="text-xs uppercase tracking-wide text-slate-400">
-                                            Portfolio
-                                        </p>
+                    <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
+                        <p class="text-sm text-gray-500">
+                            Benchmark return
+                        </p>
 
-                                        <p class="mt-1 font-semibold text-slate-900">
-                                            @if ($account['time_weighted_return'] !== null)
-                                                {{ number_format(
-                                                    $account['time_weighted_return'] * 100,
-                                                    2
-                                                ) }}%
-                                            @else
-                                                —
-                                            @endif
-                                        </p>
-                                    </div>
+                        <p
+                            id="benchmark-return"
+                            class="mt-2 text-3xl font-bold text-gray-900"
+                        >
+                            —
+                        </p>
+                    </div>
 
-                                    <div>
-                                        <p class="text-xs uppercase tracking-wide text-slate-400">
-                                            Benchmark
-                                        </p>
+                    <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
+                        <p class="text-sm text-gray-500">
+                            Relative performance
+                        </p>
 
-                                        <p class="mt-1 font-semibold text-slate-900">
-                                            @if ($account['benchmark_return'] !== null)
-                                                {{ number_format(
-                                                    $account['benchmark_return'] * 100,
-                                                    2
-                                                ) }}%
-                                            @else
-                                                —
-                                            @endif
-                                        </p>
-                                    </div>
+                        <p
+                            id="alpha"
+                            class="mt-2 text-3xl font-bold text-gray-900"
+                        >
+                            —
+                        </p>
+                    </div>
 
-                                    <div>
-                                        <p class="text-xs uppercase tracking-wide text-slate-400">
-                                            Excess
-                                        </p>
+                    <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
+                        <p class="text-sm text-gray-500">
+                            Opportunity cost
+                        </p>
 
-                                        <p class="mt-1 font-semibold text-slate-900">
-                                            @if ($account['excess_return'] !== null)
-                                                {{ $account['excess_return'] >= 0 ? '+' : '' }}
-                                                {{ number_format(
-                                                    $account['excess_return'] * 100,
-                                                    2
-                                                ) }}%
-                                            @else
-                                                —
-                                            @endif
-                                        </p>
-                                    </div>
-                                </div>
+                        <p
+                            id="opportunity-cost"
+                            class="mt-2 text-3xl font-bold text-gray-900"
+                        >
+                            —
+                        </p>
+                    </div>
+                </div>
+
+                <div class="grid gap-6 lg:grid-cols-2">
+                    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            Portfolio summary
+                        </h3>
+
+                        <dl class="mt-5 space-y-4 text-sm">
+                            <div class="flex justify-between">
+                                <dt class="text-gray-500">
+                                    Beginning value
+                                </dt>
+
+                                <dd
+                                    id="beginning-value"
+                                    class="font-medium text-gray-900"
+                                >
+                                    —
+                                </dd>
                             </div>
 
-                            @if ($account['time_weighted_return'] !== null)
-                                <div class="mt-6 grid gap-4 rounded-2xl bg-slate-50 p-5 sm:grid-cols-4">
-                                    <div>
-                                        <p class="text-xs text-slate-500">
-                                            Period
-                                        </p>
+                            <div class="flex justify-between">
+                                <dt class="text-gray-500">
+                                    Ending value
+                                </dt>
 
-                                        <p class="mt-1 text-sm font-medium text-slate-900">
-                                            {{ $account['period_start'] }}
-                                            to
-                                            {{ $account['period_end'] }}
-                                        </p>
-                                    </div>
+                                <dd
+                                    id="ending-value"
+                                    class="font-medium text-gray-900"
+                                >
+                                    —
+                                </dd>
+                            </div>
 
-                                    <div>
-                                        <p class="text-xs text-slate-500">
-                                            Beginning
-                                        </p>
+                            <div class="flex justify-between">
+                                <dt class="text-gray-500">
+                                    Net cash flow
+                                </dt>
 
-                                        <p class="mt-1 text-sm font-medium text-slate-900">
-                                            ${{ number_format(
-                                                $account['beginning_value'],
-                                                2
-                                            ) }}
-                                        </p>
-                                    </div>
+                                <dd
+                                    id="net-cash-flow"
+                                    class="font-medium text-gray-900"
+                                >
+                                    —
+                                </dd>
+                            </div>
 
-                                    <div>
-                                        <p class="text-xs text-slate-500">
-                                            Ending
-                                        </p>
+                            <div class="flex justify-between">
+                                <dt class="text-gray-500">
+                                    Valuation points
+                                </dt>
 
-                                        <p class="mt-1 text-sm font-medium text-slate-900">
-                                            ${{ number_format(
-                                                $account['ending_value'],
-                                                2
-                                            ) }}
-                                        </p>
-                                    </div>
+                                <dd
+                                    id="valuation-count"
+                                    class="font-medium text-gray-900"
+                                >
+                                    —
+                                </dd>
+                            </div>
+                        </dl>
+                    </div>
 
-                                    <div>
-                                        <p class="text-xs text-slate-500">
-                                            Snapshots
-                                        </p>
+                    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+                        <h3 class="text-lg font-semibold text-gray-900">
+                            Data quality
+                        </h3>
 
-                                        <p class="mt-1 text-sm font-medium text-slate-900">
-                                            {{ $account['snapshot_count'] }}
-                                        </p>
-                                    </div>
-                                </div>
-                            @endif
-                        </article>
-                    @endforeach
+                        <div
+                            id="warnings"
+                            class="mt-5 space-y-3"
+                        ></div>
+                    </div>
                 </div>
-            </section>
-
-            <section class="rounded-3xl bg-slate-950 p-8 text-white">
-                <p class="text-sm font-medium text-blue-300">
-                    Methodology
-                </p>
-
-                <p class="mt-4 max-w-4xl text-sm leading-7 text-slate-300">
-                    Time-weighted return is calculated by dividing the account
-                    history into periods between portfolio snapshots and
-                    geometrically linking those period returns. This version
-                    assumes external cash flows occur at the end of each period.
-                    Accurate daily performance requires daily valuations and
-                    cash-flow timing from a brokerage-data provider.
-                </p>
-
-                <p class="mt-4 text-xs text-slate-500">
-                    Formula version:
-                    {{ $analytics['formula_version'] }}
-                </p>
-            </section>
+            </div>
         </div>
     </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('performance-form');
+            const results = document.getElementById('results');
+            const loadingState = document.getElementById('loading-state');
+            const errorState = document.getElementById('error-state');
+            const insufficientState = document.getElementById('insufficient-state');
+
+            let performanceChart = null;
+
+            const renderPerformanceChart = (
+                chartData,
+                benchmarkName
+            ) => {
+                const canvas = document.getElementById(
+                    'performance-chart'
+                );
+
+                if (!canvas || !window.Chart) {
+                    return;
+                }
+
+                const labels = chartData.map(
+                    (point) => point.date
+                );
+
+                const portfolioValues = chartData.map(
+                    (point) => point.portfolio_index
+                );
+
+                const benchmarkValues = chartData.map(
+                    (point) => point.benchmark_index
+                );
+
+                if (performanceChart) {
+                    performanceChart.destroy();
+                }
+
+                performanceChart = new Chart(canvas, {
+                    type: 'line',
+
+                    data: {
+                        labels,
+
+                        datasets: [
+                            {
+                                label: 'Portfolio',
+                                data: portfolioValues,
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                pointHoverRadius: 4,
+                                tension: 0.2,
+                                spanGaps: true,
+                            },
+                            {
+                                label:
+                                    benchmarkName ??
+                                    'Benchmark',
+                                data: benchmarkValues,
+                                borderWidth: 2,
+                                pointRadius: 0,
+                                pointHoverRadius: 4,
+                                tension: 0.2,
+                                spanGaps: true,
+                            },
+                        ],
+                    },
+
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+
+                        interaction: {
+                            mode: 'index',
+                            intersect: false,
+                        },
+
+                        plugins: {
+                            legend: {
+                                position: 'top',
+                            },
+
+                            tooltip: {
+                                callbacks: {
+                                    label(context) {
+                                        const value =
+                                            context.parsed.y;
+
+                                        if (
+                                            value === null ||
+                                            value === undefined
+                                        ) {
+                                            return `${context.dataset.label}: —`;
+                                        }
+
+                                        return `${context.dataset.label}: ${value.toFixed(2)}`;
+                                    },
+                                },
+                            },
+                        },
+
+                        scales: {
+                            x: {
+                                ticks: {
+                                    maxTicksLimit: 8,
+                                },
+                            },
+
+                            y: {
+                                title: {
+                                    display: true,
+                                    text: 'Indexed value',
+                                },
+                            },
+                        },
+                    },
+                });
+            };
+
+            const formatPercent = (value) => {
+                if (value === null || value === undefined) {
+                    return '—';
+                }
+
+                return new Intl.NumberFormat('en-US', {
+                    style: 'percent',
+                    minimumFractionDigits: 1,
+                    maximumFractionDigits: 2,
+                }).format(value);
+            };
+
+            const formatCurrency = (value) => {
+                if (value === null || value === undefined) {
+                    return '—';
+                }
+
+                return new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    maximumFractionDigits: 0,
+                }).format(value);
+            };
+
+            const loadPerformance = async () => {
+                loadingState.classList.remove('hidden');
+                errorState.classList.add('hidden');
+                insufficientState.classList.add('hidden');
+                results.classList.add('hidden');
+
+                const formData = new FormData(form);
+                const query = new URLSearchParams(formData);
+
+                try {
+                    const response = await fetch(
+                        `{{ route('analytics.performance.data') }}?${query.toString()}`,
+                        {
+                            headers: {
+                                Accept: 'application/json',
+                            },
+                        }
+                    );
+
+                    const payload = await response.json();
+
+                    if (!response.ok) {
+                        const message =
+                            payload.message ??
+                            'Unable to load performance analytics.';
+
+                        throw new Error(message);
+                    }
+
+                    const data = payload.data;
+
+                    if (data.status === 'insufficient_data') {
+                        document.getElementById(
+                            'insufficient-message'
+                        ).textContent = data.message;
+
+                        insufficientState.classList.remove('hidden');
+                        return;
+                    }
+
+                    renderPerformanceChart(
+                        data.chart ?? [],
+                        data.benchmark?.name
+                    );
+
+                    document.getElementById(
+                        'benchmark-name'
+                    ).textContent =
+                        data.benchmark?.name ??
+                        'No benchmark';
+
+                    document.getElementById(
+                        'portfolio-return'
+                    ).textContent = formatPercent(
+                        data.portfolio.return
+                    );
+
+                    document.getElementById(
+                        'benchmark-return'
+                    ).textContent = formatPercent(
+                        data.benchmark.return
+                    );
+
+                    document.getElementById(
+                        'alpha'
+                    ).textContent = formatPercent(
+                        data.comparison.alpha
+                    );
+
+                    document.getElementById(
+                        'opportunity-cost'
+                    ).textContent = formatCurrency(
+                        data.comparison.opportunity_cost
+                    );
+
+                    document.getElementById(
+                        'beginning-value'
+                    ).textContent = formatCurrency(
+                        data.portfolio.beginning_value
+                    );
+
+                    document.getElementById(
+                        'ending-value'
+                    ).textContent = formatCurrency(
+                        data.portfolio.ending_value
+                    );
+
+                    document.getElementById(
+                        'net-cash-flow'
+                    ).textContent = formatCurrency(
+                        data.portfolio.net_cash_flow
+                    );
+
+                    document.getElementById(
+                        'valuation-count'
+                    ).textContent =
+                        data.portfolio.valuation_count;
+
+                    const warningsContainer =
+                        document.getElementById('warnings');
+
+                    warningsContainer.innerHTML = '';
+
+                    const warnings =
+                        data.data_quality?.warnings ?? [];
+
+                    if (warnings.length === 0) {
+                        warningsContainer.innerHTML = `
+                            <div class="rounded-lg bg-green-50 p-3 text-sm text-green-700">
+                                No data-quality warnings detected.
+                            </div>
+                        `;
+                    } else {
+                        warnings.forEach((warning) => {
+                            const element =
+                                document.createElement('div');
+
+                            element.className =
+                                'rounded-lg bg-amber-50 p-3 text-sm text-amber-800';
+
+                            element.textContent = warning.message;
+
+                            warningsContainer.appendChild(element);
+                        });
+                    }
+
+                    results.classList.remove('hidden');
+                } catch (error) {
+                    errorState.textContent = error.message;
+                    errorState.classList.remove('hidden');
+                } finally {
+                    loadingState.classList.add('hidden');
+                }
+            };
+
+            form.addEventListener('submit', (event) => {
+                event.preventDefault();
+                loadPerformance();
+            });
+
+            loadPerformance();
+        });
+    </script>
 </x-app-layout>

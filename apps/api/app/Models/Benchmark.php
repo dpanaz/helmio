@@ -10,26 +10,24 @@ class Benchmark extends Model
     protected $fillable = [
         'name',
         'symbol',
-        'benchmark_type',
-        'currency',
         'description',
+        'benchmark_type',
         'is_active',
+        'is_default',
+        'metadata',
     ];
 
     protected function casts(): array
     {
         return [
             'is_active' => 'boolean',
+            'is_default' => 'boolean',
+            'metadata' => 'array',
         ];
     }
 
-    public function returns(): HasMany
+    public function prices(): HasMany
     {
-        return $this->hasMany(BenchmarkReturn::class);
-    }
-
-    public function investmentAccounts(): HasMany
-    {
-        return $this->hasMany(InvestmentAccount::class);
+        return $this->hasMany(BenchmarkPrice::class);
     }
 }

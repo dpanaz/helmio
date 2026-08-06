@@ -1,634 +1,628 @@
 <?php
 
-namespace App\Services\Analytics;
+namespace App\Services\Analytics\Risk;
 
-use App\Models\InvestmentAccount;
-use App\Models\PortfolioSnapshot;
-use Illuminate\Support\Collection;
+use App\Data\Analytics\AnalyticsResult;
+use App\Models\Benchmark;
+use App\Models\PortfolioValuation;
+use App\Models\User;
+use Carbon\CarbonInterface;
 
 class RiskAnalyticsService
 {
-    public const FORMULA_VERSION = 'risk-1.0.0';
+    public const FORMULA_VERSION = 'risk-0.3.0';
+
+    public function __construct(
+        private readonly DailyReturnBuilder $dailyReturnBuilder,
+        private readonly BenchmarkReturnBuilder $benchmarkReturnBuilder,
+        private readonly RiskMetricsService $riskMetricsService
+    ) {
+    }
 
     /**
-     * @param Collection<int, InvestmentAccount> $accounts
      * @return array<string, mixed>
      */
-    public function calculate(Collection $accounts): array
-    {
-        $portfolioValue = (float) $accounts->sum(
-            fn (InvestmentAccount $account): float =>
-                (float) $account->current_value,
-        );
+    public function analyze(
+        User $user,
+        CarbonInterface $startDate,
+        CarbonInterface $endDate,
+        ?Benchmark $benchmark = null,
+        float $annualRiskFreeRate = 0.0,
+        float $minimumAcceptableAnnualReturn = 0.0
+    ): array {
+        $valuations = PortfolioValuation::query()
+            ->where('user_id', $user->id)
+            ->whereNull('investment_account_id')
+            ->whereBetween('valuation_date', [
+                $startDate->toDateString(),
+                $endDate->toDateString(),
+            ])
+            ->orderBy('valuation_date')
+            ->get();
 
-        if ($portfolioValue <= 0) {
-            return $this->emptyResult();
+        if ($valuations->count() < 2) {
+            return $this->legacyCompatibleResult(
+                AnalyticsResult::insufficientData(
+                    message: 'At least two portfolio valuations are required.',
+                    metrics: $this->emptyMetrics(),
+                    warnings: [
+                        [
+                            'code' => 'insufficient_risk_history',
+                            'message' => 'At least two portfolio valuations are required.',
+                        ],
+                    ],
+                    data: [
+                        'period' => null,
+                        'benchmark' => null,
+                        'observations' => null,
+                        'assumptions' => null,
+                        'risk_level' => null,
+                        'series' => [],
+                    ],
+                    formulaVersion: self::FORMULA_VERSION,
+                )
+            );
         }
 
-        $holdings = $accounts
-            ->flatMap(
-                fn (InvestmentAccount $account): Collection =>
-                    $account->holdings->map(
-                        fn ($holding): array => [
-                            'account_id' => $account->id,
-                            'account_name' => $account->name,
-                            'holding' => $holding,
-                            'security' => $holding->security,
+        $portfolioSeries = $this->dailyReturnBuilder
+            ->build($valuations);
+
+        if (count($portfolioSeries) < 2) {
+            return $this->legacyCompatibleResult(
+                AnalyticsResult::insufficientData(
+                    message: 'At least two valid portfolio return periods are required.',
+                    metrics: $this->emptyMetrics(),
+                    warnings: [
+                        [
+                            'code' => 'insufficient_return_periods',
+                            'message' => 'At least two valid portfolio return periods are required.',
                         ],
-                    ),
+                    ],
+                    data: [
+                        'period' => [
+                            'start_date' => $startDate->toDateString(),
+                            'end_date' => $endDate->toDateString(),
+                            'valuation_count' => $valuations->count(),
+                            'return_period_count' => count($portfolioSeries),
+                            'aligned_return_count' => 0,
+                        ],
+                        'benchmark' => [
+                            'id' => $benchmark?->id,
+                            'name' => $benchmark?->name,
+                            'symbol' => $benchmark?->symbol,
+                        ],
+                        'observations' => null,
+                        'assumptions' => null,
+                        'risk_level' => null,
+                        'series' => [],
+                    ],
+                    formulaVersion: self::FORMULA_VERSION,
+                )
+            );
+        }
+
+        $portfolioDates = collect($portfolioSeries)
+            ->pluck('date')
+            ->values()
+            ->all();
+
+        $benchmarkSeries = $benchmark
+            ? $this->benchmarkReturnBuilder->build(
+                benchmark: $benchmark,
+                dates: $portfolioDates,
+                startDate: $startDate,
+                endDate: $endDate,
             )
+            : [];
+
+        $alignedSeries = $this->alignReturns(
+            portfolioSeries: $portfolioSeries,
+            benchmarkSeries: $benchmarkSeries,
+        );
+
+        $allPortfolioReturns = collect($alignedSeries)
+            ->pluck('portfolio_return')
+            ->filter(fn ($value): bool => $value !== null)
+            ->map(fn ($value): float => (float) $value)
+            ->values()
+            ->all();
+
+        $pairedSeries = collect($alignedSeries)
             ->filter(
-                fn (array $item): bool =>
-                    (float) $item['holding']->market_value > 0,
+                fn (array $row): bool =>
+                    $row['portfolio_return'] !== null
+                    && $row['benchmark_return'] !== null
             )
             ->values();
 
-        $cashValue = (float) $accounts->sum(
-            fn (InvestmentAccount $account): float =>
-                (float) $account->cash_value,
+        $pairedPortfolioReturns = $pairedSeries
+            ->pluck('portfolio_return')
+            ->map(fn ($value): float => (float) $value)
+            ->all();
+
+        $benchmarkReturns = $pairedSeries
+            ->pluck('benchmark_return')
+            ->map(fn ($value): float => (float) $value)
+            ->all();
+
+        $metricsResult = $this->riskMetricsService->analyze(
+            portfolioReturns:
+                $benchmarkReturns !== []
+                    ? $pairedPortfolioReturns
+                    : $allPortfolioReturns,
+
+            benchmarkReturns: $benchmarkReturns,
+
+            annualRiskFreeRate:
+                $annualRiskFreeRate,
+
+            minimumAcceptableAnnualReturn:
+                $minimumAcceptableAnnualReturn,
         );
 
-        $cashWeight = $portfolioValue > 0
-            ? $cashValue / $portfolioValue
-            : null;
+        if (($metricsResult['status'] ?? null) !== 'complete') {
+            return $this->legacyCompatibleResult(
+                AnalyticsResult::insufficientData(
+                    message:
+                        $metricsResult['message']
+                        ?? 'Risk metrics could not be calculated.',
 
-        $equityValue = (float) $holdings
-            ->filter(
-                fn (array $item): bool =>
-                    $this->isEquityHolding($item),
-            )
-            ->sum(
-                fn (array $item): float =>
-                    (float) $item['holding']->market_value,
-            );
+                    metrics:
+                        $metricsResult['metrics']
+                        ?? $this->emptyMetrics(),
 
-        $equityWeight = $portfolioValue > 0
-            ? $equityValue / $portfolioValue
-            : null;
+                    warnings:
+                        $metricsResult['warnings']
+                        ?? [],
 
-        $largestAccount = $accounts
-            ->sortByDesc(
-                fn (InvestmentAccount $account): float =>
-                    (float) $account->current_value,
-            )
-            ->first();
+                    data: [
+                        'period' => [
+                            'start_date' => $startDate->toDateString(),
+                            'end_date' => $endDate->toDateString(),
+                            'valuation_count' => $valuations->count(),
+                            'return_period_count' => count($portfolioSeries),
+                            'aligned_return_count' => count($benchmarkReturns),
+                        ],
+                        'benchmark' => [
+                            'id' => $benchmark?->id,
+                            'name' => $benchmark?->name,
+                            'symbol' => $benchmark?->symbol,
+                        ],
+                        'observations' =>
+                            $metricsResult['observations'] ?? null,
+                        'assumptions' =>
+                            $metricsResult['assumptions'] ?? null,
+                        'risk_level' =>
+                            $metricsResult['risk_level'] ?? null,
+                        'series' => $alignedSeries,
+                    ],
 
-        $largestAccountWeight = (
-            $largestAccount !== null
-            && $portfolioValue > 0
-        )
-            ? (float) $largestAccount->current_value
-                / $portfolioValue
-            : null;
-
-        $returnSeries = $this->buildPortfolioReturnSeries(
-            $accounts,
-        );
-
-        $volatility = $this->annualizedVolatility(
-            $returnSeries,
-        );
-
-        $maximumDrawdown = $this->maximumDrawdown(
-            $returnSeries,
-        );
-
-        $negativePeriodRate = $returnSeries->isNotEmpty()
-            ? $returnSeries
-                ->filter(
-                    fn (array $period): bool =>
-                        $period['return'] < 0,
+                    formulaVersion:
+                        self::FORMULA_VERSION,
                 )
-                ->count() / $returnSeries->count()
-            : null;
+            );
+        }
 
-        $scoreResult = $this->calculateScore(
-            volatility: $volatility,
-            maximumDrawdown: $maximumDrawdown,
-            equityWeight: $equityWeight,
-            cashWeight: $cashWeight,
-            largestAccountWeight: $largestAccountWeight,
-            negativePeriodRate: $negativePeriodRate,
-            returnPeriodCount: $returnSeries->count(),
+        $metrics = $metricsResult['metrics'] ?? [];
+
+        $riskLevel =
+            $metricsResult['risk_level'] ?? null;
+
+        $flags = $this->buildRiskFlags(
+            metrics: $metrics,
+            riskLevel: $riskLevel,
         );
 
-        return [
-            'score' => $scoreResult['score'],
-            'label' => $scoreResult['label'],
-            'reasons' => $scoreResult['reasons'],
-            'recommendations' =>
-                $scoreResult['recommendations'],
+        $warnings = array_values(
+            array_merge(
+                $metricsResult['warnings'] ?? [],
+                $this->buildDataWarnings(
+                    portfolioSeries: $portfolioSeries,
+                    benchmarkSeries: $benchmarkSeries,
+                    alignedSeries: $alignedSeries,
+                    benchmark: $benchmark,
+                )
+            )
+        );
 
-            'metrics' => [
-                'portfolio_value' =>
-                    round($portfolioValue, 2),
+        $score = $this->calculateScore(
+            metrics: $metrics,
+            riskLevel: $riskLevel,
+            warnings: $warnings,
+        );
 
-                'cash_value' =>
-                    round($cashValue, 2),
+        $period = [
+            'start_date' => $valuations
+                ->first()
+                ->valuation_date
+                ->toDateString(),
 
-                'cash_weight' =>
-                    $cashWeight,
+            'end_date' => $valuations
+                ->last()
+                ->valuation_date
+                ->toDateString(),
 
-                'equity_value' =>
-                    round($equityValue, 2),
+            'valuation_count' => $valuations->count(),
 
-                'equity_weight' =>
-                    $equityWeight,
+            'return_period_count' =>
+                count($portfolioSeries),
 
-                'largest_account_name' =>
-                    $largestAccount?->name,
+            'aligned_return_count' =>
+                count($benchmarkReturns),
+        ];
 
-                'largest_account_weight' =>
-                    $largestAccountWeight,
+        $benchmarkData = [
+            'id' => $benchmark?->id,
+            'name' => $benchmark?->name,
+            'symbol' => $benchmark?->symbol,
+        ];
 
-                'annualized_volatility' =>
-                    $volatility,
+        $result = AnalyticsResult::complete(
+            metrics: $metrics,
+            flags: $flags,
+            warnings: $warnings,
 
-                'maximum_drawdown' =>
-                    $maximumDrawdown,
-
-                'negative_period_rate' =>
-                    $negativePeriodRate,
-
-                'return_period_count' =>
-                    $returnSeries->count(),
+            data: [
+                'period' => $period,
+                'benchmark' => $benchmarkData,
+                'observations' =>
+                    $metricsResult['observations'] ?? [],
+                'assumptions' =>
+                    $metricsResult['assumptions'] ?? [],
+                'risk_level' => $riskLevel,
+                'series' => $alignedSeries,
             ],
 
-            'return_series' => $returnSeries,
+            score: $score,
 
-            'account_exposure' => $accounts
-                ->map(
-                    function (
-                        InvestmentAccount $account,
-                    ) use ($portfolioValue): array {
-                        $value =
-                            (float) $account->current_value;
+            label:
+                $score === null
+                    ? null
+                    : $this->scoreLabel($score),
 
-                        return [
-                            'account_id' => $account->id,
-                            'account_name' => $account->name,
-                            'value' => round($value, 2),
-                            'weight' => $portfolioValue > 0
-                                ? $value / $portfolioValue
-                                : null,
-                        ];
-                    },
-                )
-                ->sortByDesc('weight')
-                ->values(),
-
-            'formula_version' =>
-                self::FORMULA_VERSION,
-        ];
-    }
-
-    private function isEquityHolding(
-        array $item,
-    ): bool {
-        $assetClass = strtolower(
-            trim(
-                (string) (
-                    $item['security']?->asset_class
-                    ?? ''
-                ),
-            ),
+            formulaVersion: self::FORMULA_VERSION,
         );
 
-        $securityType = strtolower(
-            trim(
-                (string) (
-                    $item['security']?->security_type
-                    ?? ''
-                ),
-            ),
-        );
-
-        if ($securityType === 'stock') {
-            return true;
-        }
-
-        return str_contains($assetClass, 'equity')
-            || str_contains($assetClass, 'stock');
+        return $this->legacyCompatibleResult($result);
     }
 
     /**
-     * Build a portfolio-level return series by combining account
-     * snapshot returns for matching ending dates.
+     * Produce a consumer-facing risk score.
      *
-     * @param Collection<int, InvestmentAccount> $accounts
-     * @return Collection<int, array<string, mixed>>
-     */
-    private function buildPortfolioReturnSeries(
-        Collection $accounts,
-    ): Collection {
-        $accountPeriods = collect();
-
-        foreach ($accounts as $account) {
-            $account->loadMissing(
-                'portfolioSnapshots',
-            );
-
-            $snapshots = $account
-                ->portfolioSnapshots
-                ->sortBy(
-                    fn (
-                        PortfolioSnapshot $snapshot,
-                    ): int =>
-                        $snapshot
-                            ->snapshot_date
-                            ->timestamp,
-                )
-                ->values();
-
-            for (
-                $index = 1;
-                $index < $snapshots->count();
-                $index++
-            ) {
-                $previous = $snapshots[$index - 1];
-                $current = $snapshots[$index];
-
-                $beginningValue =
-                    (float) $previous->ending_value;
-
-                if ($beginningValue <= 0) {
-                    continue;
-                }
-
-                $endingValue =
-                    (float) $current->ending_value;
-
-                $externalCashFlow =
-                    (float) $current
-                        ->external_cash_flow;
-
-                $periodReturn = (
-                    $endingValue
-                    - $externalCashFlow
-                    - $beginningValue
-                ) / $beginningValue;
-
-                $accountPeriods->push([
-                    'account_id' => $account->id,
-                    'account_name' => $account->name,
-                    'start_date' => $previous
-                        ->snapshot_date
-                        ->toDateString(),
-                    'end_date' => $current
-                        ->snapshot_date
-                        ->toDateString(),
-                    'beginning_value' =>
-                        $beginningValue,
-                    'ending_value' =>
-                        $endingValue,
-                    'external_cash_flow' =>
-                        $externalCashFlow,
-                    'return' => $periodReturn,
-                ]);
-            }
-        }
-
-        return $accountPeriods
-            ->groupBy('end_date')
-            ->map(
-                function (
-                    Collection $periods,
-                    string $endDate,
-                ): array {
-                    $beginningValue = (float) $periods
-                        ->sum('beginning_value');
-
-                    $weightedReturn =
-                        $beginningValue > 0
-                            ? (float) $periods->sum(
-                                fn (
-                                    array $period,
-                                ): float =>
-                                    $period['return']
-                                    * $period[
-                                        'beginning_value'
-                                    ],
-                            ) / $beginningValue
-                            : 0;
-
-                    return [
-                        'start_date' =>
-                            $periods->min(
-                                'start_date',
-                            ),
-                        'end_date' => $endDate,
-                        'beginning_value' =>
-                            round(
-                                $beginningValue,
-                                2,
-                            ),
-                        'ending_value' =>
-                            round(
-                                (float) $periods
-                                    ->sum(
-                                        'ending_value',
-                                    ),
-                                2,
-                            ),
-                        'external_cash_flow' =>
-                            round(
-                                (float) $periods
-                                    ->sum(
-                                        'external_cash_flow',
-                                    ),
-                                2,
-                            ),
-                        'return' =>
-                            $weightedReturn,
-                    ];
-                },
-            )
-            ->sortBy('end_date')
-            ->values();
-    }
-
-    /**
-     * Returns annualized standard deviation.
+     * Higher scores represent more favorable risk characteristics.
      *
-     * The first implementation assumes monthly return periods and
-     * multiplies period volatility by the square root of 12.
-     */
-    private function annualizedVolatility(
-        Collection $returnSeries,
-    ): ?float {
-        if ($returnSeries->count() < 3) {
-            return null;
-        }
-
-        $returns = $returnSeries
-            ->pluck('return')
-            ->map(
-                fn ($return): float =>
-                    (float) $return,
-            );
-
-        $mean = (float) $returns->average();
-
-        $variance = (float) $returns->sum(
-            fn (float $return): float =>
-                ($return - $mean) ** 2,
-        ) / max(1, $returns->count() - 1);
-
-        $periodVolatility = sqrt($variance);
-
-        return $periodVolatility * sqrt(12);
-    }
-
-    /**
-     * Maximum peak-to-trough decline in the compounded return path.
-     */
-    private function maximumDrawdown(
-        Collection $returnSeries,
-    ): ?float {
-        if ($returnSeries->isEmpty()) {
-            return null;
-        }
-
-        $wealth = 1.0;
-        $peak = 1.0;
-        $maximumDrawdown = 0.0;
-
-        foreach ($returnSeries as $period) {
-            $wealth *= 1 + (float) $period['return'];
-
-            $peak = max($peak, $wealth);
-
-            if ($peak <= 0) {
-                continue;
-            }
-
-            $drawdown = (
-                $wealth - $peak
-            ) / $peak;
-
-            $maximumDrawdown = min(
-                $maximumDrawdown,
-                $drawdown,
-            );
-        }
-
-        return abs($maximumDrawdown);
-    }
-
-    /**
-     * @return array<string, mixed>
+     * @param array<string, mixed> $metrics
+     * @param array<int, array<string, mixed>> $warnings
      */
     private function calculateScore(
-        ?float $volatility,
-        ?float $maximumDrawdown,
-        ?float $equityWeight,
-        ?float $cashWeight,
-        ?float $largestAccountWeight,
-        ?float $negativePeriodRate,
-        int $returnPeriodCount,
-    ): array {
-        $score = 100;
-        $reasons = [];
-        $recommendations = [];
+        array $metrics,
+        ?string $riskLevel,
+        array $warnings
+    ): ?int {
+        $volatility =
+            $metrics['annualized_volatility'] ?? null;
 
-        if ($returnPeriodCount < 3) {
-            $score -= 20;
+        $drawdown =
+            $metrics['maximum_drawdown'] ?? null;
 
-            $reasons[] =
-                'Fewer than three return periods are available, so volatility cannot be estimated reliably.';
-
-            $recommendations[] =
-                'Add monthly portfolio snapshots to improve risk measurement.';
+        if ($volatility === null || $drawdown === null) {
+            return null;
         }
 
-        if ($volatility !== null) {
-            if ($volatility > 0.35) {
-                $score -= 35;
+        $score = match ($riskLevel) {
+            'very_low' => 95,
+            'low' => 88,
+            'moderate' => 72,
+            'high' => 50,
+            'very_high' => 25,
+            default => 70,
+        };
 
-                $reasons[] = sprintf(
-                    'Estimated annualized volatility is %.1f%%.',
-                    $volatility * 100,
-                );
+        $sharpe = $metrics['sharpe_ratio'] ?? null;
+        $sortino = $metrics['sortino_ratio'] ?? null;
+        $beta = $metrics['beta'] ?? null;
 
-                $recommendations[] =
-                    'Review whether portfolio volatility is consistent with the investor’s time horizon and loss tolerance.';
-            } elseif ($volatility > 0.25) {
-                $score -= 25;
-
-                $reasons[] = sprintf(
-                    'Estimated annualized volatility is %.1f%%.',
-                    $volatility * 100,
-                );
-            } elseif ($volatility > 0.18) {
-                $score -= 12;
-
-                $reasons[] = sprintf(
-                    'Estimated annualized volatility is %.1f%%.',
-                    $volatility * 100,
-                );
-            } else {
-                $reasons[] = sprintf(
-                    'Estimated annualized volatility is %.1f%%.',
-                    $volatility * 100,
-                );
-            }
-        }
-
-        if ($maximumDrawdown !== null) {
-            if ($maximumDrawdown > 0.35) {
-                $score -= 35;
-
-                $reasons[] = sprintf(
-                    'Maximum measured drawdown is %.1f%%.',
-                    $maximumDrawdown * 100,
-                );
-
-                $recommendations[] =
-                    'Review the causes of the largest decline and whether portfolio risk controls are appropriate.';
-            } elseif ($maximumDrawdown > 0.25) {
-                $score -= 25;
-
-                $reasons[] = sprintf(
-                    'Maximum measured drawdown is %.1f%%.',
-                    $maximumDrawdown * 100,
-                );
-            } elseif ($maximumDrawdown > 0.15) {
-                $score -= 12;
-
-                $reasons[] = sprintf(
-                    'Maximum measured drawdown is %.1f%%.',
-                    $maximumDrawdown * 100,
-                );
-            } else {
-                $reasons[] = sprintf(
-                    'Maximum measured drawdown is %.1f%%.',
-                    $maximumDrawdown * 100,
-                );
-            }
-        }
-
-        if ($equityWeight !== null) {
-            if ($equityWeight > 0.95) {
-                $score -= 20;
-
-                $reasons[] = sprintf(
-                    'Equity exposure represents %.1f%% of portfolio value.',
-                    $equityWeight * 100,
-                );
-
-                $recommendations[] =
-                    'Confirm that the equity allocation matches the investor’s objectives, liquidity needs and ability to withstand losses.';
-            } elseif ($equityWeight > 0.85) {
-                $score -= 10;
-
-                $reasons[] = sprintf(
-                    'Equity exposure represents %.1f%% of portfolio value.',
-                    $equityWeight * 100,
-                );
-            }
-        }
-
-        if ($cashWeight !== null) {
-            if ($cashWeight > 0.40) {
+        if ($sharpe !== null) {
+            if ($sharpe >= 1.5) {
+                $score += 10;
+            } elseif ($sharpe >= 1.0) {
+                $score += 6;
+            } elseif ($sharpe < 0) {
                 $score -= 15;
-
-                $reasons[] = sprintf(
-                    'Cash represents %.1f%% of portfolio value.',
-                    $cashWeight * 100,
-                );
-
-                $recommendations[] =
-                    'Review whether the cash level is intentional or creating long-term return drag.';
-            } elseif ($cashWeight > 0.25) {
+            } elseif ($sharpe < 0.5) {
                 $score -= 8;
-
-                $reasons[] = sprintf(
-                    'Cash represents %.1f%% of portfolio value.',
-                    $cashWeight * 100,
-                );
             }
         }
 
-        if (
-            $largestAccountWeight !== null
-            && $largestAccountWeight > 0.90
-        ) {
-            $score -= 8;
-
-            $reasons[] = sprintf(
-                'One account represents %.1f%% of total portfolio value.',
-                $largestAccountWeight * 100,
-            );
+        if ($sortino !== null) {
+            if ($sortino >= 1.5) {
+                $score += 6;
+            } elseif ($sortino < 0) {
+                $score -= 10;
+            } elseif ($sortino < 0.5) {
+                $score -= 5;
+            }
         }
 
-        if (
-            $negativePeriodRate !== null
-            && $negativePeriodRate > 0.60
-        ) {
+        if ($beta !== null) {
+            if ($beta >= 1.5) {
+                $score -= 12;
+            } elseif ($beta >= 1.2) {
+                $score -= 6;
+            } elseif ($beta < 0) {
+                $score -= 5;
+            }
+        }
+
+        if ($drawdown <= -0.35) {
+            $score -= 15;
+        } elseif ($drawdown <= -0.25) {
             $score -= 10;
-
-            $reasons[] = sprintf(
-                'Negative returns occurred in %.0f%% of measured periods.',
-                $negativePeriodRate * 100,
-            );
+        } elseif ($drawdown <= -0.15) {
+            $score -= 5;
         }
 
-        $score = max(
-            0,
-            min(100, $score),
-        );
-
-        if ($reasons === []) {
-            $reasons[] =
-                'No material risk indicators were identified using the available data.';
+        if (count($warnings) >= 3) {
+            $score -= 8;
+        } elseif (count($warnings) >= 1) {
+            $score -= 3;
         }
 
-        if ($recommendations === []) {
-            $recommendations[] =
-                'Continue monitoring volatility, drawdowns and portfolio exposure as additional history becomes available.';
+        return max(0, min(100, $score));
+    }
+
+    private function alignReturns(
+        array $portfolioSeries,
+        array $benchmarkSeries
+    ): array {
+        $benchmarkByDate = collect($benchmarkSeries)
+            ->keyBy('date');
+
+        return collect($portfolioSeries)
+            ->map(function (
+                array $portfolioPoint
+            ) use ($benchmarkByDate): array {
+                $benchmarkPoint = $benchmarkByDate->get(
+                    $portfolioPoint['date']
+                );
+
+                return [
+                    'date' =>
+                        $portfolioPoint['date'],
+
+                    'start_date' =>
+                        $portfolioPoint['start_date'],
+
+                    'portfolio_return' =>
+                        $portfolioPoint['return'],
+
+                    'benchmark_return' =>
+                        data_get(
+                            $benchmarkPoint,
+                            'return'
+                        ),
+
+                    'portfolio_beginning_value' =>
+                        $portfolioPoint[
+                            'beginning_value'
+                        ],
+
+                    'portfolio_ending_value' =>
+                        $portfolioPoint[
+                            'ending_value'
+                        ],
+
+                    'net_cash_flow' =>
+                        $portfolioPoint[
+                            'net_cash_flow'
+                        ],
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function buildRiskFlags(
+        array $metrics,
+        ?string $riskLevel
+    ): array {
+        $flags = [];
+
+        $volatility =
+            $metrics['annualized_volatility'] ?? null;
+
+        $drawdown =
+            $metrics['maximum_drawdown'] ?? null;
+
+        $sharpe =
+            $metrics['sharpe_ratio'] ?? null;
+
+        $sortino =
+            $metrics['sortino_ratio'] ?? null;
+
+        $beta =
+            $metrics['beta'] ?? null;
+
+        if (
+            $volatility !== null
+            && $volatility >= 0.25
+        ) {
+            $flags[] = [
+                'code' => 'high_volatility',
+                'severity' => 'high',
+                'title' => 'High portfolio volatility',
+                'message' => 'The portfolio has experienced substantial variation in daily returns.',
+            ];
         }
 
+        if (
+            $drawdown !== null
+            && $drawdown <= -0.25
+        ) {
+            $flags[] = [
+                'code' => 'severe_drawdown',
+                'severity' => 'high',
+                'title' => 'Severe historical drawdown',
+                'message' => 'The portfolio experienced a peak-to-trough decline of at least 25%.',
+            ];
+        }
+
+        if (
+            $sharpe !== null
+            && $sharpe < 0.5
+        ) {
+            $flags[] = [
+                'code' => 'weak_risk_adjusted_return',
+                'severity' => 'moderate',
+                'title' => 'Weak risk-adjusted performance',
+                'message' => 'Portfolio returns have been low relative to the volatility taken.',
+            ];
+        }
+
+        if (
+            $sortino !== null
+            && $sortino < 0.5
+        ) {
+            $flags[] = [
+                'code' => 'weak_downside_adjusted_return',
+                'severity' => 'moderate',
+                'title' => 'Weak downside-adjusted performance',
+                'message' => 'Portfolio returns have been low relative to harmful downside volatility.',
+            ];
+        }
+
+        if (
+            $beta !== null
+            && $beta >= 1.5
+        ) {
+            $flags[] = [
+                'code' => 'high_market_beta',
+                'severity' => 'high',
+                'title' => 'High sensitivity to market moves',
+                'message' => 'The portfolio has historically moved substantially more than its benchmark.',
+            ];
+        }
+
+        if (
+            $beta !== null
+            && $beta <= 0
+        ) {
+            $flags[] = [
+                'code' => 'non_positive_beta',
+                'severity' => 'informational',
+                'title' => 'Unusual benchmark relationship',
+                'message' => 'The portfolio has shown little or negative movement relative to its benchmark.',
+            ];
+        }
+
+        if ($flags === []) {
+            $flags[] = [
+                'code' => 'no_major_risk_flags',
+                'severity' => 'informational',
+                'title' => 'No major risk flags detected',
+                'message' => "The portfolio's available risk metrics do not currently exceed Helmio's warning thresholds.",
+            ];
+        }
+
+        return $flags;
+    }
+
+    private function buildDataWarnings(
+        array $portfolioSeries,
+        array $benchmarkSeries,
+        array $alignedSeries,
+        ?Benchmark $benchmark
+    ): array {
+        $warnings = [];
+
+        if (count($portfolioSeries) < 30) {
+            $warnings[] = [
+                'code' =>
+                    'limited_portfolio_return_history',
+
+                'message' =>
+                    'Risk results are based on fewer than 30 portfolio return periods.',
+            ];
+        }
+
+        if ($benchmark === null) {
+            $warnings[] = [
+                'code' => 'benchmark_not_selected',
+                'message' => 'Select a benchmark to calculate beta.',
+            ];
+
+            return $warnings;
+        }
+
+        if ($benchmarkSeries === []) {
+            $warnings[] = [
+                'code' =>
+                    'benchmark_return_history_missing',
+
+                'message' =>
+                    'No usable benchmark return history was available.',
+            ];
+
+            return $warnings;
+        }
+
+        $alignedCount = collect($alignedSeries)
+            ->filter(
+                fn (array $row): bool =>
+                    $row['portfolio_return'] !== null
+                    && $row['benchmark_return'] !== null
+            )
+            ->count();
+
+        if ($alignedCount < count($portfolioSeries)) {
+            $missingCount =
+                count($portfolioSeries)
+                - $alignedCount;
+
+            $warnings[] = [
+                'code' =>
+                    'unaligned_benchmark_dates',
+
+                'message' =>
+                    "{$missingCount} portfolio return period(s) did not have a matching benchmark return.",
+            ];
+        }
+
+        return $warnings;
+    }
+
+    private function emptyMetrics(): array
+    {
         return [
-            'score' => $score,
-            'label' =>
-                $this->scoreLabel($score),
-            'reasons' =>
-                array_values(
-                    array_unique($reasons),
-                ),
-            'recommendations' =>
-                array_values(
-                    array_unique(
-                        $recommendations,
-                    ),
-                ),
+            'annualized_return' => null,
+            'annualized_volatility' => null,
+            'maximum_drawdown' => null,
+            'downside_deviation' => null,
+            'sharpe_ratio' => null,
+            'sortino_ratio' => null,
+            'beta' => null,
+            'average_daily_return' => null,
+            'daily_standard_deviation' => null,
         ];
     }
 
     /**
+     * Preserve the existing risk dashboard response while exposing
+     * the standardized AnalyticsResult contract.
+     *
      * @return array<string, mixed>
      */
-    private function emptyResult(): array
-    {
-        return [
-            'score' => null,
-            'label' => 'Insufficient data',
-            'reasons' => [
-                'A positive portfolio value is required to calculate risk.',
-            ],
-            'recommendations' => [
-                'Add account values, holdings and portfolio snapshots.',
-            ],
-            'metrics' => [],
-            'return_series' => collect(),
-            'account_exposure' => collect(),
-            'formula_version' =>
-                self::FORMULA_VERSION,
-        ];
+    private function legacyCompatibleResult(
+        AnalyticsResult $result
+    ): array {
+        return array_merge(
+            $result->toArray(),
+            $result->data
+        );
     }
 
     private function scoreLabel(
-        int $score,
+        int $score
     ): string {
         return match (true) {
             $score >= 90 => 'Excellent',

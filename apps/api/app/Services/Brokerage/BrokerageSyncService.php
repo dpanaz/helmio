@@ -6,18 +6,30 @@ use App\Data\Brokerage\BrokerageAccountData;
 use App\Data\Brokerage\BrokeragePositionData;
 use App\Data\Brokerage\BrokerageTransactionData;
 use App\Models\BrokerageConnection;
+use App\Models\BrokerageSyncRun;
 use App\Models\Holding;
 use App\Models\Institution;
 use App\Models\InvestmentAccount;
 use App\Models\InvestmentTransaction;
 use App\Models\Security;
+use App\Services\AI\AiInsightStalenessService;
+use App\Services\Dashboard\DashboardService;
+use App\Services\Portfolio\PortfolioSnapshotRecorderService;
+use App\Services\Timeline\HoldingChangeDetectionService;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Throwable;
+use App\Jobs\GenerateAiPortfolioInsight;
 
 class BrokerageSyncService
 {
     public function __construct(
         private readonly BrokerageProviderManager $providerManager,
+        private readonly PortfolioSnapshotRecorderService $snapshotRecorder,
+        private readonly HoldingChangeDetectionService $holdingChangeDetector,
+        private readonly DashboardService $dashboardService,
+        private readonly AiInsightStalenessService $insightStalenessService,
     ) {
     }
 
@@ -26,26 +38,62 @@ class BrokerageSyncService
      */
     public function sync(
         BrokerageConnection $connection,
+        string $trigger = 'manual',
     ): array {
+        $startedAt = now();
+        $startedAtFloat = microtime(true);
+
+        $syncRun = BrokerageSyncRun::query()->create([
+            'brokerage_connection_id' =>
+                $connection->id,
+
+            'user_id' =>
+                $connection->user_id,
+
+            'provider' =>
+                $connection->provider,
+
+            'status' =>
+                BrokerageSyncRun::STATUS_RUNNING,
+
+            'started_at' =>
+                $startedAt,
+
+            'metadata' => [
+                'trigger' =>
+                    $trigger,
+            ],
+        ]);
+
         $connection->update([
-            'status' => BrokerageConnection::STATUS_SYNCING,
-            'last_sync_started_at' => now(),
-            'last_error' => null,
+            'status' =>
+                BrokerageConnection::STATUS_SYNCING,
+
+            'last_sync_started_at' =>
+                $startedAt,
+
+            'last_error' =>
+                null,
         ]);
 
         $stats = [
-            'accounts' => 0,
-            'positions' => 0,
-            'transactions' => 0,
+            'accounts' =>
+                0,
+
+            'positions' =>
+                0,
+
+            'transactions' =>
+                0,
         ];
 
         try {
             $provider = $this->providerManager->driver(
-                $connection->provider,
+                $connection->provider
             );
 
             $providerAccounts = $provider->getAccounts(
-                $connection,
+                $connection
             );
 
             DB::transaction(
@@ -55,56 +103,198 @@ class BrokerageSyncService
                     $providerAccounts,
                     &$stats,
                 ): void {
-                    foreach ($providerAccounts as $providerAccount) {
+                    foreach (
+                        $providerAccounts
+                        as $providerAccount
+                    ) {
                         $account = $this->syncAccount(
                             $connection,
-                            $providerAccount,
+                            $providerAccount
                         );
 
                         $stats['accounts']++;
 
                         $positions = $provider->getPositions(
                             $connection,
-                            $providerAccount->providerAccountId,
+                            $providerAccount
+                                ->providerAccountId
                         );
 
                         $this->syncPositions(
                             $account,
-                            $positions,
+                            $positions
                         );
 
-                        $stats['positions'] += $positions->count();
+                        $stats['positions'] +=
+                            $positions->count();
 
-                        $transactions = $provider->getTransactions(
-                            $connection,
-                            $providerAccount->providerAccountId,
-                        );
+                        $transactions =
+                            $provider->getTransactions(
+                                $connection,
+                                $providerAccount
+                                    ->providerAccountId
+                            );
 
                         $this->syncTransactions(
                             $account,
-                            $transactions,
+                            $transactions
                         );
 
-                        $stats['transactions'] += $transactions->count();
+                        $stats['transactions'] +=
+                            $transactions->count();
                     }
-                },
+                }
+            );
+
+            $finishedAt = now();
+
+            $durationMs = (int) round(
+                (
+                    microtime(true)
+                    - $startedAtFloat
+                ) * 1000
             );
 
             $connection->update([
-                'status' => BrokerageConnection::STATUS_ACTIVE,
+                'status' =>
+                    BrokerageConnection::STATUS_ACTIVE,
+
                 'connected_at' =>
-                    $connection->connected_at ?: now(),
-                'last_synced_at' => now(),
-                'last_successful_sync_at' => now(),
-                'last_error' => null,
+                    $connection->connected_at
+                    ?: now(),
+
+                'last_synced_at' =>
+                    $finishedAt,
+
+                'last_successful_sync_at' =>
+                    $finishedAt,
+
+                'last_error' =>
+                    null,
             ]);
 
-            return $stats;
+            $syncRun->update([
+                'status' =>
+                    BrokerageSyncRun::STATUS_SUCCESS,
+
+                'finished_at' =>
+                    $finishedAt,
+
+                'accounts_imported' =>
+                    $stats['accounts'],
+
+                'positions_imported' =>
+                    $stats['positions'],
+
+                'transactions_imported' =>
+                    $stats['transactions'],
+
+                'duration_ms' =>
+                    $durationMs,
+
+                'metadata' => [
+                    'trigger' =>
+                        $trigger,
+
+                    'completed_at' =>
+                        $finishedAt
+                            ->toIso8601String(),
+                ],
+            ]);
+
+            $freshConnection = $connection
+                ->fresh()
+                ?->load('user');
+
+            if ($freshConnection !== null) {
+                $this->snapshotRecorder->record(
+                    $freshConnection,
+                    $syncRun->fresh()
+                );
+
+                if ($freshConnection->user !== null) {
+                    $this->holdingChangeDetector
+                        ->detectLatest(
+                            $freshConnection->user
+                        );
+                }
+            }
+
+            $this->dashboardService
+                ->clearAdvisorAuditCache(
+                    $connection->user_id
+                );
+
+            $staleInsightCount =
+    $this->insightStalenessService
+        ->markIfPortfolioChanged(
+            $connection->user_id,
+            'Portfolio values changed after brokerage synchronization.'
+        );
+
+if ($staleInsightCount > 0) {
+    GenerateAiPortfolioInsight::dispatch(
+        userId:
+            $connection->user_id,
+
+        trigger:
+            'brokerage_sync',
+    )->delay(
+        now()->addMinutes(2)
+    );
+}
+
+return $stats;
         } catch (Throwable $exception) {
+            $finishedAt = now();
+
+            $durationMs = (int) round(
+                (
+                    microtime(true)
+                    - $startedAtFloat
+                ) * 1000
+            );
+
             $connection->update([
-                'status' => BrokerageConnection::STATUS_ERROR,
-                'last_synced_at' => now(),
-                'last_error' => $exception->getMessage(),
+                'status' =>
+                    BrokerageConnection::STATUS_ERROR,
+
+                'last_synced_at' =>
+                    $finishedAt,
+
+                'last_error' =>
+                    $exception->getMessage(),
+            ]);
+
+            $syncRun->update([
+                'status' =>
+                    BrokerageSyncRun::STATUS_FAILED,
+
+                'finished_at' =>
+                    $finishedAt,
+
+                'accounts_imported' =>
+                    $stats['accounts'],
+
+                'positions_imported' =>
+                    $stats['positions'],
+
+                'transactions_imported' =>
+                    $stats['transactions'],
+
+                'duration_ms' =>
+                    $durationMs,
+
+                'error_message' =>
+                    $exception->getMessage(),
+
+                'metadata' => [
+                    'trigger' =>
+                        $trigger,
+
+                    'exception_class' =>
+                        $exception::class,
+                ],
             ]);
 
             throw $exception;
@@ -118,61 +308,141 @@ class BrokerageSyncService
         $institution = null;
 
         if ($data->institutionName) {
-            $institution = Institution::query()->firstOrCreate([
-                'name' => $data->institutionName,
-            ]);
+            $institution = Institution::query()
+                ->where(
+                    'name',
+                    $data->institutionName
+                )
+                ->first();
+
+            if ($institution === null) {
+                $baseSlug = Str::slug(
+                    $data->institutionName
+                );
+
+                $slug = $baseSlug;
+                $suffix = 2;
+
+                while (
+                    Institution::query()
+                        ->where('slug', $slug)
+                        ->exists()
+                ) {
+                    $slug =
+                        $baseSlug.'-'.$suffix;
+
+                    $suffix++;
+                }
+
+                $institution =
+                    Institution::query()->create([
+                        'name' =>
+                            $data->institutionName,
+
+                        'slug' =>
+                            $slug,
+                    ]);
+            }
         }
 
-        return InvestmentAccount::query()->updateOrCreate(
-            [
-                'provider' => $connection->provider,
-                'provider_account_id' => $data->providerAccountId,
-            ],
-            [
-                'user_id' => $connection->user_id,
-                'brokerage_connection_id' => $connection->id,
-                'institution_id' => $institution?->id,
-                'name' => $data->name,
-                'account_type' =>
-                    $this->normalizeAccountType(
-                        $data->accountType,
-                    ),
-                'account_number_mask' =>
-                    $data->accountNumberMask,
-                'current_value' => $data->totalValue,
-                'cash_value' => $data->cashValue,
-                'provider_synced_at' => now(),
-                'provider_metadata' => $data->metadata,
-            ],
-        );
+        return InvestmentAccount::query()
+            ->updateOrCreate(
+                [
+                    'provider' =>
+                        $connection->provider,
+
+                    'provider_account_id' =>
+                        $data->providerAccountId,
+                ],
+                [
+                    'user_id' =>
+                        $connection->user_id,
+
+                    'brokerage_connection_id' =>
+                        $connection->id,
+
+                    'institution_id' =>
+                        $institution?->id,
+
+                    'name' =>
+                        $data->name,
+
+                    'account_type' =>
+                        $this->normalizeAccountType(
+                            $data->accountType
+                        ),
+
+                    'account_number_mask' =>
+                        $data->accountNumberMask,
+
+                    'current_value' =>
+                        $data->totalValue,
+
+                    'cash_value' =>
+                        $data->cashValue,
+
+                    'provider_synced_at' =>
+                        now(),
+
+                    'provider_metadata' =>
+                        $data->metadata,
+                ],
+            );
     }
 
     /**
-     * @param \Illuminate\Support\Collection<int, BrokeragePositionData> $positions
+     * @param Collection<int, BrokeragePositionData> $positions
      */
     private function syncPositions(
         InvestmentAccount $account,
-        $positions,
+        Collection $positions,
     ): void {
         $syncedPositionIds = [];
 
         foreach ($positions as $position) {
-            $security = $this->syncSecurity($position);
+            $security = $this->syncSecurity(
+                $position
+            );
 
             Holding::query()->updateOrCreate(
                 [
-                    'investment_account_id' => $account->id,
+                    'investment_account_id' =>
+                        $account->id,
+
                     'provider_position_id' =>
-                        $position->providerPositionId,
+                        $position
+                            ->providerPositionId,
                 ],
                 [
-                    'security_id' => $security->id,
-                    'quantity' => $position->quantity,
-                    'price' => $position->price,
-                    'market_value' => $position->marketValue,
-                    'cost_basis' => $position->costBasis,
-                    'provider_synced_at' => now(),
-                    'provider_metadata' => $position->metadata,
+                    'security_id' =>
+                        $security->id,
+
+                    'quantity' =>
+                        $position->quantity,
+
+                    'price' =>
+                        $position->price,
+
+                    'market_value' =>
+                        $position->marketValue,
+
+                    'cost_basis' =>
+                        $position->costBasis,
+
+                    'unrealized_gain_loss' =>
+                        $position->costBasis !== null
+                            ? $position->marketValue
+                                - $position->costBasis
+                            : null,
+
+                    'as_of_date' =>
+                        now()->toDateString(),
+
+                    'provider_synced_at' =>
+                        now(),
+
+                    'provider_metadata' =>
+                        $position->metadata,
                 ],
             );
 
@@ -180,28 +450,33 @@ class BrokerageSyncService
                 $position->providerPositionId;
         }
 
-        /*
-         * Remove stale imported positions. Manual positions have a null
-         * provider_position_id and are not affected.
-         */
-        Holding::query()
-            ->where('investment_account_id', $account->id)
-            ->whereNotNull('provider_position_id')
-            ->when(
-                $syncedPositionIds !== [],
-                fn ($query) => $query->whereNotIn(
-                    'provider_position_id',
-                    $syncedPositionIds,
-                ),
+        $staleHoldings = Holding::query()
+            ->where(
+                'investment_account_id',
+                $account->id
             )
-            ->delete();
+            ->whereNotNull(
+                'provider_position_id'
+            );
+
+        if ($syncedPositionIds !== []) {
+            $staleHoldings->whereNotIn(
+                'provider_position_id',
+                $syncedPositionIds
+            );
+        }
+
+        $staleHoldings->delete();
 
         $account->update([
             'current_value' =>
-                (float) $account->holdings()->sum('market_value')
+                (float) $account
+                    ->holdings()
+                    ->sum('market_value')
                 + (float) $account->cash_value,
 
-            'provider_synced_at' => now(),
+            'provider_synced_at' =>
+                now(),
         ]);
     }
 
@@ -210,62 +485,107 @@ class BrokerageSyncService
     ): Security {
         $security = null;
 
-        if ($position->symbol) {
+        if ($position->providerSecurityId) {
             $security = Security::query()
-                ->where('symbol', $position->symbol)
+                ->where(
+                    'provider_security_id',
+                    $position->providerSecurityId
+                )
+                ->first();
+        }
+
+        if (
+            $security === null
+            && $position->symbol
+        ) {
+            $security = Security::query()
+                ->where(
+                    'symbol',
+                    $position->symbol
+                )
                 ->first();
         }
 
         if ($security === null) {
-            $security = Security::query()->firstOrCreate(
-                [
-                    'name' => $position->name,
-                    'symbol' => $position->symbol,
-                ],
-                [
-                    'security_type' =>
-                        $position->securityType ?: 'other',
+            return Security::query()->create([
+                'provider_security_id' =>
+                    $position->providerSecurityId,
 
-                    'asset_class' =>
-                        $position->assetClass,
+                'symbol' =>
+                    $position->symbol,
 
-                    'sector' =>
-                        $position->sector,
+                'name' =>
+                    $position->name,
 
-                    'expense_ratio' =>
-                        $position->expenseRatio,
-                ],
-            );
-        } else {
-            $security->fill([
-                'name' => $position->name,
                 'security_type' =>
                     $position->securityType
-                    ?: $security->security_type,
+                    ?: 'other',
 
                 'asset_class' =>
-                    $position->assetClass
-                    ?: $security->asset_class,
+                    $position->assetClass,
 
                 'sector' =>
-                    $position->sector
-                    ?: $security->sector,
+                    $position->sector,
 
                 'expense_ratio' =>
-                    $position->expenseRatio
-                    ?? $security->expense_ratio,
-            ])->save();
+                    $position->expenseRatio,
+
+                'last_price' =>
+                    $position->price,
+
+                'price_as_of' =>
+                    now(),
+            ]);
         }
+
+        $security->fill([
+            'provider_security_id' =>
+                $position->providerSecurityId
+                ?? $security
+                    ->provider_security_id,
+
+            'symbol' =>
+                $position->symbol
+                ?? $security->symbol,
+
+            'name' =>
+                $position->name,
+
+            'security_type' =>
+                $position->securityType
+                ?: $security->security_type,
+
+            'asset_class' =>
+                $position->assetClass
+                ?: $security->asset_class,
+
+            'sector' =>
+                $position->sector
+                ?: $security->sector,
+
+            'expense_ratio' =>
+                $position->expenseRatio
+                ?? $security->expense_ratio,
+
+            'last_price' =>
+                $position->price
+                ?? $security->last_price,
+
+            'price_as_of' =>
+                $position->price !== null
+                    ? now()
+                    : $security->price_as_of,
+        ])->save();
 
         return $security;
     }
 
     /**
-     * @param \Illuminate\Support\Collection<int, BrokerageTransactionData> $transactions
+     * @param Collection<int, BrokerageTransactionData> $transactions
      */
     private function syncTransactions(
         InvestmentAccount $account,
-        $transactions,
+        Collection $transactions,
     ): void {
         foreach ($transactions as $transaction) {
             $security = null;
@@ -274,42 +594,78 @@ class BrokerageSyncService
                 $security = Security::query()
                     ->where(
                         'provider_security_id',
-                        $transaction->providerSecurityId,
+                        $transaction
+                            ->providerSecurityId
                     )
                     ->first();
             }
 
-            InvestmentTransaction::query()->updateOrCreate(
-                [
-                    'investment_account_id' => $account->id,
-                    'provider_transaction_id' =>
-                        $transaction->providerTransactionId,
-                ],
-                [
-                    'security_id' => $security?->id,
-                    'transaction_type' =>
-                        $transaction->transactionType,
-                    'transaction_date' =>
-                        $transaction->transactionDate,
-                    'settlement_date' =>
-                        $transaction->settlementDate,
-                    'quantity' => $transaction->quantity,
-                    'price' => $transaction->price,
-                    'gross_amount' =>
-                        $transaction->grossAmount,
-                    'fees' => $transaction->fees,
-                    'net_amount' => $transaction->netAmount,
-                    'description' =>
-                        $transaction->description,
-                    'provider_synced_at' => now(),
-                    'provider_metadata' =>
-                        $transaction->metadata,
-                    'metadata' => [
-                        'entry_method' =>
-                            'brokerage_sync',
+            InvestmentTransaction::query()
+                ->updateOrCreate(
+                    [
+                        'investment_account_id' =>
+                            $account->id,
+
+                        'provider_transaction_id' =>
+                            $transaction
+                                ->providerTransactionId,
                     ],
-                ],
-            );
+                    [
+                        'security_id' =>
+                            $security?->id,
+
+                        'transaction_type' =>
+                            $transaction
+                                ->transactionType,
+
+                        'transaction_date' =>
+                            $transaction
+                                ->transactionDate,
+
+                        'settlement_date' =>
+                            $transaction
+                                ->settlementDate,
+
+                        'quantity' =>
+                            $transaction->quantity,
+
+                        'price' =>
+                            $transaction->price,
+
+                        'gross_amount' =>
+                            $transaction
+                                ->grossAmount,
+
+                        'fees' =>
+                            $transaction->fees,
+
+                        'net_amount' =>
+                            $transaction->netAmount,
+
+                        'description' =>
+                            $transaction
+                                ->description,
+
+                        'provider_synced_at' =>
+                            now(),
+
+                        'provider_metadata' =>
+                            $transaction->metadata,
+
+                        'metadata' => [
+                            'entry_method' =>
+                                'brokerage_sync',
+
+                            'provider_account_id' =>
+                                $transaction
+                                    ->providerAccountId,
+
+                            'provider_security_id' =>
+                                $transaction
+                                    ->providerSecurityId,
+                        ],
+                    ],
+                );
         }
     }
 
@@ -317,7 +673,7 @@ class BrokerageSyncService
         ?string $accountType,
     ): string {
         $value = strtolower(
-            trim((string) $accountType),
+            trim((string) $accountType)
         );
 
         return match (true) {
@@ -350,7 +706,8 @@ class BrokerageSyncService
                 || str_contains($value, 'brokerage') =>
                 'individual',
 
-            default => 'other',
+            default =>
+                'other',
         };
     }
 }

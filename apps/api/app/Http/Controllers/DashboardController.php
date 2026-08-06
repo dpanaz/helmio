@@ -17,43 +17,60 @@ class DashboardController extends Controller
         );
 
         return view('dashboard', [
-            'dashboard' => $dashboard,
+            'dashboard' =>
+                $dashboard,
 
             'accounts' =>
-                $dashboard['accounts'],
+                $dashboard['accounts']
+                ?? collect(),
 
             'portfolioValue' =>
-                $dashboard['portfolioValue'],
+                $dashboard['portfolioValue']
+                ?? 0,
 
             'cashValue' =>
-                $dashboard['cashValue'],
+                $dashboard['cashValue']
+                ?? 0,
 
             'accountCount' =>
-                $dashboard['accountCount'],
+                $dashboard['accountCount']
+                ?? 0,
 
             'helmScore' =>
-                $dashboard['helm'],
+                $dashboard['helm']
+                ?? null,
 
             'largestAccount' =>
-                $dashboard['largestAccount'],
+                $dashboard['largestAccount']
+                ?? null,
 
             'advisorAudit' =>
-                $dashboard['advisorAudit'],
+                $dashboard['advisorAudit']
+                ?? null,
 
             'currentAuditRun' =>
-                $dashboard['currentAuditRun'],
+                $dashboard['currentAuditRun']
+                ?? null,
 
             'previousAuditRun' =>
-                $dashboard['previousAuditRun'],
+                $dashboard['previousAuditRun']
+                ?? null,
 
             'auditComparison' =>
-                $dashboard['auditComparison'],
+                $dashboard['auditComparison']
+                ?? null,
 
             'openFindings' =>
-                $dashboard['openFindings'],
+                $dashboard['openFindings']
+                ?? collect(),
 
             'findingCounts' =>
-                $dashboard['findingCounts'],
+                $dashboard['findingCounts']
+                ?? [],
+
+            'latestAiInsight' =>
+                $dashboard['latestAiInsight']
+                ?? null,
         ]);
     }
 }

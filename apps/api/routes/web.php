@@ -1,289 +1,932 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\InvestmentAccountController;
+use App\Http\Controllers\AdvisorActionCenterController;
+use App\Http\Controllers\AdvisorAuditController;
+use App\Http\Controllers\AdvisorAuditHistoryController;
+use App\Http\Controllers\AdvisorAuditReportController;
+use App\Http\Controllers\AiPortfolioInsightController;
+use App\Http\Controllers\AskHelmioController;
+use App\Http\Controllers\AuditFindingController;
+use App\Http\Controllers\BillingController;
+use App\Http\Controllers\BrokerageConnectionController;
+use App\Http\Controllers\CashDragAnalyticsController;
+use App\Http\Controllers\CostAnalyticsController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\DiversificationAnalyticsController;
+use App\Http\Controllers\FundExpenseAnalyticsController;
+use App\Http\Controllers\HelmScoreController;
+use App\Http\Controllers\HoldingController;
+use App\Http\Controllers\InvestmentAccountController;
+use App\Http\Controllers\InvestmentAccountProfileController;
+use App\Http\Controllers\InvestmentTransactionController;
+use App\Http\Controllers\InvestorProfileController;
+use App\Http\Controllers\MonthlyAuditSettingsController;
+use App\Http\Controllers\MonthlyPortfolioReviewController;
+use App\Http\Controllers\NotificationCenterController;
+use App\Http\Controllers\PerformanceAnalyticsController;
+use App\Http\Controllers\PerformanceDataController;
+use App\Http\Controllers\PortfolioTimelineController;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\RiskAnalyticsController;
+use App\Http\Controllers\TaxEfficiencyAnalyticsController;
+use App\Http\Controllers\TradingDisciplineAnalyticsController;
+use App\Http\Controllers\Webhooks\SnapTradeWebhookController;
+use App\Http\Controllers\OnboardingController;
+use App\Http\Controllers\Onboarding\HelmScoreRevealController;
+use App\Http\Controllers\Onboarding\PortfolioRevealController;
+use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Onboarding\TopFindingsRevealController;
+use App\Http\Controllers\Onboarding\ExecutiveSummaryRevealController;
+
+/*
+|--------------------------------------------------------------------------
+| Public routes
+|--------------------------------------------------------------------------
+*/
+
+Route::post(
+    '/webhooks/snaptrade',
+    SnapTradeWebhookController::class,
+)->name('webhooks.snaptrade');
 
 Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/dashboard', [DashboardController::class, 'index'])
-    ->middleware(['auth', 'verified'])
+/*
+|--------------------------------------------------------------------------
+| Authenticated onboarding and billing
+|--------------------------------------------------------------------------
+|
+| These routes must remain available before onboarding is complete. A customer
+| needs access to pricing, billing, the investor profile, and every onboarding
+| step before Helmio can allow them into the main dashboard.
+|
+*/
+
+Route::middleware([
+    'auth',
+    'verified',
+])->group(function (): void {
+    /*
+    |--------------------------------------------------------------------------
+    | Billing
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/pricing',
+        [
+            BillingController::class,
+            'pricing',
+        ],
+    )->name('billing.pricing');
+
+    Route::post(
+        '/billing/checkout',
+        [
+            BillingController::class,
+            'checkout',
+        ],
+    )->name('billing.checkout');
+
+    Route::get(
+        '/billing/success',
+        [
+            BillingController::class,
+            'success',
+        ],
+    )->name('billing.success');
+
+    Route::get(
+        '/billing',
+        [
+            BillingController::class,
+            'index',
+        ],
+    )->name('billing.index');
+
+    Route::post(
+        '/billing/portal',
+        [
+            BillingController::class,
+            'portal',
+        ],
+    )->name('billing.portal');
+
+    Route::get(
+        '/billing/status',
+        [
+            BillingController::class,
+            'status',
+        ],
+    )->name('billing.status');
+
+    Route::get(
+        '/billing/invoices/{invoice}',
+        [
+            BillingController::class,
+            'downloadInvoice',
+        ],
+    )->name('billing.invoices.download');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Onboarding
+    |--------------------------------------------------------------------------
+    */
+
+    Route::prefix('onboarding')
+        ->name('onboarding.')
+        ->group(function (): void {
+            Route::get(
+                '/',
+                [
+                    OnboardingController::class,
+                    'index',
+                ],
+            )->name('index');
+
+            Route::get(
+                '/welcome',
+                [
+                    OnboardingController::class,
+                    'welcome',
+                ],
+            )->name('welcome');
+
+            Route::get(
+                '/profile',
+                [
+                    OnboardingController::class,
+                    'profile',
+                ],
+            )->name('profile');
+
+            Route::get(
+                '/connect',
+                [
+                    OnboardingController::class,
+                    'connect',
+                ],
+            )->name('connect');
+
+            Route::get(
+                '/syncing',
+                [
+                    OnboardingController::class,
+                    'syncing',
+                ],
+            )->name('syncing');
+
+            Route::get(
+                '/reveal',
+                [
+                    PortfolioRevealController::class,
+                    'index',
+                ],
+            )->name('reveal');
+
+            Route::get(
+                '/score',
+                [
+                    HelmScoreRevealController::class,
+                    'index',
+                ],
+            )->name('score');
+
+            Route::get(
+                '/findings',
+                [
+                    TopFindingsRevealController::class,
+                    'index',
+                ],
+            )->name('findings');
+            
+            Route::get(
+                '/executive-summary',
+                [
+                    ExecutiveSummaryRevealController::class,
+                    'index',
+                ],
+            )->name('executive-summary');
+
+            Route::get(
+                '/complete',
+                [
+                    OnboardingController::class,
+                    'complete',
+                ],
+            )->name('complete');
+
+            Route::post(
+                '/finish',
+                [
+                    OnboardingController::class,
+                    'finish',
+                ],
+            )->name('finish');
+        });
+
+    /*
+    |--------------------------------------------------------------------------
+    | Investor profile
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/investor-profile',
+        [
+            InvestorProfileController::class,
+            'edit',
+        ],
+    )->name('investor-profile.edit');
+
+    Route::put(
+        '/investor-profile',
+        [
+            InvestorProfileController::class,
+            'update',
+        ],
+    )->name('investor-profile.update');
+
+    /*
+    |--------------------------------------------------------------------------
+    | User profile
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/profile',
+        [
+            ProfileController::class,
+            'edit',
+        ],
+    )->name('profile.edit');
+
+    Route::patch(
+        '/profile',
+        [
+            ProfileController::class,
+            'update',
+        ],
+    )->name('profile.update');
+
+    Route::delete(
+        '/profile',
+        [
+            ProfileController::class,
+            'destroy',
+        ],
+    )->name('profile.destroy');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notifications
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/notifications',
+        [
+            NotificationCenterController::class,
+            'index',
+        ],
+    )->name('notifications.index');
+
+    Route::patch(
+        '/notifications/read-all',
+        [
+            NotificationCenterController::class,
+            'markAllRead',
+        ],
+    )->name('notifications.read-all');
+
+    Route::patch(
+        '/notifications/{notification}/read',
+        [
+            NotificationCenterController::class,
+            'read',
+        ],
+    )->name('notifications.read');
+
+    Route::delete(
+        '/notifications/{notification}',
+        [
+            NotificationCenterController::class,
+            'destroy',
+        ],
+    )->name('notifications.destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Completed-onboarding dashboard
+|--------------------------------------------------------------------------
+|
+| Only customers who have subscribed, completed their investor profile, and
+| connected an account may enter the main dashboard.
+|
+*/
+
+Route::get(
+    '/dashboard',
+    [
+        DashboardController::class,
+        'index',
+    ],
+)
+    ->middleware([
+        'auth',
+        'verified',
+        'onboarding.complete',
+    ])
     ->name('dashboard');
-Route::middleware('auth')->group(function () {
-    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
-    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
-    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-});
 
-require __DIR__.'/auth.php';
+/*
+|--------------------------------------------------------------------------
+| Premium-only application routes
+|--------------------------------------------------------------------------
+|
+| Customers must have an active Stripe subscription, valid trial, or grace
+| period before they can connect accounts or use Helmio's premium features.
+|
+*/
 
-Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::get('/accounts', [\App\Http\Controllers\InvestmentAccountController::class, 'index'])
-        ->name('accounts.index');
+Route::middleware([
+    'auth',
+    'verified',
+    'subscribed',
+])->group(function (): void {
+    /*
+    |--------------------------------------------------------------------------
+    | Investment accounts
+    |--------------------------------------------------------------------------
+    */
 
-    Route::get('/accounts/connect', [\App\Http\Controllers\InvestmentAccountController::class, 'create'])
-        ->name('accounts.create');
+    Route::get(
+        '/accounts',
+        [
+            InvestmentAccountController::class,
+            'index',
+        ],
+    )->name('accounts.index');
 
-    Route::post('/accounts', [\App\Http\Controllers\InvestmentAccountController::class, 'store'])
-        ->name('accounts.store');
-});
+    Route::get(
+        '/accounts/connect',
+        [
+            InvestmentAccountController::class,
+            'create',
+        ],
+    )->name('accounts.create');
 
-Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::post(
+        '/accounts',
+        [
+            InvestmentAccountController::class,
+            'store',
+        ],
+    )->name('accounts.store');
+
+    Route::get(
+        '/accounts/{investmentAccount}/profile',
+        [
+            InvestmentAccountProfileController::class,
+            'edit',
+        ],
+    )->name('accounts.profile.edit');
+
+    Route::put(
+        '/accounts/{investmentAccount}/profile',
+        [
+            InvestmentAccountProfileController::class,
+            'update',
+        ],
+    )->name('accounts.profile.update');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Holdings
+    |--------------------------------------------------------------------------
+    */
+
     Route::get(
         '/accounts/{investmentAccount}/holdings',
-        [\App\Http\Controllers\HoldingController::class, 'index'],
+        [
+            HoldingController::class,
+            'index',
+        ],
     )->name('accounts.holdings.index');
 
     Route::get(
         '/accounts/{investmentAccount}/holdings/create',
-        [\App\Http\Controllers\HoldingController::class, 'create'],
+        [
+            HoldingController::class,
+            'create',
+        ],
     )->name('accounts.holdings.create');
 
     Route::post(
         '/accounts/{investmentAccount}/holdings',
-        [\App\Http\Controllers\HoldingController::class, 'store'],
+        [
+            HoldingController::class,
+            'store',
+        ],
     )->name('accounts.holdings.store');
-});
 
-Route::middleware(['auth', 'verified'])->group(function (): void {
+    /*
+    |--------------------------------------------------------------------------
+    | Transactions
+    |--------------------------------------------------------------------------
+    */
+
     Route::get(
         '/accounts/{investmentAccount}/transactions',
-        [\App\Http\Controllers\InvestmentTransactionController::class, 'index'],
+        [
+            InvestmentTransactionController::class,
+            'index',
+        ],
     )->name('accounts.transactions.index');
 
     Route::get(
         '/accounts/{investmentAccount}/transactions/create',
-        [\App\Http\Controllers\InvestmentTransactionController::class, 'create'],
+        [
+            InvestmentTransactionController::class,
+            'create',
+        ],
     )->name('accounts.transactions.create');
 
     Route::post(
         '/accounts/{investmentAccount}/transactions',
-        [\App\Http\Controllers\InvestmentTransactionController::class, 'store'],
+        [
+            InvestmentTransactionController::class,
+            'store',
+        ],
     )->name('accounts.transactions.store');
-});
 
-Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::get(
-        '/analytics/costs',
-        [\App\Http\Controllers\CostAnalyticsController::class, 'index'],
-    )->name('analytics.costs');
-});
+    /*
+    |--------------------------------------------------------------------------
+    | Performance data management
+    |--------------------------------------------------------------------------
+    */
 
-Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::get(
-        '/analytics/fund-expenses',
-        [\App\Http\Controllers\FundExpenseAnalyticsController::class, 'index'],
-    )->name('analytics.fund-expenses');
-});
-
-Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::get(
-        '/analytics/helm-score',
-        [\App\Http\Controllers\HelmScoreController::class, 'index'],
-    )->name('analytics.helm-score');
-});
-
-Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::get(
-        '/analytics/diversification',
-        [\App\Http\Controllers\DiversificationAnalyticsController::class, 'index'],
-    )->name('analytics.diversification');
-});
-
-Route::middleware(['auth', 'verified'])->group(function (): void {
-    Route::get(
-        '/analytics/trading-discipline',
-        [\App\Http\Controllers\TradingDisciplineAnalyticsController::class, 'index'],
-    )->name('analytics.trading-discipline');
-});
-
-Route::middleware(['auth', 'verified'])->group(function (): void {
     Route::get(
         '/accounts/{investmentAccount}/performance-data',
-        [\App\Http\Controllers\PerformanceDataController::class, 'index'],
+        [
+            PerformanceDataController::class,
+            'index',
+        ],
     )->name('accounts.performance-data.index');
 
     Route::post(
         '/accounts/{investmentAccount}/portfolio-snapshots',
-        [\App\Http\Controllers\PerformanceDataController::class, 'storeSnapshot'],
+        [
+            PerformanceDataController::class,
+            'storeSnapshot',
+        ],
     )->name('accounts.portfolio-snapshots.store');
 
     Route::put(
         '/accounts/{investmentAccount}/benchmark',
-        [\App\Http\Controllers\PerformanceDataController::class, 'assignBenchmark'],
+        [
+            PerformanceDataController::class,
+            'assignBenchmark',
+        ],
     )->name('accounts.benchmark.update');
 
     Route::post(
         '/benchmarks',
-        [\App\Http\Controllers\PerformanceDataController::class, 'storeBenchmark'],
+        [
+            PerformanceDataController::class,
+            'storeBenchmark',
+        ],
     )->name('benchmarks.store');
 
     Route::post(
         '/benchmarks/{benchmark}/returns',
-        [\App\Http\Controllers\PerformanceDataController::class, 'storeBenchmarkReturn'],
+        [
+            PerformanceDataController::class,
+            'storeBenchmarkReturn',
+        ],
     )->name('benchmarks.returns.store');
-});
 
-Route::middleware(['auth', 'verified'])->group(function (): void {
+    /*
+    |--------------------------------------------------------------------------
+    | Brokerage connections
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/brokerage-connections',
+        [
+            BrokerageConnectionController::class,
+            'index',
+        ],
+    )->name('brokerage-connections.index');
+
+    Route::get(
+        '/brokerage-connections/create',
+        [
+            BrokerageConnectionController::class,
+            'create',
+        ],
+    )->name('brokerage-connections.create');
+
+    Route::post(
+        '/brokerage-connections',
+        [
+            BrokerageConnectionController::class,
+            'connect',
+        ],
+    )->name('brokerage-connections.connect');
+
+    Route::get(
+        '/brokerage-connections/{brokerageConnection}/callback',
+        [
+            BrokerageConnectionController::class,
+            'callback',
+        ],
+    )->name('brokerage-connections.callback');
+
+    Route::get(
+        '/brokerage-connections/{brokerageConnection}/fake-complete',
+        [
+            BrokerageConnectionController::class,
+            'fakeComplete',
+        ],
+    )->name('brokerage-connections.fake-complete');
+
+    Route::post(
+        '/brokerage-connections/{brokerageConnection}/sync',
+        [
+            BrokerageConnectionController::class,
+            'sync',
+        ],
+    )->name('brokerage-connections.sync');
+
+    Route::post(
+        '/brokerage-connections/{brokerageConnection}/refresh',
+        [
+            BrokerageConnectionController::class,
+            'refresh',
+        ],
+    )->name('brokerage-connections.refresh');
+
+    Route::delete(
+        '/brokerage-connections/{brokerageConnection}',
+        [
+            BrokerageConnectionController::class,
+            'disconnect',
+        ],
+    )->name('brokerage-connections.disconnect');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Analytics
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/analytics/costs',
+        [
+            CostAnalyticsController::class,
+            'index',
+        ],
+    )->name('analytics.costs');
+
+    Route::get(
+        '/analytics/fund-expenses',
+        [
+            FundExpenseAnalyticsController::class,
+            'index',
+        ],
+    )->name('analytics.fund-expenses');
+
+    Route::get(
+        '/analytics/helm-score',
+        [
+            HelmScoreController::class,
+            'index',
+        ],
+    )->name('analytics.helm-score');
+
+    Route::get(
+        '/analytics/diversification',
+        [
+            DiversificationAnalyticsController::class,
+            'index',
+        ],
+    )->name('analytics.diversification');
+
     Route::get(
         '/analytics/performance',
-        [\App\Http\Controllers\PerformanceAnalyticsController::class, 'index'],
+        [
+            PerformanceAnalyticsController::class,
+            'index',
+        ],
     )->name('analytics.performance');
-});
 
-Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/analytics/performance/data',
+        [
+            PerformanceAnalyticsController::class,
+            'data',
+        ],
+    )->name('analytics.performance.data');
+
     Route::get(
         '/analytics/risk',
-        [\App\Http\Controllers\RiskAnalyticsController::class, 'index'],
+        [
+            RiskAnalyticsController::class,
+            'index',
+        ],
     )->name('analytics.risk');
-});
 
-Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/analytics/risk/data',
+        [
+            RiskAnalyticsController::class,
+            'data',
+        ],
+    )->name('analytics.risk.data');
+
+    Route::get(
+        '/analytics/trading-discipline',
+        [
+            TradingDisciplineAnalyticsController::class,
+            'index',
+        ],
+    )->name('analytics.trading-discipline');
+
+    Route::get(
+        '/analytics/trading-discipline/data',
+        [
+            TradingDisciplineAnalyticsController::class,
+            'data',
+        ],
+    )->name('analytics.trading-discipline.data');
+
+    Route::get(
+        '/analytics/cash-drag',
+        [
+            CashDragAnalyticsController::class,
+            'index',
+        ],
+    )->name('analytics.cash-drag');
+
+    Route::get(
+        '/analytics/cash-drag/data',
+        [
+            CashDragAnalyticsController::class,
+            'data',
+        ],
+    )->name('analytics.cash-drag.data');
+
     Route::get(
         '/analytics/tax-efficiency',
-        [\App\Http\Controllers\TaxEfficiencyAnalyticsController::class, 'index'],
+        [
+            TaxEfficiencyAnalyticsController::class,
+            'index',
+        ],
     )->name('analytics.tax-efficiency');
-});
 
-Route::middleware(['auth', 'verified'])->group(function (): void {
+    Route::get(
+        '/analytics/tax-efficiency/data',
+        [
+            TaxEfficiencyAnalyticsController::class,
+            'data',
+        ],
+    )->name('analytics.tax-efficiency.data');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Advisor audit
+    |--------------------------------------------------------------------------
+    */
+
     Route::get(
         '/advisor-audit',
-        [\App\Http\Controllers\AdvisorAuditController::class, 'index'],
+        [
+            AdvisorAuditController::class,
+            'index',
+        ],
     )->name('advisor-audit.index');
+
+    Route::get(
+        '/advisor-audit/data',
+        [
+            AdvisorAuditController::class,
+            'data',
+        ],
+    )->name('advisor-audit.data');
+
+    Route::post(
+        '/advisor-audit/run',
+        [
+            AdvisorAuditController::class,
+            'run',
+        ],
+    )->name('advisor-audit.run');
+
+    Route::get(
+        '/advisor-action-center',
+        [
+            AdvisorActionCenterController::class,
+            'index',
+        ],
+    )->name('advisor-action-center.index');
+
     Route::patch(
-    '/audit-findings/{auditFinding}',
-    [
-        \App\Http\Controllers\AuditFindingController::class,
-        'update',
-    ],
-        )->name('audit-findings.update');
+        '/audit-findings/{auditFinding}',
+        [
+            AuditFindingController::class,
+            'update',
+        ],
+    )->name('audit-findings.update');
 
-        Route::get(
-            '/advisor-audit/report',
-            [
-                \App\Http\Controllers\AdvisorAuditReportController::class,
-                'show',
-            ],
-        )->name('advisor-audit.report');
+    Route::get(
+        '/advisor-audit/report',
+        [
+            AdvisorAuditReportController::class,
+            'show',
+        ],
+    )->name('advisor-audit.report');
 
-        Route::get(
-            '/advisor-audit/report/pdf',
-            [
-                \App\Http\Controllers\AdvisorAuditReportController::class,
-                'download',
-            ],
-        )->name('advisor-audit.report.pdf');
+    Route::get(
+        '/advisor-audit/report/pdf',
+        [
+            AdvisorAuditReportController::class,
+            'download',
+        ],
+    )->name('advisor-audit.report.pdf');
 
-        Route::get(
-    '/advisor-audit/history',
-    [
-        \App\Http\Controllers\AdvisorAuditHistoryController::class,
-        'index',
-    ],
-        )->name('advisor-audit.history');
+    Route::get(
+        '/advisor-audit/history',
+        [
+            AdvisorAuditHistoryController::class,
+            'index',
+        ],
+    )->name('advisor-audit.history');
 
-        Route::get(
-            '/advisor-audit/history/{auditRun}',
-            [
-                \App\Http\Controllers\AdvisorAuditHistoryController::class,
-                'show',
-            ],
-        )->name('advisor-audit.history.show');
+    Route::get(
+        '/advisor-audit/history/{auditRun}',
+        [
+            AdvisorAuditHistoryController::class,
+            'show',
+        ],
+    )->name('advisor-audit.history.show');
 
-        Route::get(
-    '/advisor-audit/monthly-report',
-    [
-        \App\Http\Controllers\MonthlyAuditSettingsController::class,
-        'edit',
-    ],
-)->name('advisor-audit.monthly-settings');
+    Route::get(
+        '/advisor-audit/monthly-report',
+        [
+            MonthlyAuditSettingsController::class,
+            'edit',
+        ],
+    )->name('advisor-audit.monthly-settings');
 
-Route::put(
-    '/advisor-audit/monthly-report',
-    [
-        \App\Http\Controllers\MonthlyAuditSettingsController::class,
-        'update',
-    ],
-)->name('advisor-audit.monthly-settings.update');
-Route::get(
-    '/notifications',
-    [
-        \App\Http\Controllers\NotificationCenterController::class,
-        'index',
-    ],
-)->name('notifications.index');
+    Route::put(
+        '/advisor-audit/monthly-report',
+        [
+            MonthlyAuditSettingsController::class,
+            'update',
+        ],
+    )->name('advisor-audit.monthly-settings.update');
 
-Route::patch(
-    '/notifications/{notification}/read',
-    [
-        \App\Http\Controllers\NotificationCenterController::class,
-        'read',
-    ],
-)->name('notifications.read');
+    /*
+    |--------------------------------------------------------------------------
+    | AI insights
+    |--------------------------------------------------------------------------
+    */
 
-Route::patch(
-    '/notifications/read-all',
-    [
-        \App\Http\Controllers\NotificationCenterController::class,
-        'markAllRead',
-    ],
-)->name('notifications.read-all');
+    Route::get(
+        '/ai-insights',
+        [
+            AiPortfolioInsightController::class,
+            'index',
+        ],
+    )->name('ai-insights.index');
 
-Route::delete(
-    '/notifications/{notification}',
-    [
-        \App\Http\Controllers\NotificationCenterController::class,
-        'destroy',
-    ],
-)->name('notifications.destroy');
-Route::get(
-    '/brokerage-connections',
-    [
-        \App\Http\Controllers\BrokerageConnectionController::class,
-        'index',
-    ],
-)->name('brokerage-connections.index');
+    Route::post(
+        '/ai-insights',
+        [
+            AiPortfolioInsightController::class,
+            'generate',
+        ],
+    )->name('ai-insights.generate');
 
-Route::get(
-    '/brokerage-connections/create',
-    [
-        \App\Http\Controllers\BrokerageConnectionController::class,
-        'create',
-    ],
-)->name('brokerage-connections.create');
+    Route::get(
+        '/ai-insights/{aiInsightRun}',
+        [
+            AiPortfolioInsightController::class,
+            'show',
+        ],
+    )->name('ai-insights.show');
 
-Route::post(
-    '/brokerage-connections',
-    [
-        \App\Http\Controllers\BrokerageConnectionController::class,
-        'connect',
-    ],
-)->name('brokerage-connections.connect');
+    Route::post(
+        '/ai-insights/{aiInsightRun}/regenerate',
+        [
+            AiPortfolioInsightController::class,
+            'regenerate',
+        ],
+    )->name('ai-insights.regenerate');
 
-Route::get(
-    '/brokerage-connections/{brokerageConnection}/fake-complete',
-    [
-        \App\Http\Controllers\BrokerageConnectionController::class,
-        'fakeComplete',
-    ],
-)->name('brokerage-connections.fake-complete');
+    /*
+    |--------------------------------------------------------------------------
+    | Portfolio timeline
+    |--------------------------------------------------------------------------
+    */
 
-Route::post(
-    '/brokerage-connections/{brokerageConnection}/sync',
-    [
-        \App\Http\Controllers\BrokerageConnectionController::class,
-        'sync',
-    ],
-)->name('brokerage-connections.sync');
+    Route::get(
+        '/portfolio-timeline',
+        [
+            PortfolioTimelineController::class,
+            'index',
+        ],
+    )->name('portfolio-timeline.index');
 
-Route::delete(
-    '/brokerage-connections/{brokerageConnection}',
-    [
-        \App\Http\Controllers\BrokerageConnectionController::class,
-        'disconnect',
-    ],
-)->name('brokerage-connections.disconnect');
+    /*
+    |--------------------------------------------------------------------------
+    | Monthly portfolio reviews
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/monthly-reviews',
+        [
+            MonthlyPortfolioReviewController::class,
+            'index',
+        ],
+    )->name('monthly-reviews.index');
+
+    Route::post(
+        '/monthly-reviews',
+        [
+            MonthlyPortfolioReviewController::class,
+            'generate',
+        ],
+    )->name('monthly-reviews.generate');
+
+    Route::get(
+        '/monthly-reviews/{monthlyPortfolioReview}/pdf',
+        [
+            MonthlyPortfolioReviewController::class,
+            'pdf',
+        ],
+    )->name('monthly-reviews.pdf');
+
+    Route::get(
+        '/monthly-reviews/{monthlyPortfolioReview}',
+        [
+            MonthlyPortfolioReviewController::class,
+            'show',
+        ],
+    )->name('monthly-reviews.show');
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ask Helmio
+    |--------------------------------------------------------------------------
+    */
+
+    Route::get(
+        '/ask-helmio',
+        [
+            AskHelmioController::class,
+            'index',
+        ],
+    )->name('ask-helmio.index');
+
+    Route::get(
+        '/ask-helmio/new',
+        [
+            AskHelmioController::class,
+            'create',
+        ],
+    )->name('ask-helmio.create');
+
+    Route::post(
+        '/ask-helmio',
+        [
+            AskHelmioController::class,
+            'store',
+        ],
+    )->name('ask-helmio.store');
+
+    Route::get(
+        '/ask-helmio/{askHelmioConversation}',
+        [
+            AskHelmioController::class,
+            'show',
+        ],
+    )->name('ask-helmio.show');
+
+    Route::patch(
+        '/ask-helmio/{askHelmioConversation}/archive',
+        [
+            AskHelmioController::class,
+            'archive',
+        ],
+    )->name('ask-helmio.archive');
 });
+
+require __DIR__.'/auth.php';

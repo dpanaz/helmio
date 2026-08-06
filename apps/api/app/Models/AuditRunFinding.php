@@ -32,11 +32,15 @@ class AuditRunFinding extends Model
 
     public function auditRun(): BelongsTo
     {
-        return $this->belongsTo(AuditRun::class);
+        return $this->belongsTo(
+            AuditRun::class
+        );
     }
 
     public function auditFinding(): BelongsTo
     {
-        return $this->belongsTo(AuditFinding::class);
+        return $this->belongsTo(
+            AuditFinding::class
+        );
     }
 }

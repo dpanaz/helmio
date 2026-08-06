@@ -2,155 +2,137 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\AuditFinding;
-use App\Models\AuditRun;
-use App\Models\InvestmentAccount;
-use App\Services\Audit\AdvisorAuditService;
-use App\Services\Audit\AuditFindingSyncService;
-use App\Services\Audit\AuditNotificationService;
-use App\Services\Audit\AuditRunRecorderService;
+use App\Models\Benchmark;
+use App\Services\AdvisorAudit\AdvisorAuditPersistenceService;
+use App\Services\AdvisorAudit\AdvisorAuditService;
+use Carbon\Carbon;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
 class AdvisorAuditController extends Controller
 {
-    public function index(
-        Request $request,
-        AdvisorAuditService $auditService,
-        AuditFindingSyncService $syncService,
-        AuditRunRecorderService $runRecorder,
-        AuditNotificationService $notificationService,
-    ): View {
-        $user = $request->user();
-
-        $accounts = InvestmentAccount::query()
-            ->where('user_id', $user->id)
-            ->with([
-                'institution',
-                'holdings.security',
-                'transactions.security',
-                'portfolioSnapshots',
-                'benchmark.returns',
-            ])
+    public function index(): View
+    {
+        $benchmarks = Benchmark::query()
+            ->where('is_active', true)
             ->orderBy('name')
             ->get();
 
-        $audit = $auditService->build($accounts);
-
-        $syncService->sync(
-            $user,
-            $audit['findings'],
-        );
-
-        $persistentFindings = AuditFinding::query()
-            ->where('user_id', $user->id)
-            ->orderByRaw(
-                "CASE severity
-                    WHEN 'critical' THEN 1
-                    WHEN 'high' THEN 2
-                    WHEN 'medium' THEN 3
-                    WHEN 'low' THEN 4
-                    WHEN 'information' THEN 5
-                    WHEN 'positive' THEN 6
-                    ELSE 7
-                END",
-            )
-            ->orderByRaw(
-                "CASE status
-                    WHEN 'open' THEN 1
-                    WHEN 'reviewed' THEN 2
-                    WHEN 'dismissed' THEN 3
-                    WHEN 'resolved' THEN 4
-                    ELSE 5
-                END",
-            )
-            ->orderByDesc('last_detected_at')
-            ->orderByDesc('id')
-            ->get();
-
-        $currentRun = $runRecorder->record(
-            $user,
-            $audit,
-            $persistentFindings,
-        );
-
-        $previousRun = AuditRun::query()
-            ->where('user_id', $user->id)
-            ->where('id', '!=', $currentRun->id)
-            ->where(function ($query) use ($currentRun): void {
-                $query
-                    ->where(
-                        'calculated_for_date',
-                        '<',
-                        $currentRun->calculated_for_date,
-                    )
-                    ->orWhere(function ($query) use ($currentRun): void {
-                        $query
-                            ->whereDate(
-                                'calculated_for_date',
-                                $currentRun->calculated_for_date,
-                            )
-                            ->where('id', '<', $currentRun->id);
-                    });
-            })
-            ->with('findings')
-            ->orderByDesc('calculated_for_date')
-            ->orderByDesc('id')
-            ->first();
-
-        $notificationService->generate(
-            $user,
-            $currentRun,
-            $previousRun,
-        );
-
-        return view('audit.advisor', [
-            'audit' => $audit,
-            'accounts' => $accounts,
-            'currentRun' => $currentRun,
-
-            'persistentFindings' =>
-                $persistentFindings,
-
-            'openFindingCount' =>
-                $persistentFindings
-                    ->where(
-                        'status',
-                        AuditFinding::STATUS_OPEN,
-                    )
-                    ->count(),
-
-            'reviewedFindingCount' =>
-                $persistentFindings
-                    ->where(
-                        'status',
-                        AuditFinding::STATUS_REVIEWED,
-                    )
-                    ->count(),
-
-            'dismissedFindingCount' =>
-                $persistentFindings
-                    ->where(
-                        'status',
-                        AuditFinding::STATUS_DISMISSED,
-                    )
-                    ->count(),
-
-            'resolvedFindingCount' =>
-                $persistentFindings
-                    ->where(
-                        'status',
-                        AuditFinding::STATUS_RESOLVED,
-                    )
-                    ->count(),
-
-            'activeFindingCount' =>
-                $persistentFindings
-                    ->whereIn('status', [
-                        AuditFinding::STATUS_OPEN,
-                        AuditFinding::STATUS_REVIEWED,
-                    ])
-                    ->count(),
+        return view('advisor-audit.index', [
+            'benchmarks' => $benchmarks,
         ]);
+    }
+
+    /**
+     * Calculate an audit without writing to the database.
+     */
+    public function data(
+        Request $request,
+        AdvisorAuditService $advisorAuditService
+    ): JsonResponse {
+        $validated = $this->validateAuditRequest(
+            $request
+        );
+
+        $benchmark = $this->resolveBenchmark(
+            $validated['benchmark_id']
+                ?? null
+        );
+
+        $result = $advisorAuditService->analyze(
+            user: $request->user(),
+            startDate: Carbon::parse(
+                $validated['start_date']
+            ),
+            endDate: Carbon::parse(
+                $validated['end_date']
+            ),
+            benchmark: $benchmark,
+        );
+
+        return response()->json([
+            'data' => $result,
+        ]);
+    }
+
+    /**
+     * Calculate and persist a new audit run.
+     */
+    public function run(
+        Request $request,
+        AdvisorAuditPersistenceService $persistenceService
+    ): JsonResponse {
+        $validated = $this->validateAuditRequest(
+            $request
+        );
+
+        $benchmark = $this->resolveBenchmark(
+            $validated['benchmark_id']
+                ?? null
+        );
+
+        $result = $persistenceService
+            ->runAndPersist(
+                user: $request->user(),
+                startDate: Carbon::parse(
+                    $validated['start_date']
+                ),
+                endDate: Carbon::parse(
+                    $validated['end_date']
+                ),
+                benchmark: $benchmark,
+            );
+
+        return response()->json([
+            'data' => $result,
+            'message' =>
+                'Advisor Audit completed and saved.',
+        ]);
+    }
+
+    /**
+     * @return array{
+     *     start_date: string,
+     *     end_date: string,
+     *     benchmark_id?: int|null
+     * }
+     */
+    private function validateAuditRequest(
+        Request $request
+    ): array {
+        return $request->validate([
+            'start_date' => [
+                'required',
+                'date',
+            ],
+
+            'end_date' => [
+                'required',
+                'date',
+                'after:start_date',
+            ],
+
+            'benchmark_id' => [
+                'nullable',
+                'integer',
+                'exists:benchmarks,id',
+            ],
+        ]);
+    }
+
+    private function resolveBenchmark(
+        ?int $benchmarkId
+    ): ?Benchmark {
+        if ($benchmarkId !== null) {
+            return Benchmark::query()
+                ->where('is_active', true)
+                ->findOrFail($benchmarkId);
+        }
+
+        return Benchmark::query()
+            ->where('is_active', true)
+            ->where('symbol', 'SPY')
+            ->first();
     }
 }

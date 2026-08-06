@@ -37,17 +37,23 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index([
-                'investment_account_id',
-                'transaction_date',
-            ]);
+            $table->index(
+    [
+        'investment_account_id',
+        'transaction_date',
+    ],
+    'ix_inv_trans_acct_date'
+);
 
             $table->index('transaction_type');
 
-            $table->unique([
-                'investment_account_id',
-                'provider_transaction_id',
-            ]);
+            $table->unique(
+    [
+        'investment_account_id',
+        'provider_transaction_id',
+    ],
+    'ux_inv_trans_provider'
+);
         });
     }
 

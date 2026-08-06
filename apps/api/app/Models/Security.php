@@ -27,6 +27,7 @@ class Security extends Model
 'trailing_1y_return',
 'trailing_3y_annualized_return',
 'trailing_5y_annualized_return',
+'provider_security_id',
     ];
 
     protected function casts(): array
@@ -47,4 +48,8 @@ class Security extends Model
     {
         return $this->hasMany(Holding::class);
     }
+    public function prices(): HasMany
+{
+    return $this->hasMany(SecurityPrice::class);
+}
 }

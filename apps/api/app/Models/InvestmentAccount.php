@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class InvestmentAccount extends Model
 {
@@ -46,6 +47,13 @@ class InvestmentAccount extends Model
         'provider_metadata' => 'array',
         ];
     }
+
+    public function profile(): HasOne
+{
+    return $this->hasOne(
+        InvestmentAccountProfile::class
+    );
+}
 
     public function user(): BelongsTo
     {

@@ -14,3 +14,29 @@ Schedule::command(
     ->everyMinute()
     ->withoutOverlapping()
     ->runInBackground();
+
+    Schedule::command(
+    'helmio:dispatch-brokerage-syncs',
+)
+    ->hourly()
+    ->withoutOverlapping();
+    
+    
+    Schedule::command(
+    'helmio:generate-monthly-reviews',
+)
+    ->monthlyOn(1, '08:00')
+    ->timezone('America/Chicago')
+    ->withoutOverlapping();
+
+    Schedule::command('helmio:generate-valuations')
+    ->dailyAt('23:55')
+    ->withoutOverlapping()
+    ->onOneServer();
+
+    Schedule::command(
+    'advisor-audit:dispatch-scheduled'
+)
+    ->hourly()
+    ->withoutOverlapping()
+    ->onOneServer();

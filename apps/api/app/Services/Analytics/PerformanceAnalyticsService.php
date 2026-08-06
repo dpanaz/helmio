@@ -1,515 +1,904 @@
 <?php
 
-namespace App\Services\Analytics;
+namespace App\Services\Analytics\Performance;
 
-use App\Models\InvestmentAccount;
-use App\Models\PortfolioSnapshot;
+use App\Data\Analytics\AnalyticsResult;
+use App\Models\Benchmark;
+use App\Models\PortfolioValuation;
+use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 class PerformanceAnalyticsService
 {
-    public const FORMULA_VERSION = 'performance-1.0.0';
+    public const FORMULA_VERSION = 'performance-0.3.0';
+
+    public function __construct(
+        private readonly ReturnCalculator $returnCalculator,
+        private readonly TimeWeightedReturnService $timeWeightedReturnService,
+        private readonly BenchmarkSeriesService $benchmarkSeriesService
+    ) {
+    }
 
     /**
-     * @param Collection<int, InvestmentAccount> $accounts
      * @return array<string, mixed>
      */
-    public function calculate(
-        Collection $accounts,
-        ?CarbonInterface $asOf = null,
+    public function analyze(
+        User $user,
+        CarbonInterface $startDate,
+        CarbonInterface $endDate,
+        ?Benchmark $benchmark = null
     ): array {
-        $asOf ??= now();
+        $valuations = PortfolioValuation::query()
+            ->where('user_id', $user->id)
+            ->whereNull('investment_account_id')
+            ->whereBetween('valuation_date', [
+                $startDate->toDateString(),
+                $endDate->toDateString(),
+            ])
+            ->orderBy('valuation_date')
+            ->get();
 
-        $accountResults = $accounts
-            ->map(
-                fn (InvestmentAccount $account): array =>
-                    $this->calculateAccount($account, $asOf),
+        if ($valuations->count() < 2) {
+            return $this->legacyCompatibleResult(
+                AnalyticsResult::insufficientData(
+                    message: 'At least two portfolio valuations are required.',
+
+                    metrics: $this->emptyMetrics(),
+
+                    warnings: [
+                        [
+                            'code' => 'insufficient_portfolio_history',
+                            'message' => 'At least two portfolio valuations are required.',
+                        ],
+                    ],
+
+                    data: [
+                        'period' => null,
+                        'portfolio' => null,
+                        'benchmark' => null,
+                        'comparison' => null,
+                        'chart' => [],
+                        'daily_returns' => [],
+                        'data_quality' => [
+                            'has_sufficient_portfolio_history' => false,
+                            'has_benchmark_data' => false,
+                            'warnings' => [
+                                [
+                                    'code' => 'insufficient_portfolio_history',
+                                    'message' => 'At least two portfolio valuations are required.',
+                                ],
+                            ],
+                        ],
+                    ],
+
+                    formulaVersion: self::FORMULA_VERSION,
+                )
+            );
+        }
+
+        /** @var PortfolioValuation $firstValuation */
+        $firstValuation = $valuations->first();
+
+        /** @var PortfolioValuation $lastValuation */
+        $lastValuation = $valuations->last();
+
+        $netCashFlow = $valuations
+            ->skip(1)
+            ->sum(
+                fn (
+                    PortfolioValuation $valuation
+                ): float =>
+                    (float) $valuation->net_cash_flow
+            );
+
+        $timeWeightedResult =
+            $this->timeWeightedReturnService
+                ->calculate($valuations);
+
+        $portfolioReturn =
+            $timeWeightedResult['return'];
+
+        $actualDays = max(
+            1,
+            $firstValuation->valuation_date->diffInDays(
+                $lastValuation->valuation_date
             )
-            ->values();
+        );
 
-        $validAccounts = $accountResults
-            ->filter(
-                fn (array $account): bool =>
-                    $account['time_weighted_return'] !== null,
+        $annualizedPortfolioReturn =
+            $portfolioReturn === null
+                ? null
+                : $this->returnCalculator->annualizeReturn(
+                    $portfolioReturn,
+                    $actualDays
+                );
+
+        $benchmarkSeriesResult = $benchmark
+            ? $this->benchmarkSeriesService->build(
+                benchmark: $benchmark,
+                portfolioValuations: $valuations,
+            )
+            : $this->emptyBenchmarkSeriesResult();
+
+        $benchmarkReturn =
+            $benchmarkSeriesResult['return'];
+
+        $annualizedBenchmarkReturn =
+            $benchmarkReturn === null
+                ? null
+                : $this->returnCalculator->annualizeReturn(
+                    $benchmarkReturn,
+                    $actualDays
+                );
+
+        $alpha = $this->returnCalculator->alpha(
+            $portfolioReturn,
+            $benchmarkReturn
+        );
+
+        $opportunityCost =
+            $this->returnCalculator->opportunityCost(
+                $firstValuation->total_value,
+                $portfolioReturn,
+                $benchmarkReturn
             );
 
-        $totalBeginningValue = (float) $validAccounts->sum(
-            'beginning_value',
-        );
+        $period = [
+            'start_date' =>
+                $firstValuation
+                    ->valuation_date
+                    ->toDateString(),
 
-        $totalEndingValue = (float) $validAccounts->sum(
-            'ending_value',
-        );
+            'end_date' =>
+                $lastValuation
+                    ->valuation_date
+                    ->toDateString(),
 
-        $totalExternalFlows = (float) $validAccounts->sum(
-            'external_cash_flows',
-        );
+            'days' => $actualDays,
+        ];
 
-        $weightedPortfolioReturn = $totalBeginningValue > 0
-            ? (float) $validAccounts->sum(
-                fn (array $account): float =>
-                    $account['time_weighted_return']
-                    * $account['beginning_value'],
-            ) / $totalBeginningValue
-            : null;
+        $portfolio = [
+            'beginning_value' => round(
+                $firstValuation->total_value,
+                2
+            ),
 
-        $benchmarkAccounts = $validAccounts
-            ->filter(
-                fn (array $account): bool =>
-                    $account['benchmark_return'] !== null,
-            );
+            'ending_value' => round(
+                $lastValuation->total_value,
+                2
+            ),
 
-        $benchmarkBeginningValue = (float) $benchmarkAccounts->sum(
-            'beginning_value',
-        );
+            'net_cash_flow' => round(
+                $netCashFlow,
+                2
+            ),
 
-        $weightedBenchmarkReturn = $benchmarkBeginningValue > 0
-            ? (float) $benchmarkAccounts->sum(
-                fn (array $account): float =>
-                    $account['benchmark_return']
-                    * $account['beginning_value'],
-            ) / $benchmarkBeginningValue
-            : null;
-
-        $excessReturn = (
-            $weightedPortfolioReturn !== null
-            && $weightedBenchmarkReturn !== null
-        )
-            ? $weightedPortfolioReturn - $weightedBenchmarkReturn
-            : null;
-
-        $dataCompleteness = $accounts->count() > 0
-            ? $validAccounts->count() / $accounts->count()
-            : 0;
-
-        $benchmarkCoverage = $validAccounts->count() > 0
-            ? $benchmarkAccounts->count() / $validAccounts->count()
-            : 0;
-
-        $scoreResult = $this->calculateScore(
-            portfolioReturn: $weightedPortfolioReturn,
-            benchmarkReturn: $weightedBenchmarkReturn,
-            excessReturn: $excessReturn,
-            dataCompleteness: $dataCompleteness,
-            benchmarkCoverage: $benchmarkCoverage,
-            validAccountCount: $validAccounts->count(),
-        );
-
-        return [
-            'score' => $scoreResult['score'],
-            'label' => $scoreResult['label'],
-            'reasons' => $scoreResult['reasons'],
-            'recommendations' =>
-                $scoreResult['recommendations'],
-
-            'metrics' => [
-                'beginning_value' =>
-                    round($totalBeginningValue, 2),
-                'ending_value' =>
-                    round($totalEndingValue, 2),
-                'external_cash_flows' =>
-                    round($totalExternalFlows, 2),
-                'net_growth' => round(
-                    $totalEndingValue
-                    - $totalBeginningValue
-                    - $totalExternalFlows,
-                    2,
+            'return' =>
+                $this->roundRate(
+                    $portfolioReturn
                 ),
-                'portfolio_return' =>
-                    $weightedPortfolioReturn,
-                'benchmark_return' =>
-                    $weightedBenchmarkReturn,
-                'excess_return' => $excessReturn,
-                'data_completeness' =>
-                    $dataCompleteness,
-                'benchmark_coverage' =>
-                    $benchmarkCoverage,
-                'valid_account_count' =>
-                    $validAccounts->count(),
-                'account_count' =>
-                    $accounts->count(),
+
+            'annualized_return' =>
+                $this->roundRate(
+                    $annualizedPortfolioReturn
+                ),
+
+            'return_method' =>
+                'time_weighted',
+
+            'valuation_count' =>
+                $valuations->count(),
+
+            'subperiod_count' =>
+                $timeWeightedResult[
+                    'subperiod_count'
+                ],
+
+            'skipped_subperiod_count' =>
+                $timeWeightedResult[
+                    'skipped_subperiod_count'
+                ],
+        ];
+
+        $benchmarkData = [
+            'id' => $benchmark?->id,
+            'name' => $benchmark?->name,
+            'symbol' => $benchmark?->symbol,
+
+            'return' =>
+                $this->roundRate(
+                    $benchmarkReturn
+                ),
+
+            'annualized_return' =>
+                $this->roundRate(
+                    $annualizedBenchmarkReturn
+                ),
+
+            'data_points' =>
+                $benchmarkSeriesResult[
+                    'data_points'
+                ],
+
+            'missing_price_count' =>
+                $benchmarkSeriesResult[
+                    'missing_price_count'
+                ],
+
+            'stale_price_count' =>
+                $benchmarkSeriesResult[
+                    'stale_price_count'
+                ],
+        ];
+
+        $comparison = [
+            'alpha' =>
+                $this->roundRate($alpha),
+
+            'opportunity_cost' =>
+                $opportunityCost === null
+                    ? null
+                    : round(
+                        $opportunityCost,
+                        2
+                    ),
+
+            'outperformed_benchmark' =>
+                $alpha === null
+                    ? null
+                    : $alpha > 0,
+        ];
+
+        $chart = $this->buildComparisonChart(
+            valuations: $valuations,
+            benchmarkSeries:
+                $benchmarkSeriesResult[
+                    'series'
+                ],
+        );
+
+        $warnings = array_merge(
+            $this->buildWarnings(
+                valuations: $valuations,
+                benchmark: $benchmark,
+                benchmarkSeriesResult:
+                    $benchmarkSeriesResult,
+                timeWeightedResult:
+                    $timeWeightedResult,
+            ),
+            $benchmarkSeriesResult[
+                'warnings'
+            ],
+        );
+
+        $flags = $this->buildFlags(
+            portfolioReturn: $portfolioReturn,
+            annualizedPortfolioReturn:
+                $annualizedPortfolioReturn,
+            alpha: $alpha,
+            opportunityCost: $opportunityCost,
+        );
+
+        $metrics = [
+            'portfolio_return' =>
+                $this->roundRate(
+                    $portfolioReturn
+                ),
+
+            'annualized_portfolio_return' =>
+                $this->roundRate(
+                    $annualizedPortfolioReturn
+                ),
+
+            'benchmark_return' =>
+                $this->roundRate(
+                    $benchmarkReturn
+                ),
+
+            'annualized_benchmark_return' =>
+                $this->roundRate(
+                    $annualizedBenchmarkReturn
+                ),
+
+            'alpha' =>
+                $this->roundRate($alpha),
+
+            'opportunity_cost' =>
+                $opportunityCost === null
+                    ? null
+                    : round(
+                        $opportunityCost,
+                        2
+                    ),
+
+            'beginning_value' =>
+                $portfolio[
+                    'beginning_value'
+                ],
+
+            'ending_value' =>
+                $portfolio[
+                    'ending_value'
+                ],
+
+            'net_cash_flow' =>
+                $portfolio[
+                    'net_cash_flow'
+                ],
+
+            'valuation_count' =>
+                $portfolio[
+                    'valuation_count'
+                ],
+
+            'subperiod_count' =>
+                $portfolio[
+                    'subperiod_count'
+                ],
+
+            'skipped_subperiod_count' =>
+                $portfolio[
+                    'skipped_subperiod_count'
+                ],
+
+            'benchmark_data_points' =>
+                $benchmarkData[
+                    'data_points'
+                ],
+
+            'missing_benchmark_price_count' =>
+                $benchmarkData[
+                    'missing_price_count'
+                ],
+
+            'stale_benchmark_price_count' =>
+                $benchmarkData[
+                    'stale_price_count'
+                ],
+        ];
+
+        $score = $this->calculateScore(
+            portfolioReturn:
+                $portfolioReturn,
+
+            annualizedPortfolioReturn:
+                $annualizedPortfolioReturn,
+
+            alpha:
+                $alpha,
+
+            benchmark:
+                $benchmark,
+
+            valuations:
+                $valuations,
+
+            benchmarkSeriesResult:
+                $benchmarkSeriesResult,
+
+            timeWeightedResult:
+                $timeWeightedResult,
+        );
+
+        $dataQuality = [
+            'has_sufficient_portfolio_history' =>
+                true,
+
+            'has_benchmark_data' =>
+                $benchmarkSeriesResult[
+                    'data_points'
+                ] >= 2,
+
+            'warnings' =>
+                $warnings,
+        ];
+
+        $result = AnalyticsResult::complete(
+            metrics: $metrics,
+            flags: $flags,
+            warnings: $warnings,
+
+            data: [
+                'period' => $period,
+                'portfolio' => $portfolio,
+                'benchmark' => $benchmarkData,
+                'comparison' => $comparison,
+                'chart' => $chart,
+                'daily_returns' =>
+                    $timeWeightedResult[
+                        'subperiods'
+                    ],
+                'data_quality' => $dataQuality,
             ],
 
-            'accounts' => $accountResults,
-            'calculated_for_date' =>
-                $asOf->toDateString(),
-            'formula_version' =>
+            score: $score,
+
+            label:
+                $score === null
+                    ? null
+                    : $this->scoreLabel($score),
+
+            formulaVersion:
                 self::FORMULA_VERSION,
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function calculateAccount(
-        InvestmentAccount $account,
-        CarbonInterface $asOf,
-    ): array {
-        $account->loadMissing([
-            'portfolioSnapshots',
-            'benchmark.returns',
-        ]);
-
-        $snapshots = $account->portfolioSnapshots
-            ->filter(
-                fn (PortfolioSnapshot $snapshot): bool =>
-                    $snapshot->snapshot_date->lte($asOf),
-            )
-            ->sortBy(
-                fn (PortfolioSnapshot $snapshot): int =>
-                    $snapshot->snapshot_date->timestamp,
-            )
-            ->values();
-
-        if ($snapshots->count() < 2) {
-            return $this->insufficientAccountResult(
-                $account,
-                'At least two portfolio snapshots are required.',
-                $snapshots->count(),
-            );
-        }
-
-        $beginningSnapshot = $snapshots->first();
-        $endingSnapshot = $snapshots->last();
-
-        $beginningValue =
-            (float) $beginningSnapshot->ending_value;
-
-        $endingValue =
-            (float) $endingSnapshot->ending_value;
-
-        if ($beginningValue <= 0) {
-            return $this->insufficientAccountResult(
-                $account,
-                'The beginning portfolio value must be greater than zero.',
-                $snapshots->count(),
-            );
-        }
-
-        $subperiodReturns = collect();
-
-        for ($index = 1; $index < $snapshots->count(); $index++) {
-            $previous = $snapshots[$index - 1];
-            $current = $snapshots[$index];
-
-            $previousValue =
-                (float) $previous->ending_value;
-
-            if ($previousValue <= 0) {
-                continue;
-            }
-
-            $currentValue =
-                (float) $current->ending_value;
-
-            $externalFlow =
-                (float) $current->external_cash_flow;
-
-            /*
-             * Assumption:
-             * External cash flow occurs at the end of the period.
-             *
-             * Return =
-             * (Ending Value - External Flow - Beginning Value)
-             * / Beginning Value
-             */
-            $periodReturn = (
-                $currentValue
-                - $externalFlow
-                - $previousValue
-            ) / $previousValue;
-
-            $subperiodReturns->push([
-                'start_date' =>
-                    $previous->snapshot_date->toDateString(),
-                'end_date' =>
-                    $current->snapshot_date->toDateString(),
-                'beginning_value' =>
-                    round($previousValue, 2),
-                'ending_value' =>
-                    round($currentValue, 2),
-                'external_cash_flow' =>
-                    round($externalFlow, 2),
-                'period_return' =>
-                    $periodReturn,
-            ]);
-        }
-
-        if ($subperiodReturns->isEmpty()) {
-            return $this->insufficientAccountResult(
-                $account,
-                'No valid performance periods could be calculated.',
-                $snapshots->count(),
-            );
-        }
-
-        $timeWeightedReturn = $subperiodReturns
-            ->reduce(
-                fn (
-                    float $compound,
-                    array $period,
-                ): float =>
-                    $compound
-                    * (1 + $period['period_return']),
-                1.0,
-            ) - 1;
-
-        $externalCashFlows = (float) $snapshots
-            ->slice(1)
-            ->sum(
-                fn (PortfolioSnapshot $snapshot): float =>
-                    (float) $snapshot->external_cash_flow,
-            );
-
-        $simpleReturn = (
-            $endingValue
-            - $externalCashFlows
-            - $beginningValue
-        ) / $beginningValue;
-
-        $benchmarkReturn = $this->calculateBenchmarkReturn(
-            $account,
-            $beginningSnapshot->snapshot_date,
-            $endingSnapshot->snapshot_date,
         );
 
-        return [
-            'account_id' => $account->id,
-            'account_name' => $account->name,
-            'benchmark_name' =>
-                $account->benchmark?->name,
-            'snapshot_count' => $snapshots->count(),
-            'period_start' =>
-                $beginningSnapshot
-                    ->snapshot_date
-                    ->toDateString(),
-            'period_end' =>
-                $endingSnapshot
-                    ->snapshot_date
-                    ->toDateString(),
-            'beginning_value' =>
-                round($beginningValue, 2),
-            'ending_value' =>
-                round($endingValue, 2),
-            'external_cash_flows' =>
-                round($externalCashFlows, 2),
-            'net_growth' => round(
-                $endingValue
-                - $beginningValue
-                - $externalCashFlows,
-                2,
-            ),
-            'simple_return' => $simpleReturn,
-            'time_weighted_return' =>
-                $timeWeightedReturn,
-            'benchmark_return' =>
-                $benchmarkReturn,
-            'excess_return' => (
-                $benchmarkReturn !== null
-            )
-                ? $timeWeightedReturn
-                    - $benchmarkReturn
-                : null,
-            'subperiod_returns' =>
-                $subperiodReturns,
-            'data_status' => 'complete',
-            'data_warning' => null,
-        ];
+        return $this->legacyCompatibleResult(
+            $result
+        );
     }
 
-    private function calculateBenchmarkReturn(
-        InvestmentAccount $account,
-        CarbonInterface $periodStart,
-        CarbonInterface $periodEnd,
-    ): ?float {
-        $benchmark = $account->benchmark;
-
-        if ($benchmark === null) {
-            return null;
-        }
-
-        $returns = $benchmark->returns
-            ->filter(
-                fn ($return): bool =>
-                    $return->return_date->gt($periodStart)
-                    && $return->return_date->lte($periodEnd),
-            )
-            ->sortBy(
-                fn ($return): int =>
-                    $return->return_date->timestamp,
-            )
-            ->values();
-
-        if ($returns->isEmpty()) {
-            return null;
-        }
-
-        return $returns->reduce(
-            fn (float $compound, $return): float =>
-                $compound
-                * (1 + (float) $return->period_return),
-            1.0,
-        ) - 1;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    private function insufficientAccountResult(
-        InvestmentAccount $account,
-        string $warning,
-        int $snapshotCount,
-    ): array {
-        return [
-            'account_id' => $account->id,
-            'account_name' => $account->name,
-            'benchmark_name' =>
-                $account->benchmark?->name,
-            'snapshot_count' =>
-                $snapshotCount,
-            'period_start' => null,
-            'period_end' => null,
-            'beginning_value' => 0,
-            'ending_value' =>
-                (float) $account->current_value,
-            'external_cash_flows' => 0,
-            'net_growth' => null,
-            'simple_return' => null,
-            'time_weighted_return' => null,
-            'benchmark_return' => null,
-            'excess_return' => null,
-            'subperiod_returns' => collect(),
-            'data_status' => 'insufficient',
-            'data_warning' => $warning,
-        ];
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
     private function calculateScore(
         ?float $portfolioReturn,
-        ?float $benchmarkReturn,
-        ?float $excessReturn,
-        float $dataCompleteness,
-        float $benchmarkCoverage,
-        int $validAccountCount,
-    ): array {
-        if (
-            $portfolioReturn === null
-            || $validAccountCount === 0
-        ) {
-            return [
-                'score' => null,
-                'label' => 'Insufficient data',
-                'reasons' => [
-                    'At least two valid snapshots are required for one account.',
-                ],
-                'recommendations' => [
-                    'Add beginning and ending portfolio snapshots.',
-                ],
-            ];
+        ?float $annualizedPortfolioReturn,
+        ?float $alpha,
+        ?Benchmark $benchmark,
+        Collection $valuations,
+        array $benchmarkSeriesResult,
+        array $timeWeightedResult
+    ): ?int {
+        if ($portfolioReturn === null) {
+            return null;
         }
 
         $score = 70;
-        $reasons = [];
-        $recommendations = [];
 
-        if ($benchmarkReturn !== null && $excessReturn !== null) {
-            if ($excessReturn >= 0.03) {
-                $score += 25;
-            } elseif ($excessReturn >= 0.01) {
-                $score += 18;
-            } elseif ($excessReturn >= 0) {
+        if ($alpha !== null) {
+            if ($alpha >= 0.05) {
+                $score += 20;
+            } elseif ($alpha >= 0.02) {
+                $score += 15;
+            } elseif ($alpha >= 0) {
                 $score += 10;
-            } elseif ($excessReturn >= -0.02) {
-                $score -= 5;
-            } elseif ($excessReturn >= -0.05) {
-                $score -= 20;
+            } elseif ($alpha <= -0.05) {
+                $score -= 25;
+            } elseif ($alpha <= -0.02) {
+                $score -= 15;
             } else {
-                $score -= 35;
+                $score -= 8;
             }
-
-            $reasons[] = sprintf(
-                'Portfolio return was %.2f%% versus %.2f%% for the selected benchmark.',
-                $portfolioReturn * 100,
-                $benchmarkReturn * 100,
-            );
-
-            $reasons[] = sprintf(
-                'Benchmark-relative return was %s%.2f%%.',
-                $excessReturn >= 0 ? '+' : '',
-                $excessReturn * 100,
-            );
-
-            if ($excessReturn < -0.02) {
-                $recommendations[] =
-                    'Review whether fees, cash levels, asset allocation or security selection explain the benchmark shortfall.';
-            }
-        } else {
-            $score -= 15;
-
-            $reasons[] = sprintf(
-                'Portfolio return was %.2f%%, but benchmark comparison data is incomplete.',
-                $portfolioReturn * 100,
-            );
-
-            $recommendations[] =
-                'Assign benchmarks and enter benchmark returns for each account.';
-        }
-
-        if ($portfolioReturn < -0.20) {
-            $score -= 15;
-
-            $reasons[] =
-                'The portfolio experienced a loss greater than 20% during the measured period.';
-        } elseif ($portfolioReturn < -0.10) {
-            $score -= 8;
-        }
-
-        if ($dataCompleteness < 0.50) {
+        } elseif ($benchmark === null) {
             $score -= 20;
-
-            $reasons[] = sprintf(
-                'Performance data covers only %.0f%% of accounts.',
-                $dataCompleteness * 100,
-            );
-
-            $recommendations[] =
-                'Add snapshots for accounts missing performance history.';
-        } elseif ($dataCompleteness < 1.00) {
-            $score -= 8;
-
-            $reasons[] = sprintf(
-                'Performance data covers %.0f%% of accounts.',
-                $dataCompleteness * 100,
-            );
         }
 
-        if ($benchmarkCoverage < 0.50) {
+        if (
+            $annualizedPortfolioReturn !== null
+            && $annualizedPortfolioReturn > 0
+        ) {
+            $score += min(
+                10,
+                (int) round(
+                    $annualizedPortfolioReturn
+                    * 100
+                )
+            );
+        } elseif (
+            $annualizedPortfolioReturn !== null
+            && $annualizedPortfolioReturn < 0
+        ) {
+            $score -= 15;
+        }
+
+        if ($valuations->count() < 12) {
             $score -= 10;
         }
 
-        $score = max(0, min(100, $score));
-
-        if ($recommendations === []) {
-            $recommendations[] =
-                'Continue monitoring net performance against an appropriate benchmark.';
+        if (
+            (
+                $benchmarkSeriesResult[
+                    'missing_price_count'
+                ] ?? 0
+            ) > 0
+        ) {
+            $score -= 5;
         }
 
+        if (
+            (
+                $benchmarkSeriesResult[
+                    'stale_price_count'
+                ] ?? 0
+            ) > 0
+        ) {
+            $score -= 5;
+        }
+
+        if (
+            (
+                $timeWeightedResult[
+                    'skipped_subperiod_count'
+                ] ?? 0
+            ) > 0
+        ) {
+            $score -= 5;
+        }
+
+        return max(
+            0,
+            min(100, $score)
+        );
+    }
+
+    private function buildFlags(
+        ?float $portfolioReturn,
+        ?float $annualizedPortfolioReturn,
+        ?float $alpha,
+        ?float $opportunityCost
+    ): array {
+        $flags = [];
+
+        if ($alpha !== null && $alpha <= -0.05) {
+            $flags[] = [
+                'code' =>
+                    'significant_benchmark_underperformance',
+
+                'severity' => 'high',
+
+                'title' =>
+                    'Significant benchmark underperformance',
+
+                'message' =>
+                    'The portfolio underperformed its benchmark by at least five percentage points.',
+            ];
+        } elseif ($alpha !== null && $alpha < 0) {
+            $flags[] = [
+                'code' =>
+                    'benchmark_underperformance',
+
+                'severity' => 'moderate',
+
+                'title' =>
+                    'Portfolio underperformed its benchmark',
+
+                'message' =>
+                    'Portfolio performance lagged the selected benchmark during the period.',
+            ];
+        }
+
+        if (
+            $annualizedPortfolioReturn !== null
+            && $annualizedPortfolioReturn < 0
+        ) {
+            $flags[] = [
+                'code' =>
+                    'negative_annualized_return',
+
+                'severity' => 'high',
+
+                'title' =>
+                    'Negative annualized return',
+
+                'message' =>
+                    'The portfolio produced a negative annualized return over the selected period.',
+            ];
+        }
+
+        if (
+            $opportunityCost !== null
+            && $opportunityCost >= 1000
+        ) {
+            $flags[] = [
+                'code' =>
+                    'meaningful_performance_opportunity_cost',
+
+                'severity' => 'high',
+
+                'title' =>
+                    'Meaningful performance opportunity cost',
+
+                'message' =>
+                    sprintf(
+                        'Benchmark underperformance may represent approximately $%s in missed growth.',
+                        number_format(
+                            $opportunityCost,
+                            2
+                        )
+                    ),
+            ];
+        }
+
+        if (
+            $alpha !== null
+            && $alpha > 0
+        ) {
+            $flags[] = [
+                'code' =>
+                    'positive_alpha',
+
+                'severity' =>
+                    'informational',
+
+                'title' =>
+                    'Portfolio outperformed its benchmark',
+
+                'message' =>
+                    'The portfolio generated positive relative performance during the selected period.',
+            ];
+        }
+
+        if (
+            $flags === []
+            && $portfolioReturn !== null
+        ) {
+            $flags[] = [
+                'code' =>
+                    'no_major_performance_flags',
+
+                'severity' =>
+                    'informational',
+
+                'title' =>
+                    'No major performance concerns detected',
+
+                'message' =>
+                    'Available performance results did not exceed Helmio’s current warning thresholds.',
+            ];
+        }
+
+        return $flags;
+    }
+
+    private function buildComparisonChart(
+        Collection $valuations,
+        array $benchmarkSeries
+    ): array {
+        if ($valuations->isEmpty()) {
+            return [];
+        }
+
+        $firstPortfolioValue =
+            $valuations->first()->total_value;
+
+        $benchmarkByDate =
+            collect($benchmarkSeries)
+                ->keyBy('date');
+
+        return $valuations
+            ->map(function (
+                PortfolioValuation $valuation
+            ) use (
+                $firstPortfolioValue,
+                $benchmarkByDate
+            ): array {
+                $portfolioIndex =
+                    $firstPortfolioValue > 0
+                        ? (
+                            $valuation->total_value
+                            / $firstPortfolioValue
+                        ) * 100
+                        : null;
+
+                $benchmarkPoint =
+                    $benchmarkByDate->get(
+                        $valuation
+                            ->valuation_date
+                            ->toDateString()
+                    );
+
+                return [
+                    'date' =>
+                        $valuation
+                            ->valuation_date
+                            ->toDateString(),
+
+                    'portfolio_value' =>
+                        round(
+                            $valuation->total_value,
+                            2
+                        ),
+
+                    'portfolio_index' =>
+                        $portfolioIndex === null
+                            ? null
+                            : round(
+                                $portfolioIndex,
+                                6
+                            ),
+
+                    'benchmark_index' =>
+                        data_get(
+                            $benchmarkPoint,
+                            'indexed_value'
+                        ),
+
+                    'benchmark_price' =>
+                        data_get(
+                            $benchmarkPoint,
+                            'price'
+                        ),
+
+                    'benchmark_price_date' =>
+                        data_get(
+                            $benchmarkPoint,
+                            'price_date'
+                        ),
+
+                    'benchmark_price_age_days' =>
+                        data_get(
+                            $benchmarkPoint,
+                            'price_age_days'
+                        ),
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    private function buildWarnings(
+        Collection $valuations,
+        ?Benchmark $benchmark,
+        array $benchmarkSeriesResult,
+        array $timeWeightedResult
+    ): array {
+        $warnings = [];
+
+        if ($valuations->count() < 12) {
+            $warnings[] = [
+                'code' =>
+                    'limited_portfolio_history',
+
+                'message' =>
+                    'Performance history contains fewer than 12 valuation points.',
+            ];
+        }
+
+        if ($benchmark === null) {
+            $warnings[] = [
+                'code' =>
+                    'benchmark_not_selected',
+
+                'message' =>
+                    'Select a benchmark to calculate relative performance.',
+            ];
+        } elseif (
+            $benchmarkSeriesResult[
+                'data_points'
+            ] < 2
+        ) {
+            $warnings[] = [
+                'code' =>
+                    'insufficient_benchmark_history',
+
+                'message' =>
+                    'The selected benchmark does not have enough price history.',
+            ];
+        }
+
+        if (
+            $timeWeightedResult[
+                'skipped_subperiod_count'
+            ] > 0
+        ) {
+            $count =
+                $timeWeightedResult[
+                    'skipped_subperiod_count'
+                ];
+
+            $warnings[] = [
+                'code' =>
+                    'skipped_return_subperiods',
+
+                'message' =>
+                    "{$count} return subperiod(s) were skipped because the beginning portfolio value was invalid.",
+            ];
+        }
+
+        $missingHistoricalPriceCount =
+            $valuations->sum(
+                function (
+                    PortfolioValuation $valuation
+                ): int {
+                    return (int) data_get(
+                        $valuation->metadata,
+                        'missing_historical_price_count',
+                        0
+                    );
+                }
+            );
+
+        if ($missingHistoricalPriceCount > 0) {
+            $warnings[] = [
+                'code' =>
+                    'missing_security_prices',
+
+                'message' =>
+                    "{$missingHistoricalPriceCount} holding valuation(s) used fallback values because historical security prices were unavailable.",
+            ];
+        }
+
+        $unknownTransactionCount =
+            $valuations->sum(
+                function (
+                    PortfolioValuation $valuation
+                ): int {
+                    return (int) data_get(
+                        $valuation->metadata,
+                        'unknown_transaction_count',
+                        0
+                    );
+                }
+            );
+
+        if ($unknownTransactionCount > 0) {
+            $warnings[] = [
+                'code' =>
+                    'unknown_transaction_types',
+
+                'message' =>
+                    "{$unknownTransactionCount} transaction(s) could not be classified for cash-flow analysis.",
+            ];
+        }
+
+        return $warnings;
+    }
+
+    private function emptyBenchmarkSeriesResult(): array
+    {
         return [
-            'score' => $score,
-            'label' => $this->scoreLabel($score),
-            'reasons' =>
-                array_values(array_unique($reasons)),
-            'recommendations' =>
-                array_values(array_unique($recommendations)),
+            'status' =>
+                'insufficient_data',
+
+            'series' => [],
+
+            'return' => null,
+
+            'data_points' => 0,
+
+            'missing_price_count' => 0,
+
+            'stale_price_count' => 0,
+
+            'warnings' => [],
         ];
     }
 
-    private function scoreLabel(int $score): string
+    private function emptyMetrics(): array
     {
+        return [
+            'portfolio_return' => null,
+            'annualized_portfolio_return' => null,
+            'benchmark_return' => null,
+            'annualized_benchmark_return' => null,
+            'alpha' => null,
+            'opportunity_cost' => null,
+            'beginning_value' => null,
+            'ending_value' => null,
+            'net_cash_flow' => null,
+            'valuation_count' => 0,
+            'subperiod_count' => 0,
+            'skipped_subperiod_count' => 0,
+            'benchmark_data_points' => 0,
+            'missing_benchmark_price_count' => 0,
+            'stale_benchmark_price_count' => 0,
+        ];
+    }
+
+    /**
+     * Preserve the existing controller and Blade response while exposing
+     * the standardized AnalyticsResult contract.
+     *
+     * @return array<string, mixed>
+     */
+    private function legacyCompatibleResult(
+        AnalyticsResult $result
+    ): array {
+        return array_merge(
+            $result->toArray(),
+            $result->data
+        );
+    }
+
+    private function roundRate(
+        ?float $value
+    ): ?float {
+        return $value === null
+            ? null
+            : round($value, 10);
+    }
+
+    private function scoreLabel(
+        int $score
+    ): string {
         return match (true) {
             $score >= 90 => 'Excellent',
             $score >= 80 => 'Very good',

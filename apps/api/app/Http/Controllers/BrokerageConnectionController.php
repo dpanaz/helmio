@@ -16,26 +16,57 @@ class BrokerageConnectionController extends Controller
         Request $request,
     ): View {
         $connections = BrokerageConnection::query()
-            ->where('user_id', $request->user()->id)
-            ->withCount('investmentAccounts')
+            ->where(
+                'user_id',
+                $request->user()->id,
+            )
+            ->withCount(
+                'investmentAccounts',
+            )
             ->with([
                 'investmentAccounts.institution',
+
+                'syncRuns' => fn ($query) =>
+                    $query
+                        ->latest('started_at')
+                        ->limit(5),
             ])
-            ->orderByDesc('created_at')
+            ->orderByDesc(
+                'created_at',
+            )
             ->get();
 
         return view(
             'brokerage-connections.index',
             [
-                'connections' => $connections,
+                'connections' =>
+                    $connections,
             ],
         );
     }
 
-    public function create(): View
-    {
+    public function create(
+        Request $request,
+        BrokerageProviderManager $manager,
+    ): View {
+        if ($request->boolean('onboarding')) {
+            $request->session()->put(
+                'brokerage_onboarding',
+                true,
+            );
+        }
+
         return view(
             'brokerage-connections.create',
+            [
+                'providers' =>
+                    $manager->availableProviders(),
+
+                'isOnboarding' =>
+                    $this->isOnboarding(
+                        $request,
+                    ),
+            ],
         );
     }
 
@@ -43,10 +74,16 @@ class BrokerageConnectionController extends Controller
         Request $request,
         BrokerageProviderManager $manager,
     ): RedirectResponse {
+        $providers = $manager->availableProviders();
+
         $validated = $request->validate([
             'provider' => [
                 'required',
-                'in:fake',
+                'string',
+                'in:'.implode(
+                    ',',
+                    $providers,
+                ),
             ],
 
             'brokerage_name' => [
@@ -54,45 +91,299 @@ class BrokerageConnectionController extends Controller
                 'string',
                 'max:255',
             ],
+
+            'brokerage_slug' => [
+                'nullable',
+                'string',
+                'max:100',
+            ],
+
+            'onboarding' => [
+                'nullable',
+                'boolean',
+            ],
         ]);
 
+        if ($request->boolean('onboarding')) {
+            $request->session()->put(
+                'brokerage_onboarding',
+                true,
+            );
+        }
+
+        $providerName =
+            $validated['provider'];
+
         $provider = $manager->driver(
-            $validated['provider'],
+            $providerName,
         );
 
         $provider->registerUser(
             $request->user(),
         );
 
-        $connection = BrokerageConnection::query()->create([
-            'user_id' => $request->user()->id,
-            'provider' => $validated['provider'],
-            'brokerage_name' =>
-                $validated['brokerage_name']
-                ?: 'Helmio Test Brokerage',
-            'status' =>
-                BrokerageConnection::STATUS_PENDING,
-            'read_only' => true,
-            'capabilities' => [
-                'accounts',
-                'positions',
-                'transactions',
-            ],
-            'metadata' => [
-                'created_from' =>
-                    'connection_flow',
-            ],
-        ]);
+        $existingRemoteIds =
+            $providerName === 'snaptrade'
+                ? $provider
+                    ->listConnections(
+                        $request->user(),
+                    )
+                    ->pluck(
+                        'provider_connection_id',
+                    )
+                    ->filter()
+                    ->values()
+                    ->all()
+                : [];
+
+        $connection = BrokerageConnection::query()
+            ->create([
+                'user_id' =>
+                    $request->user()->id,
+
+                'provider' =>
+                    $providerName,
+
+                'brokerage_name' =>
+                    $validated['brokerage_name']
+                    ?: (
+                        $providerName === 'snaptrade'
+                            ? 'Brokerage connection'
+                            : 'Helmio Test Brokerage'
+                    ),
+
+                'brokerage_slug' =>
+                    $validated['brokerage_slug']
+                    ?? null,
+
+                'status' =>
+                    BrokerageConnection::STATUS_PENDING,
+
+                'read_only' =>
+                    true,
+
+                'capabilities' => [
+                    'accounts',
+                    'positions',
+                    'transactions',
+                ],
+
+                'metadata' => [
+                    'created_from' =>
+                        $this->isOnboarding($request)
+                            ? 'onboarding'
+                            : 'connection_flow',
+
+                    'onboarding' =>
+                        $this->isOnboarding(
+                            $request,
+                        ),
+
+                    'remote_connections_before' =>
+                        $existingRemoteIds,
+                ],
+            ]);
+
+        if ($providerName === 'fake') {
+            return redirect()->to(
+                $provider->createConnectionUrl(
+                    user: $request->user(),
+
+                    redirectUrl:
+                        $this->isOnboarding($request)
+                            ? route(
+                                'onboarding.syncing',
+                            )
+                            : route(
+                                'brokerage-connections.index',
+                            ),
+
+                    reconnect: $connection,
+                ),
+            );
+        }
 
         $url = $provider->createConnectionUrl(
             user: $request->user(),
+
             redirectUrl: route(
-                'brokerage-connections.index',
+                'brokerage-connections.callback',
+                $connection,
             ),
-            reconnect: $connection,
+
+            brokerageSlug:
+                $validated['brokerage_slug']
+                ?? null,
         );
 
-        return redirect()->to($url);
+        return redirect()->away(
+            $url,
+        );
+    }
+
+    public function callback(
+        Request $request,
+        BrokerageConnection $brokerageConnection,
+        BrokerageProviderManager $manager,
+        BrokerageSyncService $syncService,
+    ): RedirectResponse {
+        $this->authorizeConnection(
+            $request,
+            $brokerageConnection,
+        );
+
+        abort_unless(
+            $brokerageConnection->provider
+                === 'snaptrade',
+            404,
+        );
+
+        try {
+            $provider = $manager->driver(
+                'snaptrade',
+            );
+
+            $knownIds = collect(
+                data_get(
+                    $brokerageConnection,
+                    'metadata.remote_connections_before',
+                    [],
+                ),
+            )->filter();
+
+            $remoteConnections =
+                $provider->listConnections(
+                    $request->user(),
+                );
+
+            $remote = $remoteConnections
+                ->filter(
+                    fn (
+                        BrokerageConnection $candidate,
+                    ): bool =>
+                        $candidate
+                            ->provider_connection_id
+                            !== null
+                        && ! $knownIds->contains(
+                            $candidate
+                                ->provider_connection_id,
+                        ),
+                )
+                ->sortByDesc('id')
+                ->first();
+
+            $remote ??= $remoteConnections
+                ->filter(
+                    fn (
+                        BrokerageConnection $candidate,
+                    ): bool =>
+                        $candidate->id
+                            !== $brokerageConnection->id
+                        && $candidate
+                            ->provider_connection_id
+                            !== null,
+                )
+                ->sortByDesc('id')
+                ->first();
+
+            if ($remote === null) {
+                $brokerageConnection->update([
+                    'status' =>
+                        BrokerageConnection::STATUS_ERROR,
+
+                    'last_error' =>
+                        'No new SnapTrade connection was found.',
+                ]);
+
+                return $this->redirectAfterFailure(
+                    $request,
+                    'No new brokerage connection was found. Please try again.',
+                );
+            }
+
+            $brokerageConnection->update([
+                'provider_connection_id' =>
+                    $remote->provider_connection_id,
+
+                'brokerage_name' =>
+                    $remote->brokerage_name
+                    ?: $brokerageConnection
+                        ->brokerage_name,
+
+                'brokerage_slug' =>
+                    $remote->brokerage_slug,
+
+                'status' =>
+                    $remote->status,
+
+                'connected_at' =>
+                    $remote->connected_at
+                    ?: now(),
+
+                'last_error' =>
+                    null,
+
+                'capabilities' =>
+                    $remote->capabilities
+                    ?: $brokerageConnection
+                        ->capabilities,
+
+                'metadata' => array_merge(
+                    $brokerageConnection
+                        ->metadata
+                        ?? [],
+                    [
+                        'snaptrade_connection' =>
+                            $remote->metadata,
+
+                        'callback_completed_at' =>
+                            now()->toIso8601String(),
+                    ],
+                ),
+            ]);
+
+            if (
+                $remote->id
+                !== $brokerageConnection->id
+            ) {
+                $remote->delete();
+            }
+
+            $stats = $syncService->sync(
+                $brokerageConnection->fresh(),
+                'connection',
+            );
+
+            $message = sprintf(
+                'Brokerage connected. Imported %d account(s), %d holding(s), and %d transaction(s).',
+                $stats['accounts'],
+                $stats['positions'],
+                $stats['transactions'],
+            );
+
+            return $this->redirectAfterSuccess(
+                $request,
+                $message,
+            );
+        } catch (Throwable $exception) {
+            report(
+                $exception,
+            );
+
+            $brokerageConnection->update([
+                'status' =>
+                    BrokerageConnection::STATUS_ERROR,
+
+                'last_error' =>
+                    $exception->getMessage(),
+            ]);
+
+            return $this->redirectAfterFailure(
+                $request,
+                'The connection returned, but synchronization failed: '
+                .$exception->getMessage(),
+            );
+        }
     }
 
     public function fakeComplete(
@@ -105,47 +396,40 @@ class BrokerageConnectionController extends Controller
             $brokerageConnection,
         );
 
+        if (
+            data_get(
+                $brokerageConnection,
+                'metadata.onboarding',
+                false,
+            )
+        ) {
+            $request->session()->put(
+                'brokerage_onboarding',
+                true,
+            );
+        }
+
         $brokerageConnection->update([
             'provider_connection_id' =>
                 'fake-connection-'
                 .$brokerageConnection->id,
+
             'status' =>
                 BrokerageConnection::STATUS_ACTIVE,
-            'connected_at' => now(),
-            'last_error' => null,
+
+            'connected_at' =>
+                now(),
+
+            'last_error' =>
+                null,
         ]);
 
-        try {
-            $stats = $syncService->sync(
-                $brokerageConnection,
-            );
-
-            return redirect()
-                ->route(
-                    'brokerage-connections.index',
-                )
-                ->with(
-                    'success',
-                    sprintf(
-                        'Brokerage connected. Imported %d account, %d holdings and %d transactions.',
-                        $stats['accounts'],
-                        $stats['positions'],
-                        $stats['transactions'],
-                    ),
-                );
-        } catch (Throwable $exception) {
-            report($exception);
-
-            return redirect()
-                ->route(
-                    'brokerage-connections.index',
-                )
-                ->with(
-                    'error',
-                    'The connection was created, but the first synchronization failed: '
-                    .$exception->getMessage(),
-                );
-        }
+        return $this->runSync(
+            request: $request,
+            connection: $brokerageConnection,
+            syncService: $syncService,
+            trigger: 'connection',
+        );
     }
 
     public function sync(
@@ -158,26 +442,45 @@ class BrokerageConnectionController extends Controller
             $brokerageConnection,
         );
 
+        return $this->runSync(
+            request: $request,
+            connection: $brokerageConnection,
+            syncService: $syncService,
+            trigger: 'manual',
+        );
+    }
+
+    public function refresh(
+        Request $request,
+        BrokerageConnection $brokerageConnection,
+        BrokerageProviderManager $manager,
+    ): RedirectResponse {
+        $this->authorizeConnection(
+            $request,
+            $brokerageConnection,
+        );
+
         try {
-            $stats = $syncService->sync(
-                $brokerageConnection,
-            );
+            $manager
+                ->driver(
+                    $brokerageConnection->provider,
+                )
+                ->requestRefresh(
+                    $brokerageConnection,
+                );
 
             return back()->with(
                 'success',
-                sprintf(
-                    'Synchronization complete: %d account, %d holdings and %d transactions.',
-                    $stats['accounts'],
-                    $stats['positions'],
-                    $stats['transactions'],
-                ),
+                'The brokerage refresh was requested.',
             );
         } catch (Throwable $exception) {
-            report($exception);
+            report(
+                $exception,
+            );
 
             return back()->with(
                 'error',
-                'Synchronization failed: '
+                'Refresh request failed: '
                 .$exception->getMessage(),
             );
         }
@@ -193,27 +496,145 @@ class BrokerageConnectionController extends Controller
             $brokerageConnection,
         );
 
-        $provider = $manager->driver(
-            $brokerageConnection->provider,
-        );
+        try {
+            $manager
+                ->driver(
+                    $brokerageConnection->provider,
+                )
+                ->disconnect(
+                    $brokerageConnection,
+                );
 
-        $provider->disconnect(
-            $brokerageConnection,
-        );
+            return back()->with(
+                'success',
+                'Brokerage connection disconnected. Imported data was retained.',
+            );
+        } catch (Throwable $exception) {
+            report(
+                $exception,
+            );
 
-        return back()->with(
-            'success',
-            'Brokerage connection disconnected. Imported account data was retained.',
-        );
+            return back()->with(
+                'error',
+                'Disconnect failed: '
+                .$exception->getMessage(),
+            );
+        }
     }
+
+    private function runSync(
+        Request $request,
+        BrokerageConnection $connection,
+        BrokerageSyncService $syncService,
+        string $trigger,
+    ): RedirectResponse {
+        try {
+            $stats = $syncService->sync(
+                $connection,
+                $trigger,
+            );
+
+            $message = sprintf(
+                'Synchronization complete: %d account(s), %d holding(s), and %d transaction(s).',
+                $stats['accounts'],
+                $stats['positions'],
+                $stats['transactions'],
+            );
+
+            return $this->redirectAfterSuccess(
+                $request,
+                $message,
+            );
+        } catch (Throwable $exception) {
+            report(
+                $exception,
+            );
+
+            return $this->redirectAfterFailure(
+                $request,
+                'Synchronization failed: '
+                .$exception->getMessage(),
+            );
+        }
+    }
+
+    private function redirectAfterSuccess(
+        Request $request,
+        string $message,
+    ): RedirectResponse {
+        if (
+            $request->session()->pull(
+                'brokerage_onboarding',
+                false,
+            )
+        ) {
+            return redirect()
+                ->route(
+                    'onboarding.syncing',
+                )
+                ->with(
+                    'success',
+                    $message,
+                );
+        }
+
+        return redirect()
+            ->route(
+                'brokerage-connections.index',
+            )
+            ->with(
+                'success',
+                $message,
+            );
+    }
+
+    private function redirectAfterFailure(
+        Request $request,
+        string $message,
+    ): RedirectResponse {
+        if ($this->isOnboarding($request)) {
+            return redirect()
+                ->route(
+                    'onboarding.connect',
+                )
+                ->with(
+                    'error',
+                    $message,
+                );
+        }
+
+        return redirect()
+            ->route(
+                'brokerage-connections.index',
+            )
+            ->with(
+                'error',
+                $message,
+            );
+    }
+
+    private function isOnboarding(
+    Request $request,
+): bool {
+    return $request->boolean(
+        'onboarding',
+    )
+        || filter_var(
+            $request->session()->get(
+                'brokerage_onboarding',
+                false,
+            ),
+            FILTER_VALIDATE_BOOL,
+        );
+}
 
     private function authorizeConnection(
         Request $request,
         BrokerageConnection $brokerageConnection,
     ): void {
         abort_unless(
-            $brokerageConnection->user_id
-                === $request->user()->id,
+            (int) $brokerageConnection->user_id
+                === (int) $request->user()->id,
             403,
         );
     }
