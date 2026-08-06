@@ -13,28 +13,43 @@ return new class extends Migration
             function (Blueprint $table): void {
                 $table->id();
 
-                $table->foreignId(
-    'portfolio_state_snapshot_id'
-);
+                // Portfolio State Snapshot
+                $table->unsignedBigInteger(
+                    'portfolio_state_snapshot_id'
+                );
 
-$table->foreign(
-    'portfolio_state_snapshot_id',
-    'fk_pssh_snapshot'
-)
-    ->references('id')
-    ->on('portfolio_state_snapshots')
-    ->cascadeOnDelete();
-
-                $table->foreignId(
-                    'investment_account_id',
+                $table->foreign(
+                    'portfolio_state_snapshot_id',
+                    'fk_pssh_snapshot'
                 )
-                    ->nullable()
-                    ->constrained()
+                    ->references('id')
+                    ->on('portfolio_state_snapshots')
+                    ->cascadeOnDelete();
+
+                // Investment Account
+                $table->unsignedBigInteger(
+                    'investment_account_id'
+                )->nullable();
+
+                $table->foreign(
+                    'investment_account_id',
+                    'fk_pssh_account'
+                )
+                    ->references('id')
+                    ->on('investment_accounts')
                     ->nullOnDelete();
 
-                $table->foreignId('security_id')
-                    ->nullable()
-                    ->constrained()
+                // Security
+                $table->unsignedBigInteger(
+                    'security_id'
+                )->nullable();
+
+                $table->foreign(
+                    'security_id',
+                    'fk_pssh_security'
+                )
+                    ->references('id')
+                    ->on('securities')
                     ->nullOnDelete();
 
                 $table->string(
@@ -42,8 +57,10 @@ $table->foreign(
                     255,
                 );
 
-                $table->string('symbol', 50)
-                    ->nullable();
+                $table->string(
+                    'symbol',
+                    50,
+                )->nullable();
 
                 $table->string('name');
 
@@ -92,19 +109,26 @@ $table->foreign(
                     8,
                 )->nullable();
 
-                $table->json('metadata')->nullable();
+                $table->json('metadata')
+                    ->nullable();
 
                 $table->timestamps();
 
-                $table->unique([
-                    'portfolio_state_snapshot_id',
-                    'holding_key',
-                ]);
+                $table->unique(
+                    [
+                        'portfolio_state_snapshot_id',
+                        'holding_key',
+                    ],
+                    'ux_pssh_snapshot_holding'
+                );
 
-                $table->index([
-                    'security_id',
-                    'portfolio_state_snapshot_id',
-                ]);
+                $table->index(
+                    [
+                        'security_id',
+                        'portfolio_state_snapshot_id',
+                    ],
+                    'ix_pssh_security_snapshot'
+                );
             },
         );
     }
