@@ -14,10 +14,16 @@ return new class extends Migration
                 $table->id();
 
                 $table->foreignId(
-                    'portfolio_state_snapshot_id',
-                )
-                    ->constrained()
-                    ->cascadeOnDelete();
+    'portfolio_state_snapshot_id'
+);
+
+$table->foreign(
+    'portfolio_state_snapshot_id',
+    'fk_pssh_snapshot'
+)
+    ->references('id')
+    ->on('portfolio_state_snapshots')
+    ->cascadeOnDelete();
 
                 $table->foreignId(
                     'investment_account_id',
