@@ -28,11 +28,14 @@ return new class extends Migration
             $table->date('calculated_for_date');
             $table->timestamps();
 
-            $table->unique([
-                'user_id',
-                'calculated_for_date',
-                'formula_version',
-            ]);
+            $table->unique(
+    [
+        'user_id',
+        'calculated_for_date',
+        'formula_version',
+    ],
+    'ux_helm_score_user_date_version',
+);
         });
     }
 
