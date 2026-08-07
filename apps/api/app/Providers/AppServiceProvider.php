@@ -6,6 +6,7 @@ use App\Contracts\AI\AiInsightProviderInterface;
 use App\Contracts\AI\PortfolioChatProviderInterface;
 use App\Services\AI\Providers\FakeAiInsightProvider;
 use App\Services\AI\Providers\FakePortfolioChatProvider;
+use App\Services\AI\Providers\OpenAiAiInsightProvider;
 use App\Services\AI\Providers\OpenAiPortfolioChatProvider;
 use App\Services\Brokerage\BrokerageProviderManager;
 use App\Services\Brokerage\Providers\FakeBrokerageProvider;
@@ -23,13 +24,32 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(
             AiInsightProviderInterface::class,
-            FakeAiInsightProvider::class,
+            function (
+                $app,
+            ): AiInsightProviderInterface {
+                $provider = (string) config(
+                    'ai.portfolio_chat_provider',
+                    'fake',
+                );
+
+                return match ($provider) {
+                    'openai' =>
+                        $app->make(
+                            OpenAiAiInsightProvider::class,
+                        ),
+
+                    default =>
+                        $app->make(
+                            FakeAiInsightProvider::class,
+                        ),
+                };
+            },
         );
 
         $this->app->bind(
             PortfolioChatProviderInterface::class,
             function (
-                $app
+                $app,
             ): PortfolioChatProviderInterface {
                 $provider = (string) config(
                     'ai.portfolio_chat_provider',
@@ -64,7 +84,7 @@ class AppServiceProvider extends ServiceProvider
             Client::class,
             fn ($app): Client =>
                 $app->make(
-                    SnapTradeClientFactory::class
+                    SnapTradeClientFactory::class,
                 )->make(),
         );
     }
