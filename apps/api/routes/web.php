@@ -44,6 +44,21 @@ use App\Http\Controllers\Onboarding\ExecutiveSummaryRevealController;
 |--------------------------------------------------------------------------
 */
 
+Route::view(
+    '/contact',
+    'legal.contact',
+)->name('contact');
+
+Route::view(
+    '/terms',
+    'legal.terms',
+)->name('terms');
+
+Route::view(
+    '/privacy',
+    'legal.privacy',
+)->name('privacy');
+
 Route::post(
     '/webhooks/snaptrade',
     SnapTradeWebhookController::class,
