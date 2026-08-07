@@ -507,7 +507,10 @@ TEXT;
         $citations = collect(
             $result['citations'] ?? [],
         )
-            ->filter('is_array')
+            ->filter(
+                fn (mixed $value): bool =>
+                    is_array($value),
+            )
             ->map(
                 fn (array $citation): ?array =>
                     $this->validateCitation(
@@ -533,7 +536,10 @@ TEXT;
         $modelLimitations = collect(
             $result['limitations'] ?? [],
         )
-            ->filter('is_string');
+            ->filter(
+                fn (mixed $value): bool =>
+                    is_string($value),
+            );
 
         return [
             'answer' => $answer,

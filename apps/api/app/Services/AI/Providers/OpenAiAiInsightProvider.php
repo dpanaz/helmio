@@ -487,7 +487,10 @@ TEXT;
             $result['priorities']
             ?? [],
         )
-            ->filter('is_string')
+            ->filter(
+                fn (mixed $value): bool =>
+                    is_string($value),
+            )
             ->map(
                 fn (string $value): string =>
                     trim($value),
@@ -501,7 +504,10 @@ TEXT;
             $result['positive_changes']
             ?? [],
         )
-            ->filter('is_string')
+            ->filter(
+                fn (mixed $value): bool =>
+                    is_string($value),
+            )
             ->map(
                 fn (string $value): string =>
                     trim($value),
@@ -550,7 +556,10 @@ TEXT;
             $result['limitations']
             ?? [],
         )
-            ->filter('is_string')
+            ->filter(
+                fn (mixed $value): bool =>
+                    is_string($value),
+            )
             ->map(
                 fn (string $value): string =>
                     trim($value),
