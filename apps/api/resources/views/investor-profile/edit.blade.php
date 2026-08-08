@@ -119,26 +119,57 @@
                         </div>
 
                         <div>
-                            <label
-                                for="employment_status"
-                                class="block text-sm font-medium text-slate-700"
-                            >
-                                Employment Status
-                            </label>
+    <label
+        for="employment_status"
+        class="block text-sm font-medium text-slate-700"
+    >
+        Employment Status
+    </label>
 
-                            <input
-                                id="employment_status"
-                                type="text"
-                                name="employment_status"
-                                value="{{ old(
-                                    'employment_status',
-                                    $profile->employment_status
-                                ) }}"
-                                placeholder="Employed, retired, self-employed..."
-                                class="mt-2 w-full rounded-lg border-slate-300"
-                            >
-                        </div>
+    <select
+        id="employment_status"
+        name="employment_status"
+        class="mt-2 w-full rounded-lg border-slate-300"
+    >
+        <option value="">
+            Select employment status
+        </option>
 
+        @php
+            $employmentOptions = [
+                'employed_full_time' => 'Employed — Full Time',
+                'employed_part_time' => 'Employed — Part Time',
+                'self_employed' => 'Self-Employed',
+                'business_owner' => 'Business Owner',
+                'retired' => 'Retired',
+                'semi_retired' => 'Semi-Retired',
+                'not_employed' => 'Not Currently Employed',
+                'student' => 'Student',
+                'homemaker' => 'Homemaker',
+                'other' => 'Other',
+            ];
+        @endphp
+
+        @foreach ($employmentOptions as $value => $label)
+            <option
+                value="{{ $value }}"
+                @selected(
+                    old(
+                        'employment_status',
+                        $profile->employment_status
+                    ) === $value
+                )
+            >
+                {{ $label }}
+            </option>
+        @endforeach
+    </select>
+
+    <p class="mt-1 text-xs text-slate-500">
+        Your employment status helps Helmio evaluate income stability,
+        liquidity needs, and investment suitability.
+    </p>
+</div>
                         <div>
                             <label
                                 for="annual_income"
