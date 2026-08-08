@@ -1,247 +1,196 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div class="hidden sm:block">
-            <p class="text-sm font-medium text-blue-600">
-                Legal
-            </p>
+@extends('layouts.public')
 
-            <h2 class="mt-1 text-2xl font-semibold text-slate-950">
-                Terms of Service
-            </h2>
-        </div>
-    </x-slot>
+@section('title', 'Terms of Service')
 
-    <div class="bg-slate-50 py-10 sm:py-14">
-        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-            <article class="rounded-3xl border border-slate-200 bg-white px-6 py-8 shadow-sm sm:px-10 sm:py-12">
-                <p class="text-sm font-semibold uppercase tracking-[0.14em] text-blue-600">
-                    Helmio Legal
-                </p>
+@section('content')
 
-                <h1 class="mt-3 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">
-                    Terms of Service
-                </h1>
+<section class="mx-auto max-w-7xl px-4 pb-10 pt-16 sm:px-6 lg:px-8">
+    <div class="mx-auto max-w-4xl text-center">
+        <p class="text-sm font-semibold uppercase tracking-[0.16em] text-blue-400">
+            Helmio Legal
+        </p>
 
-                <p class="mt-3 text-sm text-slate-500">
-                    Last updated: August 2026
-                </p>
+        <h1 class="mt-4 text-4xl font-semibold tracking-tight text-white sm:text-5xl">
+            Terms of Service
+        </h1>
 
-                <div class="mt-10 space-y-10 text-sm leading-7 text-slate-700">
-                    <section>
-                        <p>
-                            Welcome to Helmio. These Terms of Service govern your use of the
-                            Helmio website, applications, software, and related services.
-                            By accessing or using Helmio, you agree to these Terms.
-                        </p>
-                    </section>
+        <p class="mt-4 text-sm text-slate-500">
+            Last updated: August 2026
+        </p>
 
-                    <section>
-                        <h2 class="text-xl font-semibold text-slate-950">
-                            1. Our Service
-                        </h2>
-
-                        <p class="mt-3">
-                            Helmio provides investment oversight tools, portfolio analytics,
-                            reporting, monitoring, and AI-generated explanations intended to
-                            help users better understand their investment accounts.
-                        </p>
-
-                        <p class="mt-3">
-                            Helmio is not a broker-dealer, investment adviser, fiduciary,
-                            bank, tax adviser, law firm, or financial institution.
-                        </p>
-                    </section>
-
-                    <section>
-                        <h2 class="text-xl font-semibold text-slate-950">
-                            2. No Investment Advice
-                        </h2>
-
-                        <p class="mt-3">
-                            Information provided through Helmio is for informational and
-                            educational purposes only.
-                        </p>
-
-                        <p class="mt-3">
-                            Nothing provided by Helmio constitutes investment advice,
-                            financial planning, legal advice, tax advice, or a recommendation
-                            to buy, sell, hold, or replace any security or investment.
-                        </p>
-
-                        <p class="mt-3">
-                            You remain solely responsible for your investment decisions and
-                            should consult appropriately qualified professionals when needed.
-                        </p>
-                    </section>
-
-                    <section>
-                        <h2 class="text-xl font-semibold text-slate-950">
-                            3. Read-Only Account Access
-                        </h2>
-
-                        <p class="mt-3">
-                            Helmio may connect to brokerage or financial accounts through
-                            third-party providers using read-only access.
-                        </p>
-
-                        <p class="mt-3">
-                            Helmio is not authorized to place trades, transfer assets,
-                            withdraw funds, or otherwise modify your brokerage accounts.
-                        </p>
-                    </section>
-
-                    <section>
-                        <h2 class="text-xl font-semibold text-slate-950">
-                            4. Data Accuracy and Availability
-                        </h2>
-
-                        <p class="mt-3">
-                            Brokerage firms, financial-data providers, market-data providers,
-                            and other third parties may provide information that is incomplete,
-                            delayed, unavailable, or inaccurate.
-                        </p>
-
-                        <p class="mt-3">
-                            Although Helmio is designed to identify data-quality issues where
-                            possible, we do not guarantee that all information, calculations,
-                            analytics, reports, or insights are complete or error-free.
-                        </p>
-                    </section>
-
-                    <section>
-                        <h2 class="text-xl font-semibold text-slate-950">
-                            5. AI-Generated Content
-                        </h2>
-
-                        <p class="mt-3">
-                            Helmio may use artificial intelligence to generate summaries,
-                            explanations, insights, and other content based on portfolio data
-                            and analytics.
-                        </p>
-
-                        <p class="mt-3">
-                            AI-generated content may contain errors or omissions and should
-                            not be relied upon as professional financial, legal, accounting,
-                            or tax advice.
-                        </p>
-                    </section>
-
-                    <section>
-                        <h2 class="text-xl font-semibold text-slate-950">
-                            6. User Responsibilities
-                        </h2>
-
-                        <p class="mt-3">
-                            You agree to provide accurate information, maintain the security
-                            of your credentials, protect access to your account, and use Helmio
-                            only for lawful purposes.
-                        </p>
-
-                        <p class="mt-3">
-                            You are responsible for activity occurring through your Helmio
-                            account unless prohibited by applicable law.
-                        </p>
-                    </section>
-
-                    <section>
-                        <h2 class="text-xl font-semibold text-slate-950">
-                            7. Subscriptions and Billing
-                        </h2>
-
-                        <p class="mt-3">
-                            Certain Helmio features require a paid subscription.
-                        </p>
-
-                        <p class="mt-3">
-                            Unless otherwise stated, subscriptions automatically renew at the
-                            applicable billing interval until cancelled.
-                        </p>
-
-                        <p class="mt-3">
-                            Payments may be processed through third-party payment providers
-                            such as Stripe.
-                        </p>
-                    </section>
-
-                    <section>
-                        <h2 class="text-xl font-semibold text-slate-950">
-                            8. Intellectual Property
-                        </h2>
-
-                        <p class="mt-3">
-                            Helmio's software, designs, trademarks, branding, analytics,
-                            reports, text, graphics, and related materials are owned by Helmio
-                            or its licensors and are protected by applicable intellectual
-                            property laws.
-                        </p>
-                    </section>
-
-                    <section>
-                        <h2 class="text-xl font-semibold text-slate-950">
-                            9. Limitation of Liability
-                        </h2>
-
-                        <p class="mt-3">
-                            To the fullest extent permitted by applicable law, Helmio will not
-                            be liable for investment losses, lost profits, trading decisions,
-                            indirect damages, incidental damages, consequential damages, or
-                            losses resulting from reliance on information provided through
-                            the service.
-                        </p>
-                    </section>
-
-                    <section>
-                        <h2 class="text-xl font-semibold text-slate-950">
-                            10. Suspension or Termination
-                        </h2>
-
-                        <p class="mt-3">
-                            Helmio may suspend or terminate access to the service when
-                            necessary to protect users, maintain security, comply with law,
-                            prevent abuse, or enforce these Terms.
-                        </p>
-                    </section>
-
-                    <section>
-                        <h2 class="text-xl font-semibold text-slate-950">
-                            11. Governing Law
-                        </h2>
-
-                        <p class="mt-3">
-                            These Terms are governed by the laws of the State of Texas,
-                            without regard to conflict-of-law principles, except where
-                            applicable law requires otherwise.
-                        </p>
-                    </section>
-
-                    <section>
-                        <h2 class="text-xl font-semibold text-slate-950">
-                            12. Changes to These Terms
-                        </h2>
-
-                        <p class="mt-3">
-                            We may update these Terms from time to time. The revised version
-                            will be posted on this page with an updated effective date.
-                        </p>
-                    </section>
-
-                    <section>
-                        <h2 class="text-xl font-semibold text-slate-950">
-                            13. Contact
-                        </h2>
-
-                        <p class="mt-3">
-                            Questions about these Terms may be sent to
-                            <a
-                                href="mailto:legal@myhelmio.com"
-                                class="font-semibold text-blue-600 hover:text-blue-500"
-                            >
-                                legal@myhelmio.com
-                            </a>.
-                        </p>
-                    </section>
-                </div>
-            </article>
-        </div>
+        <p class="mx-auto mt-6 max-w-3xl text-lg leading-8 text-slate-400">
+            These Terms of Service govern your use of Helmio's website,
+            applications, software, and investment oversight platform.
+        </p>
     </div>
-</x-app-layout>
+</section>
+
+<section class="border-t border-white/10 bg-slate-900/40">
+    <div class="mx-auto max-w-4xl px-4 py-16 sm:px-6 lg:px-8">
+        <article class="rounded-3xl border border-white/10 bg-slate-950/70 px-6 py-8 shadow-2xl shadow-black/10 sm:px-10 sm:py-12">
+
+            <div class="space-y-12 text-sm leading-7 text-slate-400">
+
+                <section>
+                    <p class="text-base leading-8 text-slate-300">
+                        Welcome to Helmio. These Terms of Service govern your use
+                        of the Helmio website, applications, software, and related
+                        services. By accessing or using Helmio, you agree to these
+                        Terms.
+                    </p>
+                </section>
+
+                <section class="border-t border-white/10 pt-10">
+                    <h2 class="text-2xl font-semibold text-white">
+                        1. Our Service
+                    </h2>
+
+                    <p class="mt-4">
+                        Helmio provides investment oversight tools, portfolio
+                        analytics, reporting, monitoring, and AI-generated
+                        explanations intended to help investors better understand
+                        their portfolios.
+                    </p>
+
+                    <p class="mt-3">
+                        Helmio is not a broker-dealer, investment adviser,
+                        fiduciary, bank, tax adviser, law firm, or financial
+                        institution.
+                    </p>
+                </section>
+
+                <section class="border-t border-white/10 pt-10">
+                    <h2 class="text-2xl font-semibold text-white">
+                        2. No Investment Advice
+                    </h2>
+
+                    <p class="mt-4">
+                        Information provided by Helmio is for informational and
+                        educational purposes only.
+                    </p>
+
+                    <p class="mt-3">
+                        Nothing provided by Helmio constitutes investment advice,
+                        financial planning, legal advice, tax advice, or a
+                        recommendation to buy, sell, or hold any investment.
+                    </p>
+                </section>
+
+                <section class="border-t border-white/10 pt-10">
+                    <h2 class="text-2xl font-semibold text-white">
+                        3. Read-Only Access
+                    </h2>
+
+                    <p class="mt-4">
+                        Helmio connects to brokerage accounts using read-only
+                        access. Helmio cannot place trades, move money, withdraw
+                        funds, or make changes to your accounts.
+                    </p>
+                </section>
+
+                <section class="border-t border-white/10 pt-10">
+                    <h2 class="text-2xl font-semibold text-white">
+                        4. Data Accuracy
+                    </h2>
+
+                    <p class="mt-4">
+                        Portfolio information is supplied by third-party financial
+                        institutions and market-data providers. While Helmio
+                        strives for accuracy, we cannot guarantee that all
+                        information is complete, current, or error free.
+                    </p>
+                </section>
+
+                <section class="border-t border-white/10 pt-10">
+                    <h2 class="text-2xl font-semibold text-white">
+                        5. AI Generated Content
+                    </h2>
+
+                    <p class="mt-4">
+                        AI-generated summaries and insights are intended to help
+                        explain portfolio activity and should never be considered
+                        professional financial, legal, tax, or investment advice.
+                    </p>
+                </section>
+
+                <section class="border-t border-white/10 pt-10">
+                    <h2 class="text-2xl font-semibold text-white">
+                        6. User Responsibilities
+                    </h2>
+
+                    <p class="mt-4">
+                        You are responsible for maintaining the security of your
+                        account and for all activity performed using your login.
+                    </p>
+                </section>
+
+                <section class="border-t border-white/10 pt-10">
+                    <h2 class="text-2xl font-semibold text-white">
+                        7. Billing
+                    </h2>
+
+                    <p class="mt-4">
+                        Premium features require an active subscription.
+                        Subscription payments are processed through Stripe.
+                    </p>
+                </section>
+
+                <section class="border-t border-white/10 pt-10">
+                    <h2 class="text-2xl font-semibold text-white">
+                        8. Intellectual Property
+                    </h2>
+
+                    <p class="mt-4">
+                        Helmio software, branding, analytics, reports, and
+                        content are protected by applicable intellectual property
+                        laws.
+                    </p>
+                </section>
+
+                <section class="border-t border-white/10 pt-10">
+                    <h2 class="text-2xl font-semibold text-white">
+                        9. Limitation of Liability
+                    </h2>
+
+                    <p class="mt-4">
+                        Helmio shall not be liable for investment losses,
+                        trading decisions, indirect damages, lost profits,
+                        or reliance upon information provided through the
+                        service.
+                    </p>
+                </section>
+
+                <section class="border-t border-white/10 pt-10">
+                    <h2 class="text-2xl font-semibold text-white">
+                        10. Governing Law
+                    </h2>
+
+                    <p class="mt-4">
+                        These Terms are governed by the laws of the State
+                        of Texas.
+                    </p>
+                </section>
+
+                <section class="border-t border-white/10 pt-10">
+                    <h2 class="text-2xl font-semibold text-white">
+                        Contact
+                    </h2>
+
+                    <p class="mt-4">
+                        Questions about these Terms may be sent to
+                        <a
+                            href="mailto:legal@myhelmio.com"
+                            class="font-semibold text-blue-400 hover:text-blue-300"
+                        >
+                            legal@myhelmio.com
+                        </a>.
+                    </p>
+                </section>
+
+            </div>
+
+        </article>
+    </div>
+</section>
+
+@endsection
