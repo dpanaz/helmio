@@ -1,27 +1,18 @@
 <x-app-layout>
     <x-slot name="header">
-        <div
-            class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-        >
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
-                <p
-                    class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400"
-                >
-                    Portfolio alerts
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400">
+                    Monitoring
                 </p>
 
-                <h2
-                    class="mt-2 text-2xl font-semibold tracking-tight text-white"
-                >
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-white">
                     Notifications
                 </h2>
 
-                <p
-                    class="mt-2 max-w-3xl text-sm leading-6 text-slate-400"
-                >
-                    Review portfolio changes, Advisor Audit alerts,
-                    score movements, and other events that may deserve
-                    your attention.
+                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+                    Important portfolio changes, Advisor Audit findings,
+                    score movements, and monitoring events.
                 </p>
             </div>
 
@@ -35,8 +26,22 @@
 
                     <button
                         type="submit"
-                        class="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-blue-500/50 hover:text-white"
+                        class="inline-flex items-center justify-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-blue-500/50 hover:bg-slate-800 hover:text-white"
                     >
+                        <svg
+                            class="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="m4.5 12.75 6 6 9-13.5"
+                            />
+                        </svg>
+
                         Mark all as read
                     </button>
                 </form>
@@ -44,70 +49,193 @@
         </div>
     </x-slot>
 
+    @php
+        $totalNotifications = method_exists($notifications, 'total')
+            ? $notifications->total()
+            : $notifications->count();
+
+        $readCount = max(
+            0,
+            $totalNotifications - $unreadCount
+        );
+    @endphp
+
     <div class="min-h-screen bg-slate-950 py-8">
-        <div
-            class="mx-auto max-w-5xl space-y-6 px-4 sm:px-6 lg:px-8"
-        >
+        <div class="mx-auto max-w-6xl space-y-6 px-4 sm:px-6 lg:px-8">
+
+            {{-- Success message --}}
             @if (session('success'))
                 <div
-                    class="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.07] px-5 py-4 text-sm font-medium text-emerald-300"
+                    class="flex items-start gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.07] px-5 py-4"
                 >
-                    {{ session('success') }}
+                    <div
+                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-emerald-500/10 text-emerald-300"
+                    >
+                        <svg
+                            class="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="m5 12 4 4L19 6"
+                            />
+                        </svg>
+                    </div>
+
+                    <p class="pt-1 text-sm font-medium text-emerald-300">
+                        {{ session('success') }}
+                    </p>
                 </div>
             @endif
 
             {{-- Summary --}}
-            <section
-                class="grid gap-4 sm:grid-cols-2"
-            >
+            <section class="grid gap-4 sm:grid-cols-3">
+
                 <article
                     class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
                 >
-                    <p class="text-sm text-slate-500">
-                        Total notifications
-                    </p>
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <p
+                                class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+                            >
+                                Total activity
+                            </p>
 
-                    <p
-                        class="mt-3 text-3xl font-semibold tracking-tight text-white"
-                    >
-                        @if (method_exists($notifications, 'total'))
-                            {{ number_format($notifications->total()) }}
-                        @else
-                            {{ number_format($notifications->count()) }}
-                        @endif
-                    </p>
+                            <p
+                                class="mt-3 text-3xl font-semibold tracking-tight text-white"
+                            >
+                                {{ number_format($totalNotifications) }}
+                            </p>
+                        </div>
+
+                        <div
+                            class="flex h-11 w-11 items-center justify-center rounded-xl border border-slate-800 bg-slate-950 text-slate-400"
+                        >
+                            <svg
+                                class="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022 23.848 23.848 0 0 0 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
+                                />
+                            </svg>
+                        </div>
+                    </div>
                 </article>
 
                 <article
                     @class([
                         'rounded-2xl border p-6 shadow-xl',
 
-                        'border-blue-500/20 bg-blue-500/[0.06]' =>
+                        'border-blue-500/30 bg-blue-500/[0.07]' =>
                             $unreadCount > 0,
 
                         'border-slate-800 bg-slate-900' =>
                             $unreadCount === 0,
                     ])
                 >
-                    <p
-                        @class([
-                            'text-sm',
-                            'text-blue-300' => $unreadCount > 0,
-                            'text-slate-500' => $unreadCount === 0,
-                        ])
-                    >
-                        Unread
-                    </p>
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <p
+                                @class([
+                                    'text-xs font-semibold uppercase tracking-[0.14em]',
 
-                    <p
-                        class="mt-3 text-3xl font-semibold tracking-tight text-white"
-                    >
-                        {{ number_format($unreadCount) }}
-                    </p>
+                                    'text-blue-300' =>
+                                        $unreadCount > 0,
+
+                                    'text-slate-500' =>
+                                        $unreadCount === 0,
+                                ])
+                            >
+                                Needs attention
+                            </p>
+
+                            <p
+                                class="mt-3 text-3xl font-semibold tracking-tight text-white"
+                            >
+                                {{ number_format($unreadCount) }}
+                            </p>
+                        </div>
+
+                        <div
+                            @class([
+                                'flex h-11 w-11 items-center justify-center rounded-xl border',
+
+                                'border-blue-500/20 bg-blue-500/10 text-blue-300' =>
+                                    $unreadCount > 0,
+
+                                'border-slate-800 bg-slate-950 text-slate-500' =>
+                                    $unreadCount === 0,
+                            ])
+                        >
+                            <svg
+                                class="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="1.8"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M12 9v3.75m9-.75a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 3.75h.008v.008H12v-.008Z"
+                                />
+                            </svg>
+                        </div>
+                    </div>
                 </article>
+
+                <article
+                    class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
+                >
+                    <div class="flex items-center justify-between gap-4">
+                        <div>
+                            <p
+                                class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+                            >
+                                Reviewed
+                            </p>
+
+                            <p
+                                class="mt-3 text-3xl font-semibold tracking-tight text-white"
+                            >
+                                {{ number_format($readCount) }}
+                            </p>
+                        </div>
+
+                        <div
+                            class="flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                        >
+                            <svg
+                                class="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="m5 12 4 4L19 6"
+                                />
+                            </svg>
+                        </div>
+                    </div>
+                </article>
+
             </section>
 
-            {{-- Notification activity --}}
+            {{-- Activity --}}
             <section
                 class="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-xl"
             >
@@ -115,31 +243,58 @@
                     class="border-b border-slate-800 px-6 py-5 sm:px-8"
                 >
                     <div
-                        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between"
+                        class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
                     >
                         <div>
-                            <h3 class="text-lg font-semibold text-white">
-                                Activity
+                            <p
+                                class="text-xs font-semibold uppercase tracking-[0.14em] text-blue-400"
+                            >
+                                Monitoring activity
+                            </p>
+
+                            <h3 class="mt-1 text-lg font-semibold text-white">
+                                Recent notifications
                             </h3>
 
                             <p class="mt-1 text-sm text-slate-500">
-                                {{ $unreadCount }}
-                                unread notification{{ $unreadCount === 1 ? '' : 's' }}
+                                @if ($unreadCount > 0)
+                                    {{ number_format($unreadCount) }}
+                                    unread
+                                    {{ Str::plural('notification', $unreadCount) }}
+                                @else
+                                    Nothing currently requires your attention.
+                                @endif
                             </p>
                         </div>
 
                         @if ($unreadCount === 0)
                             <span
-                                class="inline-flex w-fit rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300"
+                                class="inline-flex w-fit items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-semibold text-emerald-300"
                             >
+                                <span
+                                    class="h-1.5 w-1.5 rounded-full bg-emerald-400"
+                                ></span>
+
                                 All caught up
+                            </span>
+                        @else
+                            <span
+                                class="inline-flex w-fit items-center gap-2 rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold text-blue-300"
+                            >
+                                <span
+                                    class="h-1.5 w-1.5 animate-pulse rounded-full bg-blue-400"
+                                ></span>
+
+                                Monitoring active
                             </span>
                         @endif
                     </div>
                 </div>
 
                 <div class="divide-y divide-slate-800">
+
                     @forelse ($notifications as $notification)
+
                         @php
                             $data =
                                 $notification->data;
@@ -169,37 +324,108 @@
                                     'border-slate-700 bg-slate-800 text-slate-400',
                             };
 
-                            $dotClasses =
-                                $notification->unread()
-                                    ? 'bg-blue-400 ring-blue-500/20'
-                                    : 'bg-slate-600 ring-slate-700/20';
+                            $iconClasses = match ($severity) {
+                                'critical' =>
+                                    'border-red-500/20 bg-red-500/10 text-red-300',
+
+                                'high' =>
+                                    'border-orange-500/20 bg-orange-500/10 text-orange-300',
+
+                                'medium',
+                                'moderate' =>
+                                    'border-amber-500/20 bg-amber-500/10 text-amber-300',
+
+                                'positive' =>
+                                    'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
+
+                                default =>
+                                    'border-blue-500/20 bg-blue-500/10 text-blue-300',
+                            };
                         @endphp
 
                         <article
                             @class([
-                                'relative p-6 transition sm:p-7',
+                                'relative px-6 py-6 transition sm:px-8',
 
                                 'bg-blue-500/[0.025]' =>
                                     $notification->unread(),
 
-                                'hover:bg-slate-800/20' =>
-                                    $notification->read(),
+                                'hover:bg-slate-800/20',
                             ])
                         >
+                            @if ($notification->unread())
+                                <div
+                                    class="absolute inset-y-0 left-0 w-0.5 bg-blue-500"
+                                ></div>
+                            @endif
+
                             <div
                                 class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between"
                             >
                                 <div
-                                    class="flex max-w-3xl gap-4"
+                                    class="flex min-w-0 max-w-3xl items-start gap-4"
                                 >
-                                    {{-- Read/unread marker --}}
-                                    <div class="pt-2">
-                                        <span
-                                            class="block h-3 w-3 rounded-full ring-4 {{ $dotClasses }}"
-                                        ></span>
+                                    {{-- Severity icon --}}
+                                    <div
+                                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border {{ $iconClasses }}"
+                                    >
+                                        @if ($severity === 'positive')
+                                            <svg
+                                                class="h-5 w-5"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="m5 12 4 4L19 6"
+                                                />
+                                            </svg>
+                                        @elseif (
+                                            in_array(
+                                                $severity,
+                                                [
+                                                    'critical',
+                                                    'high',
+                                                    'medium',
+                                                    'moderate',
+                                                ]
+                                            )
+                                        )
+                                            <svg
+                                                class="h-5 w-5"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M12 9v4m0 4h.01M10.3 3.7 2.6 17a2 2 0 0 0 1.73 3h15.34A2 2 0 0 0 21.4 17L13.7 3.7a2 2 0 0 0-3.4 0Z"
+                                                />
+                                            </svg>
+                                        @else
+                                            <svg
+                                                class="h-5 w-5"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="M11.25 11.25 12 6l.75 5.25L18 12l-5.25.75L12 18l-.75-5.25L6 12l5.25-.75Z"
+                                                />
+                                            </svg>
+                                        @endif
                                     </div>
 
-                                    <div class="min-w-0">
+                                    <div class="min-w-0 flex-1">
+
                                         <div
                                             class="flex flex-wrap items-center gap-2"
                                         >
@@ -224,15 +450,19 @@
 
                                             @if ($notification->unread())
                                                 <span
-                                                    class="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-300"
+                                                    class="inline-flex items-center gap-1.5 rounded-full border border-blue-500/20 bg-blue-500/10 px-2.5 py-1 text-xs font-semibold text-blue-300"
                                                 >
+                                                    <span
+                                                        class="h-1.5 w-1.5 rounded-full bg-blue-400"
+                                                    ></span>
+
                                                     New
                                                 </span>
                                             @endif
                                         </div>
 
                                         <h4
-                                            class="mt-4 text-base font-semibold text-white"
+                                            class="mt-3 text-base font-semibold text-white"
                                         >
                                             {{ $data['title']
                                                 ?? 'Portfolio update' }}
@@ -246,11 +476,9 @@
                                         </p>
 
                                         <div
-                                            class="mt-4 flex flex-wrap items-center gap-x-4 gap-y-2"
+                                            class="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2"
                                         >
-                                            <p
-                                                class="text-xs text-slate-600"
-                                            >
+                                            <p class="text-xs text-slate-600">
                                                 {{ $notification
                                                     ->created_at
                                                     ->diffForHumans() }}
@@ -258,8 +486,22 @@
 
                                             @if (! empty($data['financial_impact']))
                                                 <span
-                                                    class="text-xs font-semibold text-slate-400"
+                                                    class="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-400"
                                                 >
+                                                    <svg
+                                                        class="h-3.5 w-3.5"
+                                                        fill="none"
+                                                        viewBox="0 0 24 24"
+                                                        stroke="currentColor"
+                                                        stroke-width="2"
+                                                    >
+                                                        <path
+                                                            stroke-linecap="round"
+                                                            stroke-linejoin="round"
+                                                            d="M12 6v12m3-9.75C15 7.007 13.657 6 12 6S9 7.007 9 8.25s1.343 2.25 3 2.25 3 1.007 3 2.25S13.657 15 12 15s-3-1.007-3-2.25"
+                                                        />
+                                                    </svg>
+
                                                     Estimated impact:
                                                     {{ money(
                                                         $data['financial_impact'],
@@ -320,7 +562,7 @@
 
                                         <button
                                             type="submit"
-                                            class="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-slate-400 transition hover:border-red-500/40 hover:text-red-300"
+                                            class="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-slate-500 transition hover:border-red-500/40 hover:bg-red-500/[0.05] hover:text-red-300"
                                         >
                                             Remove
                                         </button>
@@ -328,10 +570,13 @@
                                 </div>
                             </div>
                         </article>
+
                     @empty
-                        <div class="px-6 py-14 text-center">
+
+                        <div class="px-6 py-16 text-center sm:px-8">
+
                             <div
-                                class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-slate-800 bg-slate-950 text-slate-500"
+                                class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
                             >
                                 <svg
                                     class="h-7 w-7"
@@ -343,25 +588,33 @@
                                     <path
                                         stroke-linecap="round"
                                         stroke-linejoin="round"
-                                        d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022 23.848 23.848 0 0 0 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
+                                        d="m5 12 4 4L19 6"
                                     />
                                 </svg>
                             </div>
 
-                            <h3
-                                class="mt-5 text-lg font-semibold text-white"
+                            <p
+                                class="mt-5 text-xs font-semibold uppercase tracking-[0.16em] text-emerald-400"
                             >
-                                No notifications yet
+                                Monitoring active
+                            </p>
+
+                            <h3
+                                class="mt-2 text-xl font-semibold text-white"
+                            >
+                                Nothing needs your attention.
                             </h3>
 
                             <p
-                                class="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500"
+                                class="mx-auto mt-3 max-w-lg text-sm leading-7 text-slate-500"
                             >
-                                Advisor Audit changes, portfolio alerts,
-                                monthly review events, and other important
-                                updates will appear here.
+                                Helmio is monitoring your portfolio.
+                                Important Advisor Audit changes, score
+                                movements, portfolio alerts, and review
+                                events will appear here when detected.
                             </p>
                         </div>
+
                     @endforelse
                 </div>
             </section>
@@ -371,10 +624,24 @@
                 method_exists($notifications, 'hasPages')
                 && $notifications->hasPages()
             )
-                <div class="text-slate-400">
+                <div class="rounded-2xl border border-slate-800 bg-slate-900 p-4 text-slate-400">
                     {{ $notifications->links() }}
                 </div>
             @endif
+
+            {{-- Footer --}}
+            <div
+                class="flex flex-col gap-2 border-t border-slate-800 pt-5 text-xs text-slate-600 sm:flex-row sm:items-center sm:justify-between"
+            >
+                <p>
+                    Helmio continuously reviews supported portfolio data for meaningful changes.
+                </p>
+
+                <p>
+                    Informational monitoring only — not investment advice.
+                </p>
+            </div>
+
         </div>
     </div>
 </x-app-layout>

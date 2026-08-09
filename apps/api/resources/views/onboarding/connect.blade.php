@@ -1,46 +1,60 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="hidden sm:block">
-            <p class="text-sm font-medium text-blue-600">
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400">
                 Getting started
             </p>
 
-            <h2 class="mt-1 text-2xl font-semibold text-slate-950">
-                Connect your investments
+            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-white">
+                Connect Your Investments
             </h2>
         </div>
     </x-slot>
 
-    <div class="py-8 sm:py-12">
-        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-            <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                <div class="p-6 sm:p-8">
-                    <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+    <div class="min-h-screen bg-slate-950 py-8">
+        <div class="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8">
+
+            <section
+                class="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-xl"
+            >
+                <div class="p-6 sm:p-8 lg:p-10">
+
+                    <div
+                        class="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between"
+                    >
                         <div>
-                            <p class="text-sm font-semibold text-blue-600">
+                            <p class="text-sm font-semibold text-blue-400">
                                 Step 3 of 4
                             </p>
 
-                            <h1 class="mt-2 text-2xl font-semibold tracking-tight text-slate-950 sm:text-3xl">
+                            <h1
+                                class="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl"
+                            >
                                 Connect your first investment account.
                             </h1>
 
-                            <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-600">
-                                Securely link a brokerage, retirement, or managed investment
-                                account. Helmio will import balances, holdings, and transaction history.
+                            <p
+                                class="mt-3 max-w-2xl text-sm leading-7 text-slate-400"
+                            >
+                                Securely link a brokerage, retirement, or
+                                managed investment account. Helmio will import
+                                balances, holdings, and transaction history.
                             </p>
                         </div>
 
-                        <span class="inline-flex w-fit rounded-full bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">
+                        <span
+                            class="inline-flex w-fit rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300"
+                        >
                             Read-only
                         </span>
                     </div>
 
-                    <div class="mt-6 h-2 overflow-hidden rounded-full bg-slate-100">
-                        <div class="h-full w-3/4 rounded-full bg-blue-600"></div>
+                    <div class="mt-7 h-2 overflow-hidden rounded-full bg-slate-800">
+                        <div class="h-full w-3/4 rounded-full bg-blue-500"></div>
                     </div>
 
                     <div class="mt-8 grid gap-4 sm:grid-cols-3">
+
                         @foreach ([
                             [
                                 'title' => 'Balances',
@@ -55,8 +69,13 @@
                                 'text' => 'Purchases, sales, fees, and income',
                             ],
                         ] as $item)
-                            <div class="rounded-2xl bg-slate-50 p-5">
-                                <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-100 text-blue-700">
+
+                            <article
+                                class="rounded-2xl border border-slate-800 bg-slate-950 p-5"
+                            >
+                                <div
+                                    class="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-300"
+                                >
                                     <svg
                                         class="h-5 w-5"
                                         fill="none"
@@ -72,21 +91,25 @@
                                     </svg>
                                 </div>
 
-                                <p class="mt-4 font-semibold text-slate-950">
+                                <p class="mt-4 font-semibold text-white">
                                     {{ $item['title'] }}
                                 </p>
 
-                                <p class="mt-1 text-sm leading-6 text-slate-600">
+                                <p class="mt-1 text-sm leading-6 text-slate-500">
                                     {{ $item['text'] }}
                                 </p>
-                            </div>
+                            </article>
+
                         @endforeach
                     </div>
 
-                    <div class="mt-8 rounded-2xl border border-blue-200 bg-blue-50 p-5">
+                    <div
+                        class="mt-8 rounded-2xl border border-blue-500/20 bg-blue-500/[0.06] p-5"
+                    >
                         <div class="flex items-start gap-4">
+
                             <svg
-                                class="mt-0.5 h-6 w-6 shrink-0 text-blue-700"
+                                class="mt-0.5 h-6 w-6 shrink-0 text-blue-300"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -100,22 +123,26 @@
                             </svg>
 
                             <div>
-                                <p class="font-semibold text-blue-950">
+                                <p class="font-semibold text-white">
                                     Helmio never receives trading authority.
                                 </p>
 
-                                <p class="mt-1 text-sm leading-6 text-blue-800">
-                                    The connection cannot place trades, move money,
-                                    change beneficiaries, or modify your brokerage account.
+                                <p class="mt-1 text-sm leading-6 text-slate-400">
+                                    The connection cannot place trades, move
+                                    money, change beneficiaries, or modify
+                                    your brokerage account.
                                 </p>
                             </div>
+
                         </div>
                     </div>
 
-                    <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
+                    <div
+                        class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between"
+                    >
                         <a
                             href="{{ route('onboarding.profile') }}"
-                            class="inline-flex w-full items-center justify-center rounded-xl border border-slate-300 px-5 py-3 font-semibold text-slate-700 hover:bg-slate-50 sm:w-auto"
+                            class="inline-flex w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white sm:w-auto"
                         >
                             Back
                         </a>
@@ -124,7 +151,7 @@
                             href="{{ route('brokerage-connections.create', [
                                 'onboarding' => 1,
                             ]) }}"
-                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 font-semibold text-white shadow-sm hover:bg-blue-500 sm:w-auto"
+                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 py-3.5 font-semibold text-white transition hover:bg-blue-500 sm:w-auto"
                         >
                             Connect Account
 
@@ -143,8 +170,10 @@
                             </svg>
                         </a>
                     </div>
+
                 </div>
             </section>
+
         </div>
     </div>
 </x-app-layout>
