@@ -105,6 +105,11 @@ return [
         ),
     ],
 
+    'registration_open' => env(
+    'HELMIO_REGISTRATION_OPEN',
+    false
+),
+
     /*
     |--------------------------------------------------------------------------
     | Maintenance Mode Driver
