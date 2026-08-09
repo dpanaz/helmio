@@ -5,7 +5,7 @@
 
     <meta
         name="viewport"
-        content="width=device-width, initial-scale=1"
+        content="width=device-width, initial-scale=1, viewport-fit=cover"
     >
 
     <meta
@@ -18,11 +18,8 @@
         content="#020617"
     >
 
-    <title>
-        Helmio — Independent Investment Oversight
-    </title>
+    <title>Helmio — Independent Investment Oversight</title>
 
-    {{-- Favicons --}}
     <link
         rel="icon"
         type="image/x-icon"
@@ -51,191 +48,293 @@
     ])
 </head>
 
-<body
-    class="min-h-screen overflow-x-hidden bg-slate-950 text-white antialiased"
->
-    <div class="relative min-h-screen">
+<body class="min-h-screen overflow-x-hidden bg-slate-950 text-white antialiased">
 
-        {{-- Background --}}
+<div class="relative min-h-screen">
+
+    {{-- =========================================================
+        BACKGROUND
+    ========================================================== --}}
+    <div class="pointer-events-none fixed inset-0 overflow-hidden">
         <div
-            class="pointer-events-none absolute inset-x-0 top-0 h-screen overflow-hidden"
-        >
-            <div
-                class="absolute -left-32 -top-32 h-96 w-96 rounded-full bg-blue-600/20 blur-3xl"
-            ></div>
+            class="absolute -left-40 -top-40 h-[32rem] w-[32rem]
+                   rounded-full bg-blue-600/15 blur-3xl"
+        ></div>
 
-            <div
-                class="absolute -right-32 top-10 h-96 w-96 rounded-full bg-cyan-500/10 blur-3xl"
-            ></div>
-        </div>
+        <div
+            class="absolute -right-40 top-32 h-[28rem] w-[28rem]
+                   rounded-full bg-cyan-500/10 blur-3xl"
+        ></div>
+    </div>
 
-        {{-- Header --}}
-        <header
-            class="relative z-30 border-b border-white/10 bg-slate-950/90 backdrop-blur-lg"
+
+    {{-- =========================================================
+        HEADER
+    ========================================================== --}}
+    <header
+        class="relative z-50 border-b border-white/10
+               bg-slate-950/95 backdrop-blur-xl"
+    >
+        <div
+            class="mx-auto flex h-16 max-w-7xl
+                   items-center justify-between
+                   px-4 sm:h-20 sm:px-6 lg:px-8"
         >
-            <div
-                class="mx-auto flex h-20 max-w-7xl items-center justify-between gap-5 px-4 sm:px-6 lg:px-8"
+
+            {{-- Logo --}}
+            <a
+                href="/"
+                class="flex min-w-0 items-center gap-2.5 sm:gap-3"
             >
-                <a
-                    href="/"
-                    class="flex items-center gap-3"
+                <img
+                    src="{{ asset('icons/icon-192.png') }}"
+                    alt="Helmio"
+                    class="h-9 w-9 shrink-0 rounded-xl shadow-lg
+                           sm:h-11 sm:w-11"
                 >
-                    <img
-                        src="{{ asset('icons/icon-192.png') }}"
-                        alt="Helmio"
-                        class="h-11 w-11 rounded-xl shadow-lg"
+
+                <div class="min-w-0">
+                    <div
+                        class="text-lg font-semibold tracking-tight
+                               text-white sm:text-xl"
                     >
-
-                    <div>
-                        <p
-                            class="text-lg font-semibold tracking-tight text-white"
-                        >
-                            Helmio
-                        </p>
-
-                        <p
-                            class="text-xs uppercase tracking-widest text-slate-500"
-                        >
-                            Investment oversight
-                        </p>
+                        Helmio
                     </div>
+
+                    <div
+                        class="hidden text-[10px] uppercase
+                               tracking-[0.22em] text-slate-500
+                               sm:block"
+                    >
+                        Investment oversight
+                    </div>
+                </div>
+            </a>
+
+
+            {{-- Desktop navigation --}}
+            <nav class="hidden items-center gap-8 lg:flex">
+                <a
+                    href="#what-helmio-watches"
+                    class="text-sm font-medium text-slate-400
+                           transition hover:text-white"
+                >
+                    What We Monitor
                 </a>
 
-                <nav
-                    class="hidden items-center gap-8 lg:flex"
+                <a
+                    href="#advisor-oversight"
+                    class="text-sm font-medium text-slate-400
+                           transition hover:text-white"
                 >
+                    Advisor Oversight
+                </a>
+
+                <a
+                    href="#helm-score"
+                    class="text-sm font-medium text-slate-400
+                           transition hover:text-white"
+                >
+                    Helm Score
+                </a>
+
+                <a
+                    href="#how-it-works"
+                    class="text-sm font-medium text-slate-400
+                           transition hover:text-white"
+                >
+                    How It Works
+                </a>
+            </nav>
+
+
+            {{-- Account actions --}}
+            <div class="flex shrink-0 items-center gap-1 sm:gap-3">
+
+                @auth
                     <a
-                        href="#what-helmio-watches"
-                        class="text-sm font-medium text-slate-400 transition hover:text-white"
+                        href="{{ route('dashboard') }}"
+                        class="inline-flex items-center justify-center
+                               rounded-xl bg-white
+                               px-3.5 py-2
+                               text-sm font-semibold text-slate-950
+                               transition hover:bg-slate-100
+                               sm:px-5 sm:py-2.5"
                     >
-                        What We Monitor
+                        Dashboard
+                    </a>
+                @else
+                    <a
+                        href="{{ route('login') }}"
+                        class="inline-flex items-center justify-center
+                               px-2 py-2
+                               text-sm font-semibold text-slate-300
+                               transition hover:text-white
+                               sm:px-3"
+                    >
+                        Log in
                     </a>
 
                     <a
-                        href="#advisor-oversight"
-                        class="text-sm font-medium text-slate-400 transition hover:text-white"
+                        href="{{ route('register') }}"
+                        class="inline-flex items-center justify-center
+                               rounded-xl bg-blue-600
+                               px-3.5 py-2
+                               text-sm font-semibold text-white
+                               shadow-lg shadow-blue-950/30
+                               transition hover:bg-blue-500
+                               sm:px-5 sm:py-2.5"
                     >
-                        Advisor Oversight
-                    </a>
+                        <span class="sm:hidden">
+                            Get started
+                        </span>
 
-                    <a
-                        href="#helm-score"
-                        class="text-sm font-medium text-slate-400 transition hover:text-white"
-                    >
-                        Helm Score
+                        <span class="hidden sm:inline">
+                            Start free trial
+                        </span>
                     </a>
+                @endauth
 
-                    <a
-                        href="#how-it-works"
-                        class="text-sm font-medium text-slate-400 transition hover:text-white"
-                    >
-                        How It Works
-                    </a>
-                </nav>
+            </div>
+        </div>
+    </header>
 
-                <div class="flex items-center gap-3">
+
+    <main class="relative z-10">
+
+        {{-- =====================================================
+            HERO
+        ====================================================== --}}
+        <section
+            class="mx-auto max-w-7xl
+                   px-4 pb-14 pt-10
+                   sm:px-6 sm:pb-24 sm:pt-20
+                   lg:px-8 lg:pb-28 lg:pt-28"
+        >
+            <div class="mx-auto max-w-5xl text-center">
+
+                {{-- Eyebrow --}}
+                <div
+                    class="inline-flex items-center gap-2
+                           rounded-full
+                           border border-blue-400/25
+                           bg-blue-500/10
+                           px-3 py-1.5
+                           text-xs font-medium text-blue-200
+                           sm:px-4 sm:py-2 sm:text-sm"
+                >
+                    <span
+                        class="h-2 w-2 rounded-full bg-emerald-400"
+                    ></span>
+
+                    Independent investment oversight
+                </div>
+
+
+                {{-- Headline --}}
+                <h1
+                    class="mx-auto mt-6 max-w-5xl
+                           text-[2.45rem] font-semibold
+                           leading-[1.04] tracking-[-0.04em]
+                           text-white
+                           sm:mt-9 sm:text-6xl
+                           lg:text-7xl"
+                >
+                    See what your financial advisor
+
+                    <span class="text-blue-400">
+                        isn’t telling you.
+                    </span>
+                </h1>
+
+
+                {{-- Mobile description --}}
+                <p
+                    class="mx-auto mt-5 max-w-sm
+                           text-base leading-7 text-slate-300
+                           sm:hidden"
+                >
+                    Independent oversight of your fees, performance,
+                    risk, trading, and portfolio decisions.
+                </p>
+
+
+                {{-- Desktop description --}}
+                <p
+                    class="mx-auto mt-7 hidden max-w-4xl
+                           text-lg leading-8 text-slate-300
+                           sm:block sm:text-xl"
+                >
+                    Helmio continuously monitors the things that can
+                    quietly affect your wealth — advisor fees, fund
+                    expenses, performance, risk, diversification,
+                    trading activity, portfolio concentration,
+                    tax efficiency, cash drag, account changes,
+                    and more.
+                </p>
+
+                <p
+                    class="mx-auto mt-4 hidden max-w-3xl
+                           text-base leading-7 text-slate-400
+                           sm:block"
+                >
+                    Think of Helmio as an independent second set of
+                    eyes on your investments — watching your portfolio
+                    and explaining what deserves your attention in
+                    plain English.
+                </p>
+
+
+                {{-- Hero CTA --}}
+                <div
+                    class="mx-auto mt-7 max-w-sm
+                           sm:mt-10 sm:max-w-none"
+                >
+
                     @auth
                         <a
                             href="{{ route('dashboard') }}"
-                            class="inline-flex items-center justify-center rounded-xl bg-white px-4 py-2 text-sm font-semibold text-slate-950 transition hover:bg-slate-100"
+                            class="inline-flex w-full items-center
+                                   justify-center gap-2
+                                   rounded-2xl bg-blue-600
+                                   px-6 py-3.5
+                                   text-base font-semibold text-white
+                                   shadow-xl shadow-blue-950/30
+                                   transition hover:bg-blue-500
+                                   sm:w-auto sm:px-7 sm:py-4"
                         >
-                            Dashboard
+                            Open Helmio
+
+                            <svg
+                                class="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="m9 18 6-6-6-6"
+                                />
+                            </svg>
                         </a>
                     @else
-                        <a
-                            href="{{ route('login') }}"
-                            class="hidden text-sm font-semibold text-slate-300 transition hover:text-white sm:inline-flex"
+                        <div
+                            class="flex flex-col items-center
+                                   justify-center gap-4
+                                   sm:flex-row sm:gap-3"
                         >
-                            Log in
-                        </a>
-
-                        <a
-                            href="{{ route('register') }}"
-                            class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:bg-blue-500"
-                        >
-                            Start free trial
-                        </a>
-                    @endauth
-                </div>
-            </div>
-        </header>
-
-        <main class="relative">
-
-            {{-- Hero --}}
-            <section
-                class="mx-auto flex min-h-screen max-w-7xl items-center px-4 py-20 sm:px-6 lg:px-8"
-            >
-                <div
-                    class="mx-auto max-w-6xl text-center"
-                >
-                    <div
-                        class="inline-flex items-center gap-2 rounded-full border border-blue-400/30 bg-blue-500/10 px-4 py-2 text-sm font-medium text-blue-200"
-                    >
-                        <span
-                            class="h-2 w-2 rounded-full bg-emerald-400"
-                        ></span>
-
-                        Independent investment oversight
-                    </div>
-
-                    <h1
-                        class="mt-8 text-4xl font-semibold tracking-tight text-white sm:text-6xl lg:text-7xl"
-                    >
-                        See what your financial advisor
-                        <span
-                            class="block text-blue-400 sm:inline"
-                        >
-                            isn’t telling you.
-                        </span>
-                    </h1>
-
-                    <p
-                        class="mx-auto mt-7 max-w-4xl text-lg leading-8 text-slate-300 sm:text-xl"
-                    >
-                        Helmio continuously monitors the things that can quietly
-                        affect your wealth — advisor fees, fund expenses,
-                        performance, risk, diversification, trading activity,
-                        portfolio concentration, tax efficiency, cash drag,
-                        account changes, and more.
-                    </p>
-
-                    <p
-                        class="mx-auto mt-4 max-w-3xl text-base leading-7 text-slate-400"
-                    >
-                        Think of Helmio as an independent second set of eyes on
-                        your investments — watching your portfolio and
-                        explaining what deserves your attention in plain English.
-                    </p>
-
-                    <div
-                        class="mt-10 flex flex-col justify-center gap-3 sm:flex-row"
-                    >
-                        @auth
-                            <a
-                                href="{{ route('dashboard') }}"
-                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 py-4 font-semibold text-white shadow-xl transition hover:bg-blue-500"
-                            >
-                                Open Helmio
-
-                                <svg
-                                    class="h-5 w-5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="m9 18 6-6-6-6"
-                                    />
-                                </svg>
-                            </a>
-                        @else
                             <a
                                 href="{{ route('register') }}"
-                                class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-7 py-4 font-semibold text-white shadow-xl transition hover:bg-blue-500"
+                                class="inline-flex w-full items-center
+                                       justify-center gap-2
+                                       rounded-2xl bg-blue-600
+                                       px-6 py-3.5
+                                       text-base font-semibold text-white
+                                       shadow-xl shadow-blue-950/30
+                                       transition hover:bg-blue-500
+                                       sm:w-auto sm:px-7 sm:py-4"
                             >
                                 Start your free trial
 
@@ -256,812 +355,543 @@
 
                             <a
                                 href="#what-helmio-watches"
-                                class="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-7 py-4 font-semibold text-white transition hover:border-slate-600 hover:bg-slate-800"
+                                class="hidden items-center justify-center
+                                       rounded-2xl border border-slate-700
+                                       bg-slate-900/70
+                                       px-7 py-4
+                                       font-semibold text-white
+                                       transition
+                                       hover:border-slate-600
+                                       hover:bg-slate-800
+                                       sm:inline-flex"
                             >
                                 See what Helmio monitors
                             </a>
-                        @endauth
-                    </div>
+                        </div>
 
-                    <div
-                        class="mt-10 flex flex-wrap justify-center gap-x-8 gap-y-3 text-sm text-slate-400"
-                    >
-                        @foreach ([
-                            'Read-only connections',
-                            'No trading authority',
-                            'No ability to move money',
-                            'Built for investors',
-                        ] as $trustItem)
-                            <span
-                                class="inline-flex items-center gap-2"
+                        <p
+                            class="mt-4 text-sm text-slate-500
+                                   sm:hidden"
+                        >
+                            Already have an account?
+
+                            <a
+                                href="{{ route('login') }}"
+                                class="ml-1 font-semibold text-blue-400"
                             >
-                                <svg
-                                    class="h-4 w-4 text-emerald-400"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="m5 12 4 4L19 6"
-                                    />
-                                </svg>
+                                Sign in
+                            </a>
+                        </p>
+                    @endauth
 
+                </div>
+
+
+                {{-- Trust signals --}}
+                <div
+                    class="mx-auto mt-7
+                           grid max-w-sm grid-cols-1 gap-2.5
+                           border-t border-white/10 pt-5
+                           text-sm text-slate-400
+                           sm:mt-12 sm:max-w-none
+                           sm:flex sm:flex-wrap sm:justify-center
+                           sm:gap-x-8 sm:gap-y-3
+                           sm:border-0 sm:pt-0"
+                >
+                    @foreach ([
+                        'Read-only connections',
+                        'No trading authority',
+                        'Built for investors',
+                    ] as $trustItem)
+                        <div
+                            class="flex items-center justify-center gap-2"
+                        >
+                            <svg
+                                class="h-4 w-4 shrink-0 text-emerald-400"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="m5 12 4 4L19 6"
+                                />
+                            </svg>
+
+                            <span>
                                 {{ $trustItem }}
                             </span>
-                        @endforeach
-                    </div>
+                        </div>
+                    @endforeach
                 </div>
-            </section>
 
-            {{-- What Helmio Watches --}}
-            <section
-                id="what-helmio-watches"
-                class="border-y border-slate-800 bg-slate-900"
+            </div>
+        </section>
+
+
+        {{-- =====================================================
+            WHAT HELMIO WATCHES
+        ====================================================== --}}
+        <section
+            id="what-helmio-watches"
+            class="border-y border-slate-800 bg-slate-900"
+        >
+            <div
+                class="mx-auto max-w-7xl
+                       px-4 py-14
+                       sm:px-6 sm:py-20
+                       lg:px-8 lg:py-28"
             >
+                <div class="mx-auto max-w-3xl text-center">
+
+                    <p
+                        class="text-xs font-semibold uppercase
+                               tracking-[0.2em] text-blue-400
+                               sm:text-sm"
+                    >
+                        What Helmio watches
+                    </p>
+
+                    <h2
+                        class="mt-4 text-3xl font-semibold
+                               tracking-tight text-white
+                               sm:text-5xl"
+                    >
+                        Your entire portfolio.
+
+                        <span class="text-slate-400">
+                            Not just the balance.
+                        </span>
+                    </h2>
+
+                    <p
+                        class="mt-4 text-base leading-7
+                               text-slate-400 sm:mt-5"
+                    >
+                        Helmio evaluates the costs, activity,
+                        risks, structure, and performance behind
+                        your investment accounts.
+                    </p>
+
+                </div>
+
+
+                @php
+                    $features = [
+                        [
+                            'label' => 'COST',
+                            'number' => '01',
+                            'title' => 'Fees & Costs',
+                            'text' => 'See what you are paying across advisory fees, fund expenses, account charges, and trading costs.',
+                            'tags' => [
+                                'Advisor Fees',
+                                'Expense Ratios',
+                                'All-In Cost',
+                            ],
+                        ],
+                        [
+                            'label' => 'RETURN',
+                            'number' => '02',
+                            'title' => 'Performance',
+                            'text' => 'Understand how your investments are performing and how the results compare with relevant benchmarks.',
+                            'tags' => [
+                                'Returns',
+                                'Benchmarks',
+                                'History',
+                            ],
+                        ],
+                        [
+                            'label' => 'RISK',
+                            'number' => '03',
+                            'title' => 'Portfolio Risk',
+                            'text' => 'Identify exposure that may be creating more risk than expected across securities, sectors, and asset classes.',
+                            'tags' => [
+                                'Volatility',
+                                'Exposure',
+                                'Allocation',
+                            ],
+                        ],
+                        [
+                            'label' => 'TRADING',
+                            'number' => '04',
+                            'title' => 'Trading Activity',
+                            'text' => 'Watch turnover, transaction volume, round trips, and trading patterns that deserve a closer look.',
+                            'tags' => [
+                                'Turnover',
+                                'Trades',
+                                'Round Trips',
+                            ],
+                        ],
+                        [
+                            'label' => 'BALANCE',
+                            'number' => '05',
+                            'title' => 'Diversification',
+                            'text' => 'See whether your portfolio is truly diversified or quietly concentrated.',
+                            'tags' => [
+                                'Top Holdings',
+                                'Sectors',
+                                'Asset Classes',
+                            ],
+                        ],
+                        [
+                            'label' => 'TAX',
+                            'number' => '06',
+                            'title' => 'Tax Efficiency',
+                            'text' => 'Review gains, holding periods, dividends, tax-exempt income, and other after-tax considerations.',
+                            'tags' => [
+                                'Capital Gains',
+                                'Dividends',
+                                'Holding Period',
+                            ],
+                        ],
+                        [
+                            'label' => 'CASH',
+                            'number' => '07',
+                            'title' => 'Cash & Cash Drag',
+                            'text' => 'Monitor idle cash and understand whether uninvested balances may be holding back performance.',
+                            'tags' => [
+                                'Cash',
+                                'Deposits',
+                                'Withdrawals',
+                            ],
+                        ],
+                        [
+                            'label' => 'POSITIONS',
+                            'number' => '08',
+                            'title' => 'Holdings',
+                            'text' => 'Track positions, market value, cost basis, gains, portfolio weight, sector, and asset class.',
+                            'tags' => [
+                                'Cost Basis',
+                                'Market Value',
+                                'Portfolio Weight',
+                            ],
+                        ],
+                        [
+                            'label' => 'OVERSIGHT',
+                            'number' => '09',
+                            'title' => 'Advisor Oversight',
+                            'text' => 'Surface high costs, unusual activity, concentration, and other issues worth discussing.',
+                            'tags' => [
+                                'Advisor Audit',
+                                'Red Flags',
+                                'Action Center',
+                            ],
+                        ],
+                        [
+                            'label' => 'ACTIVITY',
+                            'number' => '10',
+                            'title' => 'Account Activity',
+                            'text' => 'Follow deposits, withdrawals, transfers, purchases, sales, dividends, interest, and fees.',
+                            'tags' => [
+                                'Transactions',
+                                'Transfers',
+                                'Income',
+                            ],
+                        ],
+                        [
+                            'label' => 'HISTORY',
+                            'number' => '11',
+                            'title' => 'Portfolio History',
+                            'text' => 'See how your holdings, activity, and portfolio risk evolve over time.',
+                            'tags' => [
+                                'Snapshots',
+                                'Timeline',
+                                'Changes',
+                            ],
+                        ],
+                        [
+                            'label' => 'AI',
+                            'number' => '12',
+                            'title' => 'AI Insights',
+                            'text' => 'Turn complex analytics into clear explanations, priorities, and questions worth asking.',
+                            'tags' => [
+                                'Insights',
+                                'Priorities',
+                                'Ask Helmio',
+                            ],
+                        ],
+                    ];
+                @endphp
+
+
                 <div
-                    class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28"
+                    class="mt-9 grid gap-4
+                           sm:mt-14 sm:gap-6
+                           md:grid-cols-2
+                           lg:grid-cols-3"
                 >
-                    <div
-                        class="mx-auto max-w-3xl text-center"
-                    >
-                        <p
-                            class="text-sm font-semibold uppercase tracking-widest text-blue-400"
+                    @foreach ($features as $feature)
+                        <article
+                            class="group relative overflow-hidden
+                                   rounded-2xl
+                                   border border-slate-700
+                                   bg-slate-950
+                                   shadow-xl
+                                   transition duration-300
+                                   hover:-translate-y-1
+                                   hover:border-blue-400
+                                   sm:rounded-3xl"
                         >
-                            What Helmio watches
-                        </p>
+                            <div
+                                class="h-1 w-full
+                                       bg-gradient-to-r
+                                       from-blue-600
+                                       via-blue-400
+                                       to-cyan-400"
+                            ></div>
 
-                        <h2
-                            class="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl"
-                        >
-                            Your entire portfolio.
-                            <span class="text-slate-400">
-                                Not just the balance.
-                            </span>
-                        </h2>
+                            <div class="p-5 sm:p-7">
 
-                        <p
-                            class="mt-5 text-base leading-7 text-slate-400"
-                        >
-                            Helmio continuously evaluates the costs, activity,
-                            risks, structure, and performance behind your
-                            investment accounts.
-                        </p>
-                    </div>
-
-                    @php
-                        $features = [
-                            [
-                                'label' => 'COST',
-                                'number' => '01',
-                                'title' => 'Fees & Costs',
-                                'text' => 'See exactly what you are paying across advisory fees, fund expenses, account charges, and trading costs.',
-                                'tags' => [
-                                    'Advisor Fees',
-                                    'Expense Ratios',
-                                    'All-In Cost',
-                                ],
-                                'icon' => 'fees',
-                            ],
-                            [
-                                'label' => 'RETURN',
-                                'number' => '02',
-                                'title' => 'Performance',
-                                'text' => 'Understand how your investments are actually performing and how those results compare with relevant benchmarks.',
-                                'tags' => [
-                                    'Returns',
-                                    'Benchmarks',
-                                    'History',
-                                ],
-                                'icon' => 'performance',
-                            ],
-                            [
-                                'label' => 'RISK',
-                                'number' => '03',
-                                'title' => 'Portfolio Risk',
-                                'text' => 'Identify exposure that may be creating more risk than expected across securities, sectors, and asset classes.',
-                                'tags' => [
-                                    'Volatility',
-                                    'Exposure',
-                                    'Allocation',
-                                ],
-                                'icon' => 'risk',
-                            ],
-                            [
-                                'label' => 'TRADING',
-                                'number' => '04',
-                                'title' => 'Trading Activity',
-                                'text' => 'Watch turnover, transaction volume, round trips, and trading patterns that deserve a closer look.',
-                                'tags' => [
-                                    'Turnover',
-                                    'Trades',
-                                    'Round Trips',
-                                ],
-                                'icon' => 'trading',
-                            ],
-                            [
-                                'label' => 'BALANCE',
-                                'number' => '05',
-                                'title' => 'Diversification',
-                                'text' => 'See whether your portfolio is truly diversified or quietly concentrated in a few securities or market exposures.',
-                                'tags' => [
-                                    'Top Holdings',
-                                    'Sectors',
-                                    'Asset Classes',
-                                ],
-                                'icon' => 'diversification',
-                            ],
-                            [
-                                'label' => 'TAX',
-                                'number' => '06',
-                                'title' => 'Tax Efficiency',
-                                'text' => 'Review gains, holding periods, dividends, tax-exempt income, and other factors that can affect after-tax results.',
-                                'tags' => [
-                                    'Capital Gains',
-                                    'Dividends',
-                                    'Holding Period',
-                                ],
-                                'icon' => 'tax',
-                            ],
-                            [
-                                'label' => 'CASH',
-                                'number' => '07',
-                                'title' => 'Cash & Cash Drag',
-                                'text' => 'Monitor idle cash and understand whether uninvested balances may be holding back portfolio performance.',
-                                'tags' => [
-                                    'Cash',
-                                    'Deposits',
-                                    'Withdrawals',
-                                ],
-                                'icon' => 'cash',
-                            ],
-                            [
-                                'label' => 'POSITIONS',
-                                'number' => '08',
-                                'title' => 'Holdings',
-                                'text' => 'Track every security, position value, cost basis, gain or loss, portfolio weight, sector, and asset class.',
-                                'tags' => [
-                                    'Cost Basis',
-                                    'Market Value',
-                                    'Portfolio Weight',
-                                ],
-                                'icon' => 'holdings',
-                            ],
-                            [
-                                'label' => 'OVERSIGHT',
-                                'number' => '09',
-                                'title' => 'Advisor Oversight',
-                                'text' => 'Surface high costs, unusual activity, concentrated positions, and other issues worth discussing with your advisor.',
-                                'tags' => [
-                                    'Advisor Audit',
-                                    'Red Flags',
-                                    'Action Center',
-                                ],
-                                'icon' => 'oversight',
-                            ],
-                            [
-                                'label' => 'ACTIVITY',
-                                'number' => '10',
-                                'title' => 'Account Activity',
-                                'text' => 'Follow deposits, withdrawals, transfers, purchases, sales, dividends, interest, and account-level fees.',
-                                'tags' => [
-                                    'Transactions',
-                                    'Transfers',
-                                    'Income',
-                                ],
-                                'icon' => 'activity',
-                            ],
-                            [
-                                'label' => 'HISTORY',
-                                'number' => '11',
-                                'title' => 'Portfolio History',
-                                'text' => 'Preserve a history of portfolio changes so you can see how your holdings and risk profile evolve over time.',
-                                'tags' => [
-                                    'Snapshots',
-                                    'Timeline',
-                                    'Changes',
-                                ],
-                                'icon' => 'history',
-                            ],
-                            [
-                                'label' => 'AI',
-                                'number' => '12',
-                                'title' => 'AI Insights',
-                                'text' => 'Turn complex portfolio analytics into clear explanations, priorities, positive signals, and questions worth asking.',
-                                'tags' => [
-                                    'Insights',
-                                    'Priorities',
-                                    'Ask Helmio',
-                                ],
-                                'icon' => 'ai',
-                            ],
-                        ];
-                    @endphp
-
-                    <div
-                        class="mt-14 grid gap-6 md:grid-cols-2 lg:grid-cols-3"
-                    >
-                        @foreach ($features as $feature)
-                            <article
-                                class="group relative overflow-hidden rounded-3xl border border-slate-700 bg-slate-950 shadow-xl transition duration-300 hover:-translate-y-1 hover:border-blue-400 hover:shadow-2xl"
-                            >
-                                {{-- top accent --}}
                                 <div
-                                    class="h-1 w-full bg-gradient-to-r from-blue-600 via-blue-400 to-cyan-400"
-                                ></div>
-
-                                <div class="p-7">
-                                    <div
-                                        class="flex items-center justify-between"
+                                    class="flex items-center justify-between"
+                                >
+                                    <span
+                                        class="rounded-lg
+                                               border border-blue-500/30
+                                               bg-blue-500/10
+                                               px-3 py-1
+                                               text-[10px] font-semibold
+                                               tracking-widest text-blue-300
+                                               sm:text-xs"
                                     >
-                                        <span
-                                            class="rounded-lg border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold tracking-widest text-blue-300"
-                                        >
-                                            {{ $feature['label'] }}
-                                        </span>
+                                        {{ $feature['label'] }}
+                                    </span>
 
-                                        <span
-                                            class="text-xs font-semibold text-slate-600"
-                                        >
-                                            {{ $feature['number'] }}
-                                        </span>
-                                    </div>
-
-                                    <div
-                                        class="mt-6 flex items-start justify-between gap-5"
+                                    <span
+                                        class="text-xs font-semibold
+                                               text-slate-600"
                                     >
-                                        <div
-                                            class="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-slate-700 bg-slate-900 text-blue-300 shadow-lg transition group-hover:border-blue-500/50 group-hover:bg-blue-500/10"
+                                        {{ $feature['number'] }}
+                                    </span>
+                                </div>
+
+                                <h3
+                                    class="mt-5 text-xl font-semibold
+                                           tracking-tight text-white
+                                           sm:text-2xl"
+                                >
+                                    {{ $feature['title'] }}
+                                </h3>
+
+                                <p
+                                    class="mt-2 text-sm leading-6
+                                           text-slate-400
+                                           sm:mt-3 sm:leading-7"
+                                >
+                                    {{ $feature['text'] }}
+                                </p>
+
+                                <div
+                                    class="mt-5 hidden flex-wrap
+                                           gap-2 sm:flex"
+                                >
+                                    @foreach ($feature['tags'] as $tag)
+                                        <span
+                                            class="rounded-lg
+                                                   border border-slate-800
+                                                   bg-slate-900
+                                                   px-2.5 py-1.5
+                                                   text-xs font-medium
+                                                   text-slate-400"
                                         >
+                                            {{ $tag }}
+                                        </span>
+                                    @endforeach
+                                </div>
 
-                                            @switch($feature['icon'])
+                            </div>
+                        </article>
+                    @endforeach
+                </div>
 
-                                                @case('fees')
-                                                    <svg
-                                                        class="h-7 w-7"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.8"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M12 6v12m3-9.5c0-1.4-1.35-2.5-3-2.5s-3 1.1-3 2.5S10.35 11 12 11s3 1.1 3 2.5S13.65 16 12 16s-3-1.1-3-2.5"
-                                                        />
-                                                    </svg>
-                                                    @break
+            </div>
+        </section>
 
-                                                @case('performance')
-                                                    <svg
-                                                        class="h-7 w-7"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.8"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M4 18 9 13l3 3 7-8"
-                                                        />
 
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M15 8h4v4"
-                                                        />
-                                                    </svg>
-                                                    @break
+        {{-- =====================================================
+            ADVISOR OVERSIGHT
+        ====================================================== --}}
+        <section
+            id="advisor-oversight"
+            class="mx-auto max-w-7xl
+                   px-4 py-14
+                   sm:px-6 sm:py-20
+                   lg:px-8 lg:py-28"
+        >
+            <div
+                class="grid gap-9
+                       lg:grid-cols-2 lg:items-center lg:gap-14"
+            >
 
-                                                @case('risk')
-                                                    <svg
-                                                        class="h-7 w-7"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.8"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M12 3 5 6v5c0 4.5 2.9 8 7 10 4.1-2 7-5.5 7-10V6l-7-3Z"
-                                                        />
+                <div>
+                    <p
+                        class="text-xs font-semibold uppercase
+                               tracking-[0.2em] text-blue-400
+                               sm:text-sm"
+                    >
+                        Advisor oversight
+                    </p>
 
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M12 8v4m0 3h.01"
-                                                        />
-                                                    </svg>
-                                                    @break
+                    <h2
+                        class="mt-4 text-3xl font-semibold
+                               tracking-tight text-white
+                               sm:text-5xl"
+                    >
+                        Your advisor has a job.
 
-                                                @case('trading')
-                                                    <svg
-                                                        class="h-7 w-7"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.8"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M7 7h11m0 0-3-3m3 3-3 3"
-                                                        />
+                        <span class="text-blue-400">
+                            Helmio watches how it’s being done.
+                        </span>
+                    </h2>
 
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M17 17H6m0 0 3 3m-3-3 3-3"
-                                                        />
-                                                    </svg>
-                                                    @break
+                    <p
+                        class="mt-4 max-w-xl
+                               text-base leading-7 text-slate-400
+                               sm:mt-6 sm:leading-8"
+                    >
+                        Helmio independently reviews activity inside
+                        your accounts and highlights patterns that
+                        deserve a closer look.
+                    </p>
+                </div>
 
-                                                @case('diversification')
-                                                    <svg
-                                                        class="h-7 w-7"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.8"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M12 3v9h9A9 9 0 1 1 12 3Z"
-                                                        />
 
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M15 3.5A9 9 0 0 1 20.5 9H15V3.5Z"
-                                                        />
-                                                    </svg>
-                                                    @break
+                <div class="grid gap-3 sm:gap-4">
 
-                                                @case('tax')
-                                                    <svg
-                                                        class="h-7 w-7"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.8"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M6 3h9l3 3v15H6V3Z"
-                                                        />
+                    @foreach ([
+                        [
+                            'number' => '01',
+                            'title' => 'High-cost investments',
+                            'text' => 'Identify investments and account structures that may be creating unnecessary ongoing expenses.',
+                        ],
+                        [
+                            'number' => '02',
+                            'title' => 'Unusual trading',
+                            'text' => 'Surface high turnover, frequent trading, round trips, and other activity worth reviewing.',
+                        ],
+                        [
+                            'number' => '03',
+                            'title' => 'Concentration',
+                            'text' => 'See when individual securities, sectors, or asset classes begin dominating the portfolio.',
+                        ],
+                        [
+                            'number' => '04',
+                            'title' => 'Suitability & risk',
+                            'text' => 'Compare portfolio characteristics with the goals, time horizon, and risk profile you provide.',
+                        ],
+                        [
+                            'number' => '05',
+                            'title' => 'Action Center',
+                            'text' => 'Turn findings into prioritized questions and topics you can discuss with your advisor.',
+                        ],
+                    ] as $item)
 
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M9 15 15 9M9.5 9h.01m5 6h.01"
-                                                        />
-                                                    </svg>
-                                                    @break
+                        <article
+                            class="rounded-2xl
+                                   border border-slate-800
+                                   bg-slate-900/60
+                                   p-5"
+                        >
+                            <div class="flex items-start gap-4">
 
-                                                @case('cash')
-                                                    <svg
-                                                        class="h-7 w-7"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.8"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M4 7h16v10H4V7Z"
-                                                        />
+                                <div
+                                    class="flex h-10 w-10 shrink-0
+                                           items-center justify-center
+                                           rounded-xl
+                                           border border-blue-400/25
+                                           bg-blue-500/10
+                                           text-xs font-bold
+                                           text-blue-300"
+                                >
+                                    {{ $item['number'] }}
+                                </div>
 
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M12 10.5c1.1 0 2 .67 2 1.5s-.9 1.5-2 1.5-2-.67-2-1.5.9-1.5 2-1.5Z"
-                                                        />
-                                                    </svg>
-                                                    @break
-
-                                                @case('holdings')
-                                                    <svg
-                                                        class="h-7 w-7"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.8"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="m12 3 8 4-8 4-8-4 8-4Z"
-                                                        />
-
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="m4 12 8 4 8-4M4 17l8 4 8-4"
-                                                        />
-                                                    </svg>
-                                                    @break
-
-                                                @case('oversight')
-                                                    <svg
-                                                        class="h-7 w-7"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.8"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M2.5 12s3.5-6 9.5-6 9.5 6 9.5 6-3.5 6-9.5 6-9.5-6-9.5-6Z"
-                                                        />
-
-                                                        <circle
-                                                            cx="12"
-                                                            cy="12"
-                                                            r="2.5"
-                                                        />
-                                                    </svg>
-                                                    @break
-
-                                                @case('activity')
-                                                    <svg
-                                                        class="h-7 w-7"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.8"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M3 12h4l2-5 4 10 2-5h6"
-                                                        />
-                                                    </svg>
-                                                    @break
-
-                                                @case('history')
-                                                    <svg
-                                                        class="h-7 w-7"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.8"
-                                                    >
-                                                        <circle
-                                                            cx="12"
-                                                            cy="12"
-                                                            r="8"
-                                                        />
-
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M12 8v4l3 2"
-                                                        />
-                                                    </svg>
-                                                    @break
-
-                                                @case('ai')
-                                                    <svg
-                                                        class="h-7 w-7"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.8"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="m12 3 1 3.5L16.5 8 13 9.5 12 13l-1-3.5L7.5 8 11 6.5 12 3Z"
-                                                        />
-
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="m18 13 .7 2.3L21 16l-2.3.7L18 19l-.7-2.3L15 16l2.3-.7L18 13Z"
-                                                        />
-                                                    </svg>
-                                                    @break
-
-                                            @endswitch
-                                        </div>
-
-                                        <div
-                                            class="mt-7 h-px flex-1 bg-slate-800 transition group-hover:bg-blue-500/40"
-                                        ></div>
-                                    </div>
-
+                                <div>
                                     <h3
-                                        class="mt-5 text-2xl font-semibold tracking-tight text-white"
+                                        class="font-semibold text-white
+                                               sm:text-lg"
                                     >
-                                        {{ $feature['title'] }}
+                                        {{ $item['title'] }}
                                     </h3>
 
                                     <p
-                                        class="mt-3 text-sm leading-7 text-slate-400"
+                                        class="mt-1.5 text-sm
+                                               leading-6 text-slate-400"
                                     >
-                                        {{ $feature['text'] }}
+                                        {{ $item['text'] }}
                                     </p>
-
-                                    <div
-                                        class="mt-6 flex flex-wrap gap-2"
-                                    >
-                                        @foreach ($feature['tags'] as $tag)
-                                            <span
-                                                class="rounded-lg border border-slate-800 bg-slate-900 px-2.5 py-1.5 text-xs font-medium text-slate-400"
-                                            >
-                                                {{ $tag }}
-                                            </span>
-                                        @endforeach
-                                    </div>
                                 </div>
-                            </article>
-                        @endforeach
-                    </div>
-                </div>
-            </section>
 
-            {{-- Continuous Monitoring --}}
-            <section
-                class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28"
+                            </div>
+                        </article>
+
+                    @endforeach
+
+                </div>
+            </div>
+        </section>
+
+
+        {{-- =====================================================
+            HELM SCORE
+        ====================================================== --}}
+        <section
+            id="helm-score"
+            class="border-y border-slate-800 bg-slate-900"
+        >
+            <div
+                class="mx-auto max-w-7xl
+                       px-4 py-14
+                       sm:px-6 sm:py-20
+                       lg:px-8 lg:py-28"
             >
                 <div
-                    class="grid gap-12 lg:grid-cols-2"
-                >
-                    <div>
-                        <p
-                            class="text-sm font-semibold uppercase tracking-widest text-blue-400"
-                        >
-                            Continuous monitoring
-                        </p>
-
-                        <h2
-                            class="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl"
-                        >
-                            The details that are
-                            <span class="text-slate-400">
-                                easy to miss.
-                            </span>
-                        </h2>
-
-                        <p
-                            class="mt-6 max-w-xl text-base leading-8 text-slate-400"
-                        >
-                            A portfolio can look healthy at a glance while
-                            unnecessary fees, concentration, tax inefficiency,
-                            or excessive trading quietly erode results.
-                        </p>
-
-                        <p
-                            class="mt-4 max-w-xl text-base leading-8 text-slate-400"
-                        >
-                            Helmio brings those details together in one
-                            independent monitoring system.
-                        </p>
-                    </div>
-
-                    @php
-                        $monitorItems = [
-                            'Advisory fees',
-                            'Fund expense ratios',
-                            'Account fees',
-                            'Transaction fees',
-                            'Total investment costs',
-                            'Portfolio performance',
-                            'Benchmark comparisons',
-                            'Portfolio value changes',
-                            'Concentration risk',
-                            'Largest holdings',
-                            'Top-five exposure',
-                            'Sector exposure',
-                            'Asset allocation',
-                            'Security diversification',
-                            'Trading frequency',
-                            'Portfolio turnover',
-                            'Round-trip trading',
-                            'Potential excessive trading',
-                            'Purchases and sales',
-                            'Deposits and withdrawals',
-                            'Dividends and interest',
-                            'Cash balances',
-                            'Cash drag',
-                            'Cost basis',
-                            'Realized gains and losses',
-                            'Holding periods',
-                            'Qualified dividends',
-                            'Tax-exempt income',
-                            'Tax withholding',
-                            'Tax efficiency',
-                            'Historical portfolio snapshots',
-                            'Brokerage synchronization',
-                            'Missing portfolio data',
-                            'Stale account information',
-                            'Advisor audit findings',
-                            'Portfolio timeline events',
-                            'AI executive summaries',
-                            'Portfolio strengths',
-                            'Priority review items',
-                            'Helm Score™',
-                        ];
-                    @endphp
-
-                    <div
-                        class="rounded-3xl border border-slate-700 bg-slate-900 p-6 shadow-2xl sm:p-8"
-                    >
-                        <div
-                            class="grid gap-3 sm:grid-cols-2"
-                        >
-                            @foreach ($monitorItems as $item)
-                                <div
-                                    class="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-950 p-3 transition hover:border-blue-500/40 hover:bg-slate-900"
-                                >
-                                    <div
-                                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-emerald-500/20 bg-emerald-500/10"
-                                    >
-                                        <svg
-                                            class="h-4 w-4 text-emerald-400"
-                                            fill="none"
-                                            viewBox="0 0 24 24"
-                                            stroke="currentColor"
-                                            stroke-width="2"
-                                        >
-                                            <path
-                                                stroke-linecap="round"
-                                                stroke-linejoin="round"
-                                                d="m5 12 4 4L19 6"
-                                            />
-                                        </svg>
-                                    </div>
-
-                                    <span
-                                        class="text-sm font-medium text-slate-300"
-                                    >
-                                        {{ $item }}
-                                    </span>
-                                </div>
-                            @endforeach
-                        </div>
-                    </div>
-                </div>
-            </section>
-
-            {{-- Advisor Oversight --}}
-            <section
-                id="advisor-oversight"
-                class="border-y border-slate-800 bg-slate-900"
-            >
-                <div
-                    class="mx-auto grid max-w-7xl gap-14 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8 lg:py-28"
-                >
-                    <div>
-                        <p
-                            class="text-sm font-semibold uppercase tracking-widest text-blue-400"
-                        >
-                            Advisor oversight
-                        </p>
-
-                        <h2
-                            class="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl"
-                        >
-                            Your advisor has a job.
-                            <span class="text-blue-400">
-                                Helmio watches how it’s being done.
-                            </span>
-                        </h2>
-
-                        <p
-                            class="mt-6 max-w-xl text-base leading-8 text-slate-400"
-                        >
-                            Helmio independently reviews activity occurring
-                            inside your accounts and highlights patterns that
-                            deserve a closer look.
-                        </p>
-                    </div>
-
-                    <div class="grid gap-4">
-                        @foreach ([
-                            [
-                                'number' => '01',
-                                'title' => 'High-cost investments',
-                                'text' => 'Identify investments and account structures that may be creating unnecessary ongoing expenses.',
-                            ],
-                            [
-                                'number' => '02',
-                                'title' => 'Unusual trading',
-                                'text' => 'Surface high turnover, frequent trading, round trips, and other activity worth reviewing.',
-                            ],
-                            [
-                                'number' => '03',
-                                'title' => 'Concentration',
-                                'text' => 'See when individual securities, sectors, or asset classes begin dominating the portfolio.',
-                            ],
-                            [
-                                'number' => '04',
-                                'title' => 'Suitability & risk',
-                                'text' => 'Compare portfolio characteristics with the goals, time horizon, and risk profile you provide to Helmio.',
-                            ],
-                            [
-                                'number' => '05',
-                                'title' => 'Action Center',
-                                'text' => 'Turn findings into prioritized questions and topics you can discuss with your advisor.',
-                            ],
-                        ] as $item)
-                            <article
-                                class="group rounded-2xl border border-slate-700 bg-slate-950 p-5 shadow-lg transition hover:border-blue-400 hover:bg-slate-900"
-                            >
-                                <div
-                                    class="flex items-start gap-5"
-                                >
-                                    <div
-                                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-blue-400/30 bg-blue-500/10 text-xs font-bold text-blue-300"
-                                    >
-                                        {{ $item['number'] }}
-                                    </div>
-
-                                    <div class="flex-1">
-                                        <h3
-                                            class="text-lg font-semibold text-white"
-                                        >
-                                            {{ $item['title'] }}
-                                        </h3>
-
-                                        <p
-                                            class="mt-2 text-sm leading-6 text-slate-400"
-                                        >
-                                            {{ $item['text'] }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </article>
-                        @endforeach
-                    </div>
-                </div>
-            </section>
-
-            {{-- Helm Score --}}
-            <section
-                id="helm-score"
-                class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28"
-            >
-                <div
-                    class="overflow-hidden rounded-3xl border border-blue-500/30 bg-slate-900 shadow-2xl"
+                    class="overflow-hidden rounded-3xl
+                           border border-blue-500/25
+                           bg-slate-950 shadow-2xl"
                 >
                     <div
-                        class="grid gap-14 p-8 sm:p-10 lg:grid-cols-2 lg:items-center lg:p-16"
+                        class="grid gap-9 p-5
+                               sm:p-10
+                               lg:grid-cols-2
+                               lg:items-center lg:p-16"
                     >
+
                         <div>
                             <p
-                                class="text-sm font-semibold uppercase tracking-widest text-blue-400"
+                                class="text-xs font-semibold uppercase
+                                       tracking-[0.2em] text-blue-400
+                                       sm:text-sm"
                             >
                                 Helm Score™
                             </p>
 
                             <h2
-                                class="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl"
+                                class="mt-4 text-3xl font-semibold
+                                       tracking-tight text-white
+                                       sm:text-5xl"
                             >
                                 One score.
+
                                 <span class="text-slate-400">
                                     Six dimensions of portfolio health.
                                 </span>
                             </h2>
 
                             <p
-                                class="mt-6 max-w-2xl text-base leading-8 text-slate-400"
+                                class="mt-4 text-base leading-7
+                                       text-slate-400
+                                       sm:mt-5 sm:leading-8"
                             >
-                                Helm Score brings multiple portfolio analytics
-                                together so you can quickly understand where your
-                                investments are strong and where they may need attention.
+                                Quickly understand where your investments
+                                are strong and where they may need attention.
                             </p>
 
                             <div
-                                class="mt-8 grid gap-3 sm:grid-cols-2"
+                                class="mt-6 grid grid-cols-2 gap-2
+                                       sm:mt-7 sm:gap-3"
                             >
                                 @foreach ([
                                     'Cost efficiency',
@@ -1072,14 +902,21 @@
                                     'Tax efficiency',
                                 ] as $item)
                                     <div
-                                        class="flex items-center gap-3 rounded-xl border border-slate-700 bg-slate-950 px-4 py-3"
+                                        class="flex items-center gap-2
+                                               rounded-xl
+                                               border border-slate-800
+                                               bg-slate-900
+                                               px-3 py-3"
                                     >
                                         <span
-                                            class="h-2 w-2 rounded-full bg-blue-400"
+                                            class="h-2 w-2 shrink-0
+                                                   rounded-full bg-blue-400"
                                         ></span>
 
                                         <span
-                                            class="text-sm font-medium text-slate-200"
+                                            class="text-xs font-medium
+                                                   text-slate-300
+                                                   sm:text-sm"
                                         >
                                             {{ $item }}
                                         </span>
@@ -1088,634 +925,716 @@
                             </div>
                         </div>
 
-                        {{-- Animated score --}}
+
+                        {{-- Score --}}
                         <div class="flex justify-center">
+
                             <div
                                 data-helm-score-wrapper
-                                class="flex h-72 w-72 items-center justify-center rounded-full border-4 border-blue-500/20 bg-slate-950 p-4 shadow-2xl"
+                                class="flex h-52 w-52
+                                       items-center justify-center
+                                       rounded-full
+                                       border-[13px]
+                                       border-slate-800
+                                       bg-slate-950
+                                       shadow-2xl
+                                       sm:h-72 sm:w-72
+                                       sm:border-[18px]"
                             >
                                 <div
-                                    class="flex h-60 w-60 flex-col items-center justify-center rounded-full border border-blue-400/40 bg-slate-900"
+                                    class="flex h-40 w-40
+                                           flex-col items-center
+                                           justify-center
+                                           rounded-full
+                                           border border-blue-400/30
+                                           bg-slate-900
+                                           sm:h-56 sm:w-56"
                                 >
                                     <p
-                                        class="text-xs font-bold uppercase tracking-widest text-blue-400"
+                                        class="text-[10px] font-bold
+                                               uppercase tracking-[0.2em]
+                                               text-blue-400
+                                               sm:text-xs"
                                     >
                                         Helm Score
                                     </p>
 
                                     <div
-                                        class="mt-2 flex items-baseline"
+                                        class="mt-1 flex items-baseline"
                                     >
                                         <span
                                             data-helm-score
                                             data-score="84"
-                                            class="text-7xl font-semibold text-white"
+                                            class="text-6xl font-semibold
+                                                   tracking-tight text-white
+                                                   sm:text-7xl"
                                         >
                                             0
                                         </span>
 
                                         <span
-                                            class="ml-1 text-lg text-slate-600"
+                                            class="ml-1 text-sm
+                                                   text-slate-600
+                                                   sm:text-lg"
                                         >
                                             /100
                                         </span>
                                     </div>
 
                                     <div
-                                        class="mt-4 flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1"
+                                        class="mt-3 flex items-center
+                                               gap-2 rounded-full
+                                               border border-emerald-500/20
+                                               bg-emerald-500/10
+                                               px-3 py-1"
                                     >
                                         <span
-                                            class="h-2 w-2 rounded-full bg-emerald-400"
+                                            class="h-2 w-2 rounded-full
+                                                   bg-emerald-400"
                                         ></span>
 
                                         <span
-                                            class="text-xs font-semibold text-emerald-300"
+                                            class="text-xs font-semibold
+                                                   text-emerald-300"
                                         >
                                             Strong
                                         </span>
                                     </div>
 
-                                    <p
-                                        class="mt-4 text-xs text-slate-600"
-                                    >
-                                        Example portfolio
-                                    </p>
                                 </div>
                             </div>
                         </div>
+
                     </div>
                 </div>
-            </section>
+            </div>
+        </section>
 
-            {{-- AI --}}
-            <section
-                class="border-y border-slate-800 bg-slate-900"
-            >
-                <div
-                    class="mx-auto grid max-w-7xl gap-14 px-4 py-20 sm:px-6 lg:grid-cols-2 lg:items-center lg:px-8 lg:py-28"
+
+        {{-- =====================================================
+            HOW IT WORKS
+        ====================================================== --}}
+        <section
+            id="how-it-works"
+            class="mx-auto max-w-7xl
+                   px-4 py-14
+                   sm:px-6 sm:py-20
+                   lg:px-8 lg:py-28"
+        >
+            <div class="mx-auto max-w-3xl text-center">
+
+                <p
+                    class="text-xs font-semibold uppercase
+                           tracking-[0.2em] text-blue-400
+                           sm:text-sm"
                 >
-                    <div>
-                        <div
-                            class="flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-400/30 bg-violet-500/10 text-violet-300"
-                        >
-                            <svg
-                                class="h-7 w-7"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.847-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 0 0-3.09 3.09Z"
-                                />
-                            </svg>
-                        </div>
+                    How it works
+                </p>
 
-                        <p
-                            class="mt-6 text-sm font-semibold uppercase tracking-widest text-violet-400"
-                        >
-                            AI-powered explanations
-                        </p>
+                <h2
+                    class="mt-4 text-3xl font-semibold
+                           tracking-tight text-white
+                           sm:text-5xl"
+                >
+                    Connect once.
 
-                        <h2
-                            class="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl"
-                        >
-                            Understand what the numbers
-                            <span class="text-slate-400">
-                                actually mean.
-                            </span>
-                        </h2>
+                    <span class="text-slate-400">
+                        Keep watch continuously.
+                    </span>
+                </h2>
 
-                        <p
-                            class="mt-6 max-w-xl text-base leading-8 text-slate-400"
-                        >
-                            Helmio turns portfolio analytics into concise,
-                            plain-English explanations grounded in your actual
-                            account data.
-                        </p>
-                    </div>
+            </div>
+
+
+            <div
+                class="mt-9 grid gap-3
+                       sm:mt-14 sm:gap-6
+                       md:grid-cols-2
+                       lg:grid-cols-4"
+            >
+                @foreach ([
+                    [
+                        'number' => '01',
+                        'title' => 'Create your account',
+                        'text' => 'Create your secure Helmio investor profile.',
+                    ],
+                    [
+                        'number' => '02',
+                        'title' => 'Connect accounts',
+                        'text' => 'Connect investment accounts using read-only access.',
+                    ],
+                    [
+                        'number' => '03',
+                        'title' => 'Helmio analyzes',
+                        'text' => 'Helmio evaluates fees, performance, risk, trading, tax, and diversification.',
+                    ],
+                    [
+                        'number' => '04',
+                        'title' => 'Stay informed',
+                        'text' => 'Review findings, explanations, changes, and ongoing monitoring.',
+                    ],
+                ] as $step)
 
                     <article
-                        class="rounded-3xl border border-violet-500/30 bg-slate-950 p-7 shadow-2xl sm:p-9"
+                        class="rounded-2xl
+                               border border-slate-800
+                               bg-slate-900/60
+                               p-5
+                               sm:rounded-3xl sm:p-6"
                     >
-                        <div
-                            class="flex items-center justify-between gap-4"
+                        <span
+                            class="flex h-9 w-9 items-center
+                                   justify-center rounded-xl
+                                   border border-blue-400/30
+                                   bg-blue-500/10
+                                   text-xs font-bold text-blue-300"
                         >
-                            <p
-                                class="text-xs font-semibold uppercase tracking-widest text-violet-400"
-                            >
-                                Executive Insight
-                            </p>
+                            {{ $step['number'] }}
+                        </span>
 
-                            <span
-                                class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-semibold text-emerald-300"
-                            >
-                                AI analyzed
-                            </span>
-                        </div>
-
-                        <div
-                            class="mt-6 rounded-2xl border border-slate-800 bg-slate-900 p-6"
+                        <h3
+                            class="mt-4 text-lg font-semibold
+                                   text-white sm:mt-5 sm:text-xl"
                         >
-                            <h3
-                                class="text-2xl font-semibold leading-9 text-white"
-                            >
-                                Your portfolio is diversified, but your costs deserve attention.
-                            </h3>
+                            {{ $step['title'] }}
+                        </h3>
 
-                            <p
-                                class="mt-4 text-sm leading-7 text-slate-400"
-                            >
-                                Helmio identified several areas where ongoing fund
-                                expenses and advisory costs may be reducing your
-                                long-term returns. Your diversification remains
-                                relatively strong, but fees would be the first area
-                                worth discussing with your advisor.
-                            </p>
-                        </div>
-
-                        <div
-                            class="mt-5 rounded-2xl border border-violet-500/20 bg-violet-500/10 p-5"
+                        <p
+                            class="mt-2 text-sm leading-6
+                                   text-slate-400 sm:leading-7"
                         >
-                            <p
-                                class="text-xs font-bold uppercase tracking-widest text-violet-400"
-                            >
-                                Ask Helmio
-                            </p>
-
-                            <p
-                                class="mt-3 text-sm font-medium leading-6 text-slate-200"
-                            >
-                                “Why are my investment costs higher than expected?”
-                            </p>
-                        </div>
+                            {{ $step['text'] }}
+                        </p>
                     </article>
-                </div>
-            </section>
 
-            {{-- How it works --}}
-            <section
-                id="how-it-works"
-                class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-28"
+                @endforeach
+            </div>
+
+        </section>
+
+
+        {{-- =====================================================
+            FINAL CTA
+        ====================================================== --}}
+        <section
+            class="px-4 pb-14
+                   sm:px-6 sm:pb-20
+                   lg:px-8 lg:pb-28"
+        >
+            <div
+                class="mx-auto max-w-5xl
+                       rounded-3xl
+                       border border-blue-400/30
+                       bg-blue-600
+                       px-5 py-9
+                       text-center shadow-2xl
+                       sm:px-10 sm:py-14
+                       lg:py-16"
             >
-                <div
-                    class="mx-auto max-w-3xl text-center"
+                <p
+                    class="text-xs font-semibold uppercase
+                           tracking-[0.2em] text-blue-100
+                           sm:text-sm"
                 >
-                    <p
-                        class="text-sm font-semibold uppercase tracking-widest text-blue-400"
+                    Independent investment oversight
+                </p>
+
+                <h2
+                    class="mt-4 text-3xl font-semibold
+                           tracking-tight text-white
+                           sm:text-5xl"
+                >
+                    Stop wondering.
+                    Start knowing.
+                </h2>
+
+                <p
+                    class="mx-auto mt-4 max-w-2xl
+                           text-sm leading-6 text-blue-100
+                           sm:mt-5 sm:text-base sm:leading-7"
+                >
+                    Give your portfolio an independent second set
+                    of eyes.
+                </p>
+
+                <div class="mt-7 sm:mt-8">
+
+                    @auth
+                        <a
+                            href="{{ route('dashboard') }}"
+                            class="inline-flex w-full items-center
+                                   justify-center rounded-xl
+                                   bg-white px-7 py-3.5
+                                   font-semibold text-blue-800
+                                   shadow-lg transition
+                                   hover:bg-blue-50
+                                   sm:w-auto sm:py-4"
+                        >
+                            Open Dashboard
+                        </a>
+                    @else
+                        <a
+                            href="{{ route('register') }}"
+                            class="inline-flex w-full items-center
+                                   justify-center rounded-xl
+                                   bg-white px-7 py-3.5
+                                   font-semibold text-blue-800
+                                   shadow-lg transition
+                                   hover:bg-blue-50
+                                   sm:w-auto sm:py-4"
+                        >
+                            Start your free trial
+                        </a>
+
+                        <p class="mt-4 text-sm text-blue-100">
+                            Already have an account?
+
+                            <a
+                                href="{{ route('login') }}"
+                                class="ml-1 font-semibold text-white
+                                       underline underline-offset-4"
+                            >
+                                Log in
+                            </a>
+                        </p>
+                    @endauth
+
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+
+    {{-- =========================================================
+        FOOTER
+    ========================================================== --}}
+    <footer
+        class="relative z-10
+               border-t border-slate-800
+               bg-slate-950"
+    >
+        <div
+            class="mx-auto max-w-7xl
+                   px-4 py-9
+                   sm:px-6 sm:py-12
+                   lg:px-8"
+        >
+
+            {{-- Mobile footer --}}
+            <div class="sm:hidden">
+
+                <div class="flex items-center gap-3">
+
+                    <img
+                        src="{{ asset('icons/icon-192.png') }}"
+                        alt="Helmio"
+                        class="h-9 w-9 rounded-xl"
                     >
-                        How it works
+
+                    <div>
+                        <p class="font-semibold text-white">
+                            Helmio
+                        </p>
+
+                        <p
+                            class="text-[10px] uppercase
+                                   tracking-[0.2em] text-slate-600"
+                        >
+                            Investment oversight
+                        </p>
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="mt-6 grid grid-cols-2
+                           gap-x-6 gap-y-3 text-sm"
+                >
+                    @guest
+                        <a
+                            href="{{ route('login') }}"
+                            class="text-slate-400 transition hover:text-white"
+                        >
+                            Log in
+                        </a>
+
+                        <a
+                            href="{{ route('register') }}"
+                            class="text-slate-400 transition hover:text-white"
+                        >
+                            Get started
+                        </a>
+                    @else
+                        <a
+                            href="{{ route('dashboard') }}"
+                            class="text-slate-400 transition hover:text-white"
+                        >
+                            Dashboard
+                        </a>
+
+                        <a
+                            href="{{ route('billing.index') }}"
+                            class="text-slate-400 transition hover:text-white"
+                        >
+                            Billing
+                        </a>
+                    @endguest
+
+                    <a
+                        href="{{ route('contact') }}"
+                        class="text-slate-400 transition hover:text-white"
+                    >
+                        Contact
+                    </a>
+
+                    <a
+                        href="{{ route('privacy') }}"
+                        class="text-slate-400 transition hover:text-white"
+                    >
+                        Privacy
+                    </a>
+
+                    <a
+                        href="{{ route('terms') }}"
+                        class="text-slate-400 transition hover:text-white"
+                    >
+                        Terms
+                    </a>
+
+                    @guest
+                        <a
+                            href="{{ route('billing.pricing') }}"
+                            class="text-slate-400 transition hover:text-white"
+                        >
+                            Pricing
+                        </a>
+                    @endguest
+                </div>
+
+            </div>
+
+
+            {{-- Desktop footer --}}
+            <div
+                class="hidden gap-10
+                       sm:grid sm:grid-cols-2
+                       lg:grid-cols-4"
+            >
+
+                <div>
+                    <div class="flex items-center gap-3">
+
+                        <img
+                            src="{{ asset('icons/icon-192.png') }}"
+                            alt="Helmio"
+                            class="h-10 w-10 rounded-xl"
+                        >
+
+                        <div>
+                            <p class="font-semibold text-white">
+                                Helmio
+                            </p>
+
+                            <p
+                                class="text-xs uppercase
+                                       tracking-widest text-slate-500"
+                            >
+                                Investment oversight
+                            </p>
+                        </div>
+
+                    </div>
+
+                    <p
+                        class="mt-5 max-w-sm
+                               text-sm leading-7 text-slate-500"
+                    >
+                        Independent investment oversight designed
+                        to help investors understand how their
+                        money is being managed.
+                    </p>
+                </div>
+
+
+                <div>
+                    <p class="text-sm font-semibold text-white">
+                        Product
                     </p>
 
-                    <h2
-                        class="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl"
-                    >
-                        Connect once.
-                        <span class="text-slate-400">
-                            Keep watch continuously.
-                        </span>
-                    </h2>
-                </div>
+                    <div class="mt-4 space-y-3 text-sm">
 
-                <div
-                    class="mt-14 grid gap-6 md:grid-cols-4"
-                >
-                    @foreach ([
-                        [
-                            'number' => '01',
-                            'title' => 'Create your account',
-                            'text' => 'Start your Helmio membership and create your secure investor profile.',
-                        ],
-                        [
-                            'number' => '02',
-                            'title' => 'Connect accounts',
-                            'text' => 'Securely connect your investment accounts using read-only access.',
-                        ],
-                        [
-                            'number' => '03',
-                            'title' => 'Helmio analyzes',
-                            'text' => 'Your portfolio is evaluated across fees, risk, diversification, trading, tax efficiency, and performance.',
-                        ],
-                        [
-                            'number' => '04',
-                            'title' => 'Stay informed',
-                            'text' => 'Review findings, AI explanations, portfolio changes, alerts, and ongoing monitoring.',
-                        ],
-                    ] as $step)
-                        <article
-                            class="rounded-3xl border border-slate-700 bg-slate-950 p-6 shadow-xl transition duration-300 hover:-translate-y-1 hover:border-blue-400"
+                        <a
+                            href="#what-helmio-watches"
+                            class="block text-slate-500
+                                   transition hover:text-white"
                         >
-                            <span
-                                class="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-400/30 bg-blue-500/10 text-sm font-bold text-blue-300"
-                            >
-                                {{ $step['number'] }}
-                            </span>
+                            What We Monitor
+                        </a>
 
-                            <h3
-                                class="mt-7 text-xl font-semibold text-white"
-                            >
-                                {{ $step['title'] }}
-                            </h3>
+                        <a
+                            href="#advisor-oversight"
+                            class="block text-slate-500
+                                   transition hover:text-white"
+                        >
+                            Advisor Oversight
+                        </a>
 
-                            <p
-                                class="mt-3 text-sm leading-7 text-slate-400"
-                            >
-                                {{ $step['text'] }}
-                            </p>
-                        </article>
-                    @endforeach
-                </div>
-            </section>
+                        <a
+                            href="#helm-score"
+                            class="block text-slate-500
+                                   transition hover:text-white"
+                        >
+                            Helm Score
+                        </a>
 
-            {{-- Trust --}}
-            <section
-                class="border-y border-slate-800 bg-slate-900"
-            >
-                <div
-                    class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8"
-                >
-                    <div
-                        class="grid gap-6 md:grid-cols-3"
-                    >
-                        @foreach ([
-                            [
-                                'title' => 'Read-only by design',
-                                'text' => 'Helmio is designed to analyze your accounts without trading authority or permission to move funds.',
-                            ],
-                            [
-                                'title' => 'Independent perspective',
-                                'text' => 'Helmio is built to help investors independently understand how their portfolios are being managed.',
-                            ],
-                            [
-                                'title' => 'Data-driven insights',
-                                'text' => 'AI explanations are grounded in Helmio’s underlying portfolio analytics and connected account data.',
-                            ],
-                        ] as $item)
-                            <article
-                                class="rounded-3xl border border-slate-700 bg-slate-950 p-7 shadow-xl"
-                            >
-                                <div
-                                    class="flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10"
-                                >
-                                    <svg
-                                        class="h-5 w-5 text-emerald-400"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="m5 12 4 4L19 6"
-                                        />
-                                    </svg>
-                                </div>
+                        <a
+                            href="#how-it-works"
+                            class="block text-slate-500
+                                   transition hover:text-white"
+                        >
+                            How It Works
+                        </a>
 
-                                <h3
-                                    class="mt-5 text-xl font-semibold text-white"
-                                >
-                                    {{ $item['title'] }}
-                                </h3>
-
-                                <p
-                                    class="mt-3 text-sm leading-7 text-slate-400"
-                                >
-                                    {{ $item['text'] }}
-                                </p>
-                            </article>
-                        @endforeach
                     </div>
                 </div>
-            </section>
 
-            {{-- CTA --}}
-            <section
-                class="px-4 py-20 sm:px-6 lg:px-8 lg:py-28"
-            >
-                <div
-                    class="mx-auto max-w-5xl rounded-3xl border border-blue-400/30 bg-blue-600 px-6 py-12 text-center shadow-2xl sm:px-10 lg:py-16"
-                >
-                    <p
-                        class="text-sm font-semibold uppercase tracking-widest text-blue-100"
-                    >
-                        Independent investment oversight
+
+                <div>
+                    <p class="text-sm font-semibold text-white">
+                        Account
                     </p>
 
-                    <h2
-                        class="mt-4 text-3xl font-semibold tracking-tight text-white sm:text-5xl"
-                    >
-                        Stop wondering.
-                        Start knowing.
-                    </h2>
+                    <div class="mt-4 space-y-3 text-sm">
 
-                    <p
-                        class="mx-auto mt-5 max-w-2xl text-base leading-7 text-blue-100"
-                    >
-                        Give your portfolio an independent second set of eyes
-                        and see what deserves your attention.
-                    </p>
-
-                    <div class="mt-8">
-                        @auth
+                        @guest
                             <a
-                                href="{{ route('dashboard') }}"
-                                class="inline-flex items-center justify-center rounded-xl bg-white px-7 py-4 font-semibold text-blue-800 shadow-lg transition hover:bg-blue-50"
+                                href="{{ route('register') }}"
+                                class="block text-slate-500
+                                       transition hover:text-white"
                             >
-                                Open Dashboard
+                                Start Free Trial
+                            </a>
+
+                            <a
+                                href="{{ route('login') }}"
+                                class="block text-slate-500
+                                       transition hover:text-white"
+                            >
+                                Log In
+                            </a>
+
+                            <a
+                                href="{{ route('billing.pricing') }}"
+                                class="block text-slate-500
+                                       transition hover:text-white"
+                            >
+                                Pricing
                             </a>
                         @else
                             <a
-                                href="{{ route('register') }}"
-                                class="inline-flex items-center justify-center rounded-xl bg-white px-7 py-4 font-semibold text-blue-800 shadow-lg transition hover:bg-blue-50"
+                                href="{{ route('dashboard') }}"
+                                class="block text-slate-500
+                                       transition hover:text-white"
                             >
-                                Start your free trial
-                            </a>
-                        @endauth
-                    </div>
-                </div>
-            </section>
-        </main>
-
-        {{-- Footer --}}
-        <footer
-            class="border-t border-slate-800 bg-slate-950"
-        >
-            <div
-                class="mx-auto max-w-7xl px-4 py-12 sm:px-6 lg:px-8"
-            >
-                <div
-                    class="grid gap-10 md:grid-cols-4"
-                >
-                    <div>
-                        <div
-                            class="flex items-center gap-3"
-                        >
-                            <img
-                                src="{{ asset('icons/icon-192.png') }}"
-                                alt="Helmio"
-                                class="h-10 w-10 rounded-xl"
-                            >
-
-                            <div>
-                                <p
-                                    class="font-semibold text-white"
-                                >
-                                    Helmio
-                                </p>
-
-                                <p
-                                    class="text-xs uppercase tracking-widest text-slate-500"
-                                >
-                                    Investment oversight
-                                </p>
-                            </div>
-                        </div>
-
-                        <p
-                            class="mt-5 max-w-sm text-sm leading-7 text-slate-500"
-                        >
-                            Independent investment oversight designed to help
-                            investors understand how their money is being managed.
-                        </p>
-                    </div>
-
-                    <div>
-                        <p
-                            class="text-sm font-semibold text-white"
-                        >
-                            Product
-                        </p>
-
-                        <div class="mt-4 space-y-3 text-sm">
-                            <a
-                                href="#what-helmio-watches"
-                                class="block text-slate-500 transition hover:text-white"
-                            >
-                                What We Monitor
+                                Dashboard
                             </a>
 
                             <a
-                                href="#advisor-oversight"
-                                class="block text-slate-500 transition hover:text-white"
+                                href="{{ route('billing.index') }}"
+                                class="block text-slate-500
+                                       transition hover:text-white"
                             >
-                                Advisor Oversight
+                                Billing
                             </a>
+                        @endguest
 
-                            <a
-                                href="#helm-score"
-                                class="block text-slate-500 transition hover:text-white"
-                            >
-                                Helm Score
-                            </a>
-
-                            <a
-                                href="#how-it-works"
-                                class="block text-slate-500 transition hover:text-white"
-                            >
-                                How It Works
-                            </a>
-                        </div>
-                    </div>
-
-                    <div>
-                        <p
-                            class="text-sm font-semibold text-white"
-                        >
-                            Account
-                        </p>
-
-                        <div class="mt-4 space-y-3 text-sm">
-                            @guest
-                                <a
-                                    href="{{ route('register') }}"
-                                    class="block text-slate-500 transition hover:text-white"
-                                >
-                                    Start Free Trial
-                                </a>
-
-                                <a
-                                    href="{{ route('login') }}"
-                                    class="block text-slate-500 transition hover:text-white"
-                                >
-                                    Log In
-                                </a>
-
-                                <a
-                                    href="{{ route('billing.pricing') }}"
-                                    class="block text-slate-500 transition hover:text-white"
-                                >
-                                    Pricing
-                                </a>
-                            @else
-                                <a
-                                    href="{{ route('dashboard') }}"
-                                    class="block text-slate-500 transition hover:text-white"
-                                >
-                                    Dashboard
-                                </a>
-
-                                <a
-                                    href="{{ route('billing.index') }}"
-                                    class="block text-slate-500 transition hover:text-white"
-                                >
-                                    Billing
-                                </a>
-                            @endguest
-                        </div>
-                    </div>
-
-                    <div>
-                        <p
-                            class="text-sm font-semibold text-white"
-                        >
-                            Company
-                        </p>
-
-                        <div class="mt-4 space-y-3 text-sm">
-                            <a
-                                href="{{ route('contact') }}"
-                                class="block text-slate-500 transition hover:text-white"
-                            >
-                                Contact
-                            </a>
-
-                            <a
-                                href="{{ route('privacy') }}"
-                                class="block text-slate-500 transition hover:text-white"
-                            >
-                                Privacy Policy
-                            </a>
-
-                            <a
-                                href="{{ route('terms') }}"
-                                class="block text-slate-500 transition hover:text-white"
-                            >
-                                Terms of Service
-                            </a>
-                        </div>
                     </div>
                 </div>
 
-                <div
-                    class="mt-10 flex flex-col gap-5 border-t border-slate-800 pt-7 text-xs text-slate-600 md:flex-row md:items-center md:justify-between"
-                >
-                    <p>
-                        © {{ date('Y') }} Helmio. All rights reserved.
+
+                <div>
+                    <p class="text-sm font-semibold text-white">
+                        Company
                     </p>
 
-                    <p
-                        class="max-w-2xl md:text-right"
-                    >
-                        Helmio provides monitoring and informational analysis.
-                        Helmio does not provide investment, tax, legal, or
-                        accounting advice and does not have trading authority
-                        over connected accounts.
-                    </p>
+                    <div class="mt-4 space-y-3 text-sm">
+
+                        <a
+                            href="{{ route('contact') }}"
+                            class="block text-slate-500
+                                   transition hover:text-white"
+                        >
+                            Contact
+                        </a>
+
+                        <a
+                            href="{{ route('privacy') }}"
+                            class="block text-slate-500
+                                   transition hover:text-white"
+                        >
+                            Privacy Policy
+                        </a>
+
+                        <a
+                            href="{{ route('terms') }}"
+                            class="block text-slate-500
+                                   transition hover:text-white"
+                        >
+                            Terms of Service
+                        </a>
+
+                    </div>
                 </div>
+
             </div>
-        </footer>
-    </div>
 
-    {{-- Helm Score animation --}}
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const scoreElement =
-                document.querySelector('[data-helm-score]');
 
-            const scoreWrapper =
-                document.querySelector('[data-helm-score-wrapper]');
+            <div
+                class="mt-8 border-t border-slate-800
+                       pt-6 text-xs leading-5
+                       text-slate-600
+                       sm:mt-10 sm:flex
+                       sm:items-start sm:justify-between
+                       sm:gap-8 sm:pt-7"
+            >
+                <p class="shrink-0">
+                    © {{ date('Y') }} Helmio.
+                    All rights reserved.
+                </p>
 
-            if (!scoreElement || !scoreWrapper) {
+                <p
+                    class="mt-4 max-w-2xl
+                           sm:mt-0 sm:text-right"
+                >
+                    Helmio provides monitoring and informational
+                    analysis. Helmio does not provide investment,
+                    tax, legal, or accounting advice and does not
+                    have trading authority over connected accounts.
+                </p>
+            </div>
+
+        </div>
+    </footer>
+
+</div>
+
+
+{{-- =============================================================
+    HELM SCORE ANIMATION
+============================================================= --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+
+        const scoreElement =
+            document.querySelector('[data-helm-score]');
+
+        const scoreWrapper =
+            document.querySelector('[data-helm-score-wrapper]');
+
+        if (!scoreElement || !scoreWrapper) {
+            return;
+        }
+
+        const target =
+            Number(scoreElement.dataset.score || 0);
+
+        let hasAnimated = false;
+
+
+        function animateScore() {
+
+            if (hasAnimated) {
                 return;
             }
 
-            const target =
-                Number(scoreElement.dataset.score || 0);
+            hasAnimated = true;
 
-            let hasAnimated = false;
+            const reducedMotion =
+                window.matchMedia(
+                    '(prefers-reduced-motion: reduce)'
+                ).matches;
 
-            function animateScore() {
-                if (hasAnimated) {
-                    return;
-                }
+            if (reducedMotion) {
+                scoreElement.textContent = target;
+                return;
+            }
 
-                hasAnimated = true;
+            const duration = 1500;
+            const startTime = performance.now();
 
-                const reducedMotion =
-                    window.matchMedia(
-                        '(prefers-reduced-motion: reduce)'
-                    ).matches;
 
-                if (reducedMotion) {
-                    scoreElement.textContent = target;
-                    return;
-                }
+            function update(currentTime) {
 
-                const duration = 1500;
-                const startTime = performance.now();
+                const elapsed =
+                    currentTime - startTime;
 
-                function update(currentTime) {
-                    const elapsed =
-                        currentTime - startTime;
+                const progress =
+                    Math.min(
+                        elapsed / duration,
+                        1
+                    );
 
-                    const progress =
-                        Math.min(
-                            elapsed / duration,
-                            1
-                        );
+                const eased =
+                    1 - Math.pow(
+                        1 - progress,
+                        3
+                    );
 
-                    const eased =
-                        1 - Math.pow(
-                            1 - progress,
-                            3
-                        );
+                scoreElement.textContent =
+                    Math.round(
+                        target * eased
+                    );
 
+
+                if (progress < 1) {
+                    requestAnimationFrame(update);
+                } else {
                     scoreElement.textContent =
-                        Math.round(
-                            target * eased
-                        );
-
-                    if (progress < 1) {
-                        requestAnimationFrame(update);
-                    } else {
-                        scoreElement.textContent =
-                            target;
-                    }
+                        target;
                 }
-
-                requestAnimationFrame(update);
             }
 
-            if (!('IntersectionObserver' in window)) {
-                animateScore();
-                return;
-            }
+            requestAnimationFrame(update);
+        }
 
-            const observer =
-                new IntersectionObserver(
-                    function (entries) {
-                        entries.forEach(
-                            function (entry) {
-                                if (entry.isIntersecting) {
-                                    animateScore();
 
-                                    observer.unobserve(
-                                        scoreWrapper
-                                    );
-                                }
+        if (!('IntersectionObserver' in window)) {
+            animateScore();
+            return;
+        }
+
+
+        const observer =
+            new IntersectionObserver(
+                function (entries) {
+
+                    entries.forEach(
+                        function (entry) {
+
+                            if (entry.isIntersecting) {
+
+                                animateScore();
+
+                                observer.unobserve(
+                                    scoreWrapper
+                                );
                             }
-                        );
-                    },
-                    {
-                        threshold: 0.4,
-                    }
-                );
+                        }
+                    );
 
-            observer.observe(scoreWrapper);
-        });
-    </script>
+                },
+                {
+                    threshold: 0.35,
+                }
+            );
+
+
+        observer.observe(scoreWrapper);
+
+    });
+</script>
+
 </body>
 </html>
