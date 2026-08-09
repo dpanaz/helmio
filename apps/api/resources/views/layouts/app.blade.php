@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html
     lang="{{ str_replace('_', '-', app()->getLocale()) }}"
-    class="h-full"
+    class="h-full bg-slate-950"
 >
 <head>
     <meta charset="utf-8">
@@ -60,11 +60,13 @@
         {{ config('app.name', 'Helmio') }}
     </title>
 
+    {{-- PWA Manifest --}}
     <link
-    rel="manifest"
-    href="{{ asset('manifest.webmanifest') }}"
->
+        rel="manifest"
+        href="{{ asset('manifest.webmanifest') }}"
+    >
 
+    {{-- App Icons --}}
     <link
         rel="icon"
         type="image/png"
@@ -90,6 +92,7 @@
         href="{{ asset('favicon.ico') }}"
     >
 
+    {{-- Fonts --}}
     <link
         rel="preconnect"
         href="https://fonts.bunny.net"
@@ -100,6 +103,7 @@
         rel="stylesheet"
     >
 
+    {{-- Application Assets --}}
     @vite([
         'resources/css/app.css',
         'resources/js/app.js',
@@ -107,17 +111,34 @@
 </head>
 
 <body
-    class="min-h-full overflow-x-hidden bg-slate-50 font-sans text-slate-900 antialiased"
+    class="min-h-full bg-slate-950 font-sans text-slate-100 antialiased"
 >
-    <div
-        id="app"
-        class="min-h-screen bg-slate-50"
-    >
+    <div class="min-h-screen bg-slate-950">
+
+        {{-- ========================================================= --}}
+        {{-- NAVIGATION --}}
+        {{-- ========================================================= --}}
+
         @include('layouts.navigation')
 
-        @isset($header)
+
+        {{-- ========================================================= --}}
+        {{-- OPTIONAL PAGE HEADER --}}
+        {{-- ========================================================= --}}
+        {{--
+            Only render the header when the page actually provides
+            meaningful header content.
+
+            This prevents an empty Breeze header from creating the
+            white horizontal strip above the Helmio dashboard.
+        --}}
+
+        @if (
+            isset($header)
+            && trim(strip_tags((string) $header)) !== ''
+        )
             <header
-                class="border-b border-slate-200 bg-white"
+                class="border-b border-slate-800 bg-slate-950"
             >
                 <div
                     class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8"
@@ -125,20 +146,41 @@
                     {{ $header }}
                 </div>
             </header>
-        @endisset
+        @endif
 
-        <main class="pb-20 sm:pb-0">
-    {{ $slot }}
-</main>
+
+        {{-- ========================================================= --}}
+        {{-- PAGE CONTENT --}}
+        {{-- ========================================================= --}}
+
+        <main
+            class="min-h-[calc(100vh-5rem)] bg-slate-950 pb-20 sm:pb-0"
+        >
+            {{ $slot }}
+        </main>
+
     </div>
+
+
+    {{-- ============================================================= --}}
+    {{-- JAVASCRIPT FALLBACK --}}
+    {{-- ============================================================= --}}
 
     <noscript>
         <div
-            class="fixed inset-x-0 bottom-0 z-50 border-t border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-900"
+            class="fixed inset-x-0 bottom-0 z-[100] border-t border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-900"
         >
-            Helmio requires JavaScript for account synchronization and interactive analytics.
+            Helmio requires JavaScript for account synchronization
+            and interactive analytics.
         </div>
     </noscript>
+
+
+    {{-- ============================================================= --}}
+    {{-- PWA INSTALL PROMPT --}}
+    {{-- ============================================================= --}}
+
     <x-pwa-install-prompt />
+
 </body>
 </html>

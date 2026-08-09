@@ -1,28 +1,33 @@
 <x-app-layout>
     <x-slot name="header">
         <div>
-            <h2 class="text-xl font-semibold text-gray-900">
+            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400">
+                Cash management
+            </p>
+
+            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-white">
                 Cash Drag Analytics
             </h2>
 
-            <p class="mt-1 text-sm text-gray-500">
-                Measure idle cash, excess allocation, and estimated missed benchmark growth.
+            <p class="mt-2 text-sm text-slate-400">
+                Measure idle cash, excess allocation, and estimated missed
+                benchmark growth.
             </p>
         </div>
     </x-slot>
 
-    <div class="py-8">
+    <div class="bg-slate-950 py-8">
         <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
 
-            <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+            <x-analytics.filter-panel title="Cash analysis controls">
                 <form
                     id="cash-drag-form"
-                    class="grid gap-4 md:grid-cols-4"
+                    class="grid gap-5 md:grid-cols-4"
                 >
                     <div>
                         <label
                             for="start_date"
-                            class="block text-sm font-medium text-gray-700"
+                            class="block text-sm font-medium text-slate-400"
                         >
                             Start date
                         </label>
@@ -32,7 +37,7 @@
                             name="start_date"
                             type="date"
                             value="{{ now()->subYear()->format('Y-m-d') }}"
-                            class="mt-1 block w-full rounded-lg border-gray-300"
+                            class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 px-4 py-3 text-slate-200 focus:border-blue-500 focus:ring-blue-500"
                             required
                         >
                     </div>
@@ -40,7 +45,7 @@
                     <div>
                         <label
                             for="end_date"
-                            class="block text-sm font-medium text-gray-700"
+                            class="block text-sm font-medium text-slate-400"
                         >
                             End date
                         </label>
@@ -50,7 +55,7 @@
                             name="end_date"
                             type="date"
                             value="{{ now()->format('Y-m-d') }}"
-                            class="mt-1 block w-full rounded-lg border-gray-300"
+                            class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 px-4 py-3 text-slate-200 focus:border-blue-500 focus:ring-blue-500"
                             required
                         >
                     </div>
@@ -58,7 +63,7 @@
                     <div>
                         <label
                             for="benchmark_id"
-                            class="block text-sm font-medium text-gray-700"
+                            class="block text-sm font-medium text-slate-400"
                         >
                             Benchmark
                         </label>
@@ -66,7 +71,7 @@
                         <select
                             id="benchmark_id"
                             name="benchmark_id"
-                            class="mt-1 block w-full rounded-lg border-gray-300"
+                            class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 px-4 py-3 text-slate-200 focus:border-blue-500 focus:ring-blue-500"
                         >
                             @foreach ($benchmarks as $benchmark)
                                 <option
@@ -83,7 +88,7 @@
                     <div>
                         <label
                             for="target_cash_percent"
-                            class="block text-sm font-medium text-gray-700"
+                            class="block text-sm font-medium text-slate-400"
                         >
                             Target cash allocation
                         </label>
@@ -96,10 +101,10 @@
                             max="1"
                             step="0.01"
                             value="0.05"
-                            class="mt-1 block w-full rounded-lg border-gray-300"
+                            class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 px-4 py-3 text-slate-200 focus:border-blue-500 focus:ring-blue-500"
                         >
 
-                        <p class="mt-1 text-xs text-gray-500">
+                        <p class="mt-2 text-xs text-slate-600">
                             Example: 0.05 means 5%.
                         </p>
                     </div>
@@ -107,64 +112,56 @@
                     <div class="md:col-span-4">
                         <button
                             type="submit"
-                            class="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-gray-700"
+                            class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
                         >
                             Analyze Cash Drag
                         </button>
                     </div>
                 </form>
-            </div>
+            </x-analytics.filter-panel>
 
             <div
                 id="loading-state"
-                class="hidden rounded-xl bg-white p-8 text-center shadow-sm ring-1 ring-gray-200"
+                class="hidden rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center text-sm text-slate-400"
             >
-                <p class="text-sm text-gray-600">
-                    Analyzing cash allocations…
-                </p>
+                Analyzing cash allocations…
             </div>
 
             <div
                 id="error-state"
-                class="hidden rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+                class="hidden rounded-2xl border border-red-500/20 bg-red-500/[0.07] p-5 text-sm text-red-300"
             ></div>
 
-            <div
-                id="insufficient-state"
-                class="hidden rounded-xl border border-amber-200 bg-amber-50 p-6"
-            >
-                <h3 class="font-semibold text-amber-900">
-                    More cash history is needed
-                </h3>
-
-                <p
-                    id="insufficient-message"
-                    class="mt-2 text-sm text-amber-800"
-                ></p>
+            <div id="insufficient-state" class="hidden">
+                <x-analytics.message-card
+                    tone="warning"
+                    title="More cash history is needed"
+                >
+                    <p id="insufficient-message"></p>
+                </x-analytics.message-card>
             </div>
 
-            <div
-                id="results"
-                class="hidden space-y-6"
-            >
-                <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                    <div class="flex items-center justify-between">
+            <div id="results" class="hidden space-y-6">
+                <x-analytics.panel>
+                    <div
+                        class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"
+                    >
                         <div>
-                            <p class="text-sm text-gray-500">
+                            <p class="text-sm text-slate-500">
                                 Cash drag score
                             </p>
 
                             <div class="mt-2 flex items-center gap-3">
                                 <span
                                     id="cash-score"
-                                    class="text-3xl font-bold text-gray-900"
+                                    class="text-4xl font-semibold text-white"
                                 >
                                     —
                                 </span>
 
                                 <span
                                     id="cash-rating"
-                                    class="inline-flex rounded-full px-3 py-1 text-sm font-semibold"
+                                    class="inline-flex rounded-full border px-3 py-1 text-sm font-semibold"
                                 >
                                     —
                                 </span>
@@ -172,170 +169,86 @@
                         </div>
 
                         <div class="text-right">
-                            <p class="text-sm text-gray-500">
+                            <p class="text-xs text-slate-600">
                                 Benchmark
                             </p>
 
                             <p
                                 id="benchmark-name"
-                                class="mt-1 font-semibold text-gray-900"
+                                class="mt-1 font-semibold text-slate-200"
                             >
                                 —
                             </p>
                         </div>
                     </div>
-                </div>
+                </x-analytics.panel>
 
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
-                        <p class="text-sm text-gray-500">
-                            Current cash
-                        </p>
-
-                        <p
-                            id="current-cash"
-                            class="mt-2 text-3xl font-bold text-gray-900"
-                        >
-                            —
-                        </p>
-                    </div>
-
-                    <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
-                        <p class="text-sm text-gray-500">
-                            Current cash %
-                        </p>
-
-                        <p
-                            id="current-cash-percent"
-                            class="mt-2 text-3xl font-bold text-gray-900"
-                        >
-                            —
-                        </p>
-                    </div>
-
-                    <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
-                        <p class="text-sm text-gray-500">
-                            Average cash %
-                        </p>
-
-                        <p
-                            id="average-cash-percent"
-                            class="mt-2 text-3xl font-bold text-gray-900"
-                        >
-                            —
-                        </p>
-                    </div>
-
-                    <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
-                        <p class="text-sm text-gray-500">
-                            Estimated cash drag
-                        </p>
-
-                        <p
-                            id="opportunity-cost"
-                            class="mt-2 text-3xl font-bold text-gray-900"
-                        >
-                            —
-                        </p>
-                    </div>
+                    @foreach ([
+                        ['Current cash', 'current-cash'],
+                        ['Current cash %', 'current-cash-percent'],
+                        ['Average cash %', 'average-cash-percent'],
+                        ['Estimated cash drag', 'opportunity-cost'],
+                    ] as [$label, $id])
+                        <x-analytics.metric-card :label="$label">
+                            <span id="{{ $id }}">—</span>
+                        </x-analytics.metric-card>
+                    @endforeach
                 </div>
 
-                <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-900">
-                            Cash Allocation History
-                        </h3>
-
-                        <p class="mt-1 text-sm text-gray-500">
-                            Cash as a percentage of total portfolio value.
-                        </p>
-                    </div>
-
-                    <div class="mt-6 h-80">
+                <x-analytics.panel
+                    title="Cash Allocation History"
+                    subtitle="Cash as a percentage of total portfolio value."
+                >
+                    <div class="h-80">
                         <canvas id="cash-chart"></canvas>
                     </div>
-                </div>
+                </x-analytics.panel>
 
                 <div class="grid gap-6 lg:grid-cols-2">
-                    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900">
-                            Opportunity Cost
-                        </h3>
-
-                        <dl class="mt-5 space-y-4 text-sm">
-                            <div class="flex justify-between">
-                                <dt class="text-gray-500">
-                                    Average cash
-                                </dt>
-
-                                <dd
-                                    id="average-cash"
-                                    class="font-medium text-gray-900"
+                    <x-analytics.panel title="Opportunity Cost">
+                        <dl class="space-y-4 text-sm">
+                            @foreach ([
+                                ['Average cash', 'average-cash'],
+                                ['Target cash amount', 'target-cash-amount'],
+                                ['Excess cash', 'excess-cash'],
+                                ['Benchmark return', 'benchmark-return'],
+                            ] as [$label, $id])
+                                <div
+                                    class="flex justify-between border-b border-slate-800 pb-4 last:border-0 last:pb-0"
                                 >
-                                    —
-                                </dd>
-                            </div>
+                                    <dt class="text-slate-500">
+                                        {{ $label }}
+                                    </dt>
 
-                            <div class="flex justify-between">
-                                <dt class="text-gray-500">
-                                    Target cash amount
-                                </dt>
-
-                                <dd
-                                    id="target-cash-amount"
-                                    class="font-medium text-gray-900"
-                                >
-                                    —
-                                </dd>
-                            </div>
-
-                            <div class="flex justify-between">
-                                <dt class="text-gray-500">
-                                    Excess cash
-                                </dt>
-
-                                <dd
-                                    id="excess-cash"
-                                    class="font-medium text-gray-900"
-                                >
-                                    —
-                                </dd>
-                            </div>
-
-                            <div class="flex justify-between">
-                                <dt class="text-gray-500">
-                                    Benchmark return
-                                </dt>
-
-                                <dd
-                                    id="benchmark-return"
-                                    class="font-medium text-gray-900"
-                                >
-                                    —
-                                </dd>
-                            </div>
+                                    <dd
+                                        id="{{ $id }}"
+                                        class="font-semibold text-slate-200"
+                                    >
+                                        —
+                                    </dd>
+                                </div>
+                            @endforeach
                         </dl>
-                    </div>
+                    </x-analytics.panel>
 
-                    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900">
-                            Findings
-                        </h3>
-
+                    <x-analytics.panel title="Findings & Data Quality">
                         <div
                             id="cash-flags"
-                            class="mt-5 space-y-3"
+                            class="space-y-3"
                         ></div>
 
-                        <h3 class="mt-6 text-lg font-semibold text-gray-900">
+                        <h4
+                            class="mt-7 border-t border-slate-800 pt-6 text-sm font-semibold text-white"
+                        >
                             Data Quality
-                        </h3>
+                        </h4>
 
                         <div
                             id="cash-warnings"
-                            class="mt-5 space-y-3"
+                            class="mt-4 space-y-3"
                         ></div>
-                    </div>
+                    </x-analytics.panel>
                 </div>
             </div>
         </div>
@@ -345,73 +258,62 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', () => {
-            const form = document.getElementById('cash-drag-form');
-            const results = document.getElementById('results');
-            const loadingState = document.getElementById('loading-state');
-            const errorState = document.getElementById('error-state');
-            const insufficientState = document.getElementById('insufficient-state');
+            const form =
+                document.getElementById('cash-drag-form');
+
+            const results =
+                document.getElementById('results');
+
+            const loadingState =
+                document.getElementById('loading-state');
+
+            const errorState =
+                document.getElementById('error-state');
+
+            const insufficientState =
+                document.getElementById('insufficient-state');
 
             let cashChart = null;
 
-            const formatPercent = (value) => {
-                if (value === null || value === undefined) {
-                    return '—';
-                }
+            const formatPercent = value =>
+                value == null
+                    ? '—'
+                    : new Intl.NumberFormat('en-US', {
+                        style: 'percent',
+                        minimumFractionDigits: 1,
+                        maximumFractionDigits: 2,
+                    }).format(value);
 
-                return new Intl.NumberFormat('en-US', {
-                    style: 'percent',
-                    minimumFractionDigits: 1,
-                    maximumFractionDigits: 2,
-                }).format(value);
-            };
+            const formatCurrency = value =>
+                value == null
+                    ? '—'
+                    : new Intl.NumberFormat('en-US', {
+                        style: 'currency',
+                        currency: 'USD',
+                        maximumFractionDigits: 0,
+                    }).format(value);
 
-            const formatCurrency = (value) => {
-                if (value === null || value === undefined) {
-                    return '—';
-                }
+            const ratingLabel = rating => ({
+                excellent: 'Excellent',
+                good: 'Good',
+                moderate: 'Moderate',
+                poor: 'Poor',
+                critical: 'Critical',
+            })[rating] ?? 'Unknown';
 
-                return new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                    maximumFractionDigits: 0,
-                }).format(value);
-            };
+            const ratingClasses = rating => ({
+                excellent: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
+                good: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
+                moderate: 'border-amber-500/20 bg-amber-500/10 text-amber-300',
+                poor: 'border-orange-500/20 bg-orange-500/10 text-orange-300',
+                critical: 'border-red-500/20 bg-red-500/10 text-red-300',
+            })[rating] ?? 'border-slate-700 bg-slate-800 text-slate-300';
 
-            const ratingLabel = (rating) => {
-                const labels = {
-                    excellent: 'Excellent',
-                    good: 'Good',
-                    moderate: 'Moderate',
-                    poor: 'Poor',
-                    critical: 'Critical',
-                };
-
-                return labels[rating] ?? 'Unknown';
-            };
-
-            const ratingClasses = (rating) => {
-                const classes = {
-                    excellent: 'bg-green-100 text-green-800',
-                    good: 'bg-emerald-100 text-emerald-800',
-                    moderate: 'bg-amber-100 text-amber-800',
-                    poor: 'bg-orange-100 text-orange-800',
-                    critical: 'bg-red-100 text-red-800',
-                };
-
-                return classes[rating] ??
-                    'bg-gray-100 text-gray-800';
-            };
-
-            const flagClasses = (severity) => {
-                const classes = {
-                    informational: 'border-blue-200 bg-blue-50 text-blue-800',
-                    moderate: 'border-amber-200 bg-amber-50 text-amber-800',
-                    high: 'border-red-200 bg-red-50 text-red-800',
-                };
-
-                return classes[severity] ??
-                    'border-gray-200 bg-gray-50 text-gray-800';
-            };
+            const flagClasses = severity => ({
+                informational: 'border-blue-500/20 bg-blue-500/[0.07] text-blue-300',
+                moderate: 'border-amber-500/20 bg-amber-500/[0.07] text-amber-300',
+                high: 'border-red-500/20 bg-red-500/[0.07] text-red-300',
+            })[severity] ?? 'border-slate-700 bg-slate-800 text-slate-300';
 
             const renderMessages = (
                 containerId,
@@ -426,7 +328,7 @@
 
                 if (!messages || messages.length === 0) {
                     container.innerHTML = `
-                        <div class="rounded-lg bg-green-50 p-3 text-sm text-green-700">
+                        <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] p-4 text-sm text-emerald-300">
                             ${emptyMessage}
                         </div>
                     `;
@@ -434,46 +336,48 @@
                     return;
                 }
 
-                messages.forEach((message) => {
+                messages.forEach(message => {
                     const element =
                         document.createElement('div');
 
                     if (isWarning) {
                         element.className =
-                            'rounded-lg bg-amber-50 p-3 text-sm text-amber-800';
+                            'rounded-xl border border-amber-500/20 bg-amber-500/[0.07] p-4 text-sm text-amber-300';
 
                         element.textContent =
                             message.message;
 
-                        container.appendChild(element);
+                        container.appendChild(
+                            element
+                        );
+
                         return;
                     }
 
                     element.className =
-                        `rounded-lg border p-4 ${flagClasses(message.severity)}`;
+                        `rounded-xl border p-4 ${flagClasses(message.severity)}`;
 
-                    const title =
-                        document.createElement('p');
+                    element.innerHTML = `
+                        <p class="font-semibold">
+                            ${message.title}
+                        </p>
 
-                    title.className = 'font-semibold';
-                    title.textContent = message.title;
+                        <p class="mt-1 text-sm leading-6 text-slate-400">
+                            ${message.message}
+                        </p>
+                    `;
 
-                    const body =
-                        document.createElement('p');
-
-                    body.className = 'mt-1 text-sm';
-                    body.textContent = message.message;
-
-                    element.appendChild(title);
-                    element.appendChild(body);
-
-                    container.appendChild(element);
+                    container.appendChild(
+                        element
+                    );
                 });
             };
 
-            const renderCashChart = (history) => {
+            const renderCashChart = history => {
                 const canvas =
-                    document.getElementById('cash-chart');
+                    document.getElementById(
+                        'cash-chart'
+                    );
 
                 if (!canvas || !window.Chart) {
                     return;
@@ -488,16 +392,20 @@
 
                     data: {
                         labels: history.map(
-                            (point) => point.date
+                            point => point.date
                         ),
 
                         datasets: [
                             {
                                 label: 'Cash allocation',
+
                                 data: history.map(
-                                    (point) =>
+                                    point =>
                                         point.cash_percent * 100
                                 ),
+
+                                borderColor: '#3b82f6',
+                                backgroundColor: '#3b82f6',
                                 borderWidth: 2,
                                 pointRadius: 0,
                                 pointHoverRadius: 4,
@@ -512,13 +420,20 @@
 
                         plugins: {
                             legend: {
-                                position: 'top',
+                                labels: {
+                                    color: '#94a3b8',
+                                },
                             },
                         },
 
                         scales: {
                             x: {
+                                grid: {
+                                    color: 'rgba(51,65,85,.35)',
+                                },
+
                                 ticks: {
+                                    color: '#64748b',
                                     maxTicksLimit: 8,
                                 },
                             },
@@ -526,7 +441,13 @@
                             y: {
                                 beginAtZero: true,
 
+                                grid: {
+                                    color: 'rgba(51,65,85,.35)',
+                                },
+
                                 ticks: {
+                                    color: '#64748b',
+
                                     callback(value) {
                                         return `${value}%`;
                                     },
@@ -543,21 +464,24 @@
                 insufficientState.classList.add('hidden');
                 results.classList.add('hidden');
 
-                const query = new URLSearchParams(
-                    new FormData(form)
-                );
+                const query =
+                    new URLSearchParams(
+                        new FormData(form)
+                    );
 
                 try {
                     const response = await fetch(
                         `{{ route('analytics.cash-drag.data') }}?${query.toString()}`,
                         {
                             headers: {
-                                Accept: 'application/json',
+                                Accept:
+                                    'application/json',
                             },
                         }
                     );
 
-                    const payload = await response.json();
+                    const payload =
+                        await response.json();
 
                     if (!response.ok) {
                         throw new Error(
@@ -568,24 +492,33 @@
 
                     const data = payload.data;
 
-                    if (data.status === 'insufficient_data') {
+                    if (
+                        data.status ===
+                        'insufficient_data'
+                    ) {
                         document.getElementById(
                             'insufficient-message'
                         ).textContent =
                             data.message ??
                             'No cash history was available.';
 
-                        insufficientState.classList.remove('hidden');
+                        insufficientState.classList.remove(
+                            'hidden'
+                        );
+
                         return;
                     }
 
                     const allocation =
-                        data.allocation?.metrics ?? {};
+                        data.allocation?.metrics
+                        ?? {};
 
                     const opportunity =
-                        data.opportunity?.metrics ?? {};
+                        data.opportunity?.metrics
+                        ?? {};
 
-                    const score = data.score ?? {};
+                    const score =
+                        data.score ?? {};
 
                     document.getElementById(
                         'cash-score'
@@ -598,10 +531,12 @@
                         );
 
                     ratingBadge.textContent =
-                        ratingLabel(score.rating);
+                        ratingLabel(
+                            score.rating
+                        );
 
                     ratingBadge.className =
-                        `inline-flex rounded-full px-3 py-1 text-sm font-semibold ${ratingClasses(score.rating)}`;
+                        `inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${ratingClasses(score.rating)}`;
 
                     document.getElementById(
                         'benchmark-name'
@@ -682,21 +617,30 @@
                         true
                     );
 
-                    results.classList.remove('hidden');
+                    results.classList.remove(
+                        'hidden'
+                    );
                 } catch (error) {
                     errorState.textContent =
                         error.message;
 
-                    errorState.classList.remove('hidden');
+                    errorState.classList.remove(
+                        'hidden'
+                    );
                 } finally {
-                    loadingState.classList.add('hidden');
+                    loadingState.classList.add(
+                        'hidden'
+                    );
                 }
             };
 
-            form.addEventListener('submit', (event) => {
-                event.preventDefault();
-                loadCashDrag();
-            });
+            form.addEventListener(
+                'submit',
+                event => {
+                    event.preventDefault();
+                    loadCashDrag();
+                }
+            );
 
             loadCashDrag();
         });

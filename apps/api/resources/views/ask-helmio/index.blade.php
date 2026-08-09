@@ -2,23 +2,23 @@
     <x-slot name="header">
         <div class="flex flex-wrap items-center justify-between gap-4">
             <div>
-                <p class="text-sm font-medium text-violet-600">
+                <p class="text-xs font-semibold uppercase tracking-[0.16em] text-violet-400">
                     Grounded portfolio assistant
                 </p>
 
-                <h2 class="mt-1 text-2xl font-semibold text-slate-900">
+                <h2 class="mt-2 text-2xl font-semibold tracking-tight text-white">
                     Ask Helmio
                 </h2>
 
-                <p class="mt-2 text-sm text-slate-500">
+                <p class="mt-2 text-sm text-slate-400">
                     Ask questions about your portfolio, audit findings,
-                    timeline events and monthly reviews.
+                    timeline events, and monthly reviews.
                 </p>
             </div>
 
             <a
                 href="{{ route('ask-helmio.create') }}"
-                class="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition hover:bg-violet-500"
+                class="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500"
             >
                 <svg
                     class="h-5 w-5"
@@ -50,7 +50,9 @@
         ];
 
         $citationUrl = function (array $citation): ?string {
-            $routeName = $citation['route_name'] ?? null;
+            $routeName =
+                $citation['route_name']
+                ?? null;
 
             if (
                 ! $routeName
@@ -74,13 +76,13 @@
                 in_array(
                     $routeName,
                     $parameterizedRoutes,
-                    true,
+                    true
                 )
                 && $parameter !== null
             ) {
                 return route(
                     $routeName,
-                    $parameter,
+                    $parameter
                 );
             }
 
@@ -88,22 +90,27 @@
         };
     @endphp
 
-    <div class="py-8">
+    <div class="bg-slate-950 py-8">
         <div class="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-8">
+
             @if (session('success'))
-                <div class="mb-6 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-medium text-emerald-800">
+                <div
+                    class="mb-6 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.07] px-5 py-4 text-sm font-medium text-emerald-300"
+                >
                     {{ session('success') }}
                 </div>
             @endif
 
             <div
-                class="grid min-h-[calc(100vh-12rem)] overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm lg:grid-cols-[19rem_minmax(0,1fr)]"
+                class="grid min-h-[calc(100vh-12rem)] overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-xl lg:grid-cols-[19rem_minmax(0,1fr)]"
             >
-                <aside class="border-b border-slate-200 bg-slate-50 lg:border-b-0 lg:border-r">
-                    <div class="border-b border-slate-200 p-4">
+                <aside
+                    class="border-b border-slate-800 bg-slate-950 lg:border-b-0 lg:border-r"
+                >
+                    <div class="border-b border-slate-800 p-4">
                         <a
                             href="{{ route('ask-helmio.create') }}"
-                            class="flex w-full items-center justify-center gap-2 rounded-xl bg-slate-950 px-4 py-3 text-sm font-semibold text-white transition hover:bg-slate-800"
+                            class="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-500"
                         >
                             <svg
                                 class="h-4 w-4"
@@ -123,8 +130,12 @@
                         </a>
                     </div>
 
-                    <div class="max-h-72 overflow-y-auto p-3 lg:max-h-[calc(100vh-18rem)]">
-                        <p class="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-400">
+                    <div
+                        class="max-h-72 overflow-y-auto p-3 lg:max-h-[calc(100vh-18rem)]"
+                    >
+                        <p
+                            class="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600"
+                        >
                             Conversations
                         </p>
 
@@ -137,32 +148,39 @@
                                     ) }}"
                                     @class([
                                         'block rounded-xl px-3 py-3 transition',
-                                        'bg-white shadow-sm ring-1 ring-slate-200' =>
+
+                                        'border border-violet-500/20 bg-violet-500/[0.08]' =>
                                             $conversation?->id === $item->id,
-                                        'hover:bg-white' =>
+
+                                        'border border-transparent hover:bg-slate-900' =>
                                             $conversation?->id !== $item->id,
                                     ])
                                 >
-                                    <p class="truncate text-sm font-medium text-slate-900">
-                                        {{ $item->title
-                                            ?: 'Portfolio conversation' }}
+                                    <p
+                                        class="truncate text-sm font-medium text-slate-200"
+                                    >
+                                        {{ $item->title ?: 'Portfolio conversation' }}
                                     </p>
 
-                                    <div class="mt-1 flex items-center justify-between gap-3">
-                                        <span class="text-xs text-slate-400">
+                                    <div
+                                        class="mt-1 flex items-center justify-between gap-3"
+                                    >
+                                        <span class="text-xs text-slate-600">
                                             {{ $item->last_message_at
                                                 ?->diffForHumans()
                                                 ?? 'No messages' }}
                                         </span>
 
-                                        <span class="text-xs text-slate-400">
+                                        <span class="text-xs text-slate-600">
                                             {{ $item->messages_count }}
                                         </span>
                                     </div>
                                 </a>
                             @empty
-                                <div class="rounded-xl border border-dashed border-slate-300 p-4 text-center">
-                                    <p class="text-sm font-medium text-slate-700">
+                                <div
+                                    class="rounded-xl border border-dashed border-slate-800 p-4 text-center"
+                                >
+                                    <p class="text-sm text-slate-500">
                                         No conversations yet
                                     </p>
                                 </div>
@@ -171,12 +189,15 @@
                     </div>
                 </aside>
 
-                <main class="flex min-w-0 flex-col bg-white">
-                    <div class="flex items-center justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-7">
+                <main
+                    class="flex min-w-0 flex-col bg-slate-900"
+                >
+                    <div
+                        class="flex items-center justify-between gap-4 border-b border-slate-800 px-5 py-4 sm:px-7"
+                    >
                         <div class="min-w-0">
-                            <p class="truncate font-semibold text-slate-900">
-                                {{ $conversation?->title
-                                    ?: 'New conversation' }}
+                            <p class="truncate font-semibold text-white">
+                                {{ $conversation?->title ?: 'New conversation' }}
                             </p>
 
                             <p class="mt-1 text-xs text-slate-500">
@@ -198,7 +219,7 @@
 
                                 <button
                                     type="submit"
-                                    class="rounded-xl border border-slate-300 px-3 py-2 text-xs font-semibold text-slate-600 transition hover:bg-slate-50 hover:text-slate-900"
+                                    class="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-400 transition hover:border-slate-600 hover:text-white"
                                 >
                                     Archive
                                 </button>
@@ -214,8 +235,12 @@
                             $conversation === null
                             || $conversation->messages->isEmpty()
                         )
-                            <div class="mx-auto flex min-h-[30rem] max-w-4xl flex-col items-center justify-center text-center">
-                                <div class="flex h-16 w-16 items-center justify-center rounded-3xl bg-violet-100 text-violet-700">
+                            <div
+                                class="mx-auto flex min-h-[30rem] max-w-4xl flex-col items-center justify-center text-center"
+                            >
+                                <div
+                                    class="flex h-16 w-16 items-center justify-center rounded-3xl border border-violet-500/20 bg-violet-500/10 text-violet-300"
+                                >
                                     <svg
                                         class="h-9 w-9"
                                         fill="none"
@@ -231,13 +256,18 @@
                                     </svg>
                                 </div>
 
-                                <h3 class="mt-6 text-3xl font-semibold tracking-tight text-slate-900">
+                                <h3
+                                    class="mt-6 text-3xl font-semibold tracking-tight text-white"
+                                >
                                     What would you like to understand?
                                 </h3>
 
-                                <p class="mt-3 max-w-2xl text-sm leading-7 text-slate-500">
-                                    Ask about portfolio changes, costs, concentration,
-                                    audit scores, findings or your latest monthly review.
+                                <p
+                                    class="mt-3 max-w-2xl text-sm leading-7 text-slate-500"
+                                >
+                                    Ask about portfolio changes, costs,
+                                    concentration, audit scores, findings,
+                                    or your latest monthly review.
                                 </p>
 
                                 <div class="mt-8 grid w-full gap-3 sm:grid-cols-2">
@@ -264,14 +294,12 @@
 
                                             <button
                                                 type="submit"
-                                                class="flex h-full w-full items-center justify-between gap-4 rounded-2xl border border-slate-200 p-5 text-left text-sm font-medium text-slate-700 transition hover:border-violet-300 hover:bg-violet-50 hover:text-violet-900"
+                                                class="flex h-full w-full items-center justify-between gap-4 rounded-2xl border border-slate-800 bg-slate-950 p-5 text-left text-sm font-medium text-slate-300 transition hover:border-violet-500/40 hover:bg-violet-500/[0.05] hover:text-white"
                                             >
-                                                <span>
-                                                    {{ $suggestion }}
-                                                </span>
+                                                <span>{{ $suggestion }}</span>
 
                                                 <svg
-                                                    class="h-4 w-4 shrink-0"
+                                                    class="h-4 w-4 shrink-0 text-violet-400"
                                                     fill="none"
                                                     viewBox="0 0 24 24"
                                                     stroke="currentColor"
@@ -291,33 +319,39 @@
                         @else
                             <div class="mx-auto max-w-4xl space-y-8">
                                 @foreach ($conversation->messages as $message)
+
                                     @if ($message->role === 'user')
                                         <div class="flex justify-end">
-                                            <div class="max-w-3xl rounded-3xl rounded-br-lg bg-slate-950 px-5 py-4 text-sm leading-7 text-white">
+                                            <div
+                                                class="max-w-3xl rounded-3xl rounded-br-lg bg-blue-600 px-5 py-4 text-sm leading-7 text-white"
+                                            >
                                                 {{ $message->content }}
                                             </div>
                                         </div>
+
                                     @elseif ($message->role === 'assistant')
                                         @php
                                             $confidenceClasses = match (
                                                 $message->confidence
                                             ) {
                                                 'high' =>
-                                                    'bg-emerald-100 text-emerald-800',
+                                                    'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
 
                                                 'medium' =>
-                                                    'bg-amber-100 text-amber-800',
+                                                    'border-amber-500/20 bg-amber-500/10 text-amber-300',
 
                                                 'low' =>
-                                                    'bg-red-100 text-red-800',
+                                                    'border-red-500/20 bg-red-500/10 text-red-300',
 
                                                 default =>
-                                                    'bg-slate-100 text-slate-700',
+                                                    'border-slate-700 bg-slate-800 text-slate-400',
                                             };
                                         @endphp
 
                                         <div class="flex items-start gap-4">
-                                            <div class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-violet-100 text-violet-700">
+                                            <div
+                                                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300"
+                                            >
                                                 <svg
                                                     class="h-5 w-5"
                                                     fill="none"
@@ -335,31 +369,41 @@
 
                                             <div class="min-w-0 flex-1">
                                                 <div class="flex flex-wrap items-center gap-3">
-                                                    <p class="font-semibold text-slate-900">
+                                                    <p class="font-semibold text-white">
                                                         Helmio
                                                     </p>
 
                                                     @if ($message->confidence)
-                                                        <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $confidenceClasses }}">
+                                                        <span
+                                                            class="rounded-full border px-3 py-1 text-xs font-semibold {{ $confidenceClasses }}"
+                                                        >
                                                             {{ str($message->confidence)->title() }}
                                                             confidence
                                                         </span>
                                                     @endif
 
                                                     @if ($message->status === 'failed')
-                                                        <span class="rounded-full bg-red-100 px-3 py-1 text-xs font-semibold text-red-800">
+                                                        <span
+                                                            class="rounded-full border border-red-500/20 bg-red-500/10 px-3 py-1 text-xs font-semibold text-red-300"
+                                                        >
                                                             Failed
                                                         </span>
                                                     @endif
                                                 </div>
 
-                                                <div class="mt-3 whitespace-pre-line text-sm leading-7 text-slate-700">
+                                                <div
+                                                    class="mt-3 whitespace-pre-line text-sm leading-7 text-slate-300"
+                                                >
                                                     {{ $message->content }}
                                                 </div>
 
                                                 @if (! empty($message->citations))
-                                                    <div class="mt-5 rounded-2xl border border-slate-200 bg-slate-50 p-4">
-                                                        <p class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-400">
+                                                    <div
+                                                        class="mt-5 rounded-2xl border border-slate-800 bg-slate-950 p-4"
+                                                    >
+                                                        <p
+                                                            class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-600"
+                                                        >
                                                             Supporting Helmio records
                                                         </p>
 
@@ -374,27 +418,15 @@
                                                                 @if ($url)
                                                                     <a
                                                                         href="{{ $url }}"
-                                                                        class="inline-flex items-center gap-2 rounded-xl bg-white px-3 py-2 text-xs font-semibold text-blue-600 shadow-sm ring-1 ring-slate-200 transition hover:text-blue-500"
+                                                                        class="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-blue-400 transition hover:border-blue-500 hover:text-blue-300"
                                                                     >
-                                                                        <svg
-                                                                            class="h-3.5 w-3.5"
-                                                                            fill="none"
-                                                                            viewBox="0 0 24 24"
-                                                                            stroke="currentColor"
-                                                                            stroke-width="2"
-                                                                        >
-                                                                            <path
-                                                                                stroke-linecap="round"
-                                                                                stroke-linejoin="round"
-                                                                                d="M13.5 6H18m0 0v4.5M18 6l-7.5 7.5M6 8.25v9.75h9.75"
-                                                                            />
-                                                                        </svg>
-
                                                                         {{ $citation['label']
                                                                             ?? 'Supporting record' }}
                                                                     </a>
                                                                 @else
-                                                                    <span class="rounded-xl bg-white px-3 py-2 text-xs font-semibold text-slate-600 ring-1 ring-slate-200">
+                                                                    <span
+                                                                        class="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-400"
+                                                                    >
                                                                         {{ $citation['label']
                                                                             ?? 'Supporting record' }}
                                                                     </span>
@@ -405,14 +437,18 @@
                                                 @endif
 
                                                 @if (! empty($message->limitations))
-                                                    <details class="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3">
-                                                        <summary class="cursor-pointer text-xs font-semibold text-amber-900">
+                                                    <details
+                                                        class="mt-4 rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3"
+                                                    >
+                                                        <summary
+                                                            class="cursor-pointer text-xs font-semibold text-amber-300"
+                                                        >
                                                             Data limitations
                                                         </summary>
 
                                                         <div class="mt-3 space-y-2">
                                                             @foreach ($message->limitations as $limitation)
-                                                                <p class="text-xs leading-5 text-amber-800">
+                                                                <p class="text-xs leading-5 text-slate-400">
                                                                     {{ $limitation }}
                                                                 </p>
                                                             @endforeach
@@ -420,7 +456,7 @@
                                                     </details>
                                                 @endif
 
-                                                <p class="mt-3 text-xs text-slate-400">
+                                                <p class="mt-3 text-xs text-slate-600">
                                                     {{ $message->generated_at
                                                         ?->format('g:i A') }}
                                                 </p>
@@ -432,7 +468,9 @@
                         @endif
                     </div>
 
-                    <div class="border-t border-slate-200 bg-white p-4 sm:p-6">
+                    <div
+                        class="border-t border-slate-800 bg-slate-950 p-4 sm:p-6"
+                    >
                         <form
                             method="POST"
                             action="{{ route('ask-helmio.store') }}"
@@ -448,14 +486,16 @@
                                 >
                             @endif
 
-                            <div class="flex items-end gap-3 rounded-2xl border border-slate-300 bg-white p-3 shadow-sm focus-within:border-violet-400 focus-within:ring-2 focus-within:ring-violet-100">
+                            <div
+                                class="flex items-end gap-3 rounded-2xl border border-slate-700 bg-slate-900 p-3 focus-within:border-violet-500 focus-within:ring-2 focus-within:ring-violet-500/10"
+                            >
                                 <textarea
                                     name="question"
                                     rows="2"
                                     maxlength="2000"
                                     required
                                     placeholder="Ask Helmio about your portfolio..."
-                                    class="max-h-40 min-h-12 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm text-slate-900 shadow-none focus:ring-0"
+                                    class="max-h-40 min-h-12 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm text-white placeholder-slate-600 shadow-none focus:ring-0"
                                 >{{ old('question') }}</textarea>
 
                                 <button
@@ -480,12 +520,14 @@
                             </div>
 
                             @error('question')
-                                <p class="mt-2 text-sm text-red-600">
+                                <p class="mt-2 text-sm text-red-300">
                                     {{ $message }}
                                 </p>
                             @enderror
 
-                            <p class="mt-3 text-center text-xs leading-5 text-slate-400">
+                            <p
+                                class="mt-3 text-center text-xs leading-5 text-slate-600"
+                            >
                                 Helmio explains recorded portfolio data and does not
                                 provide instructions to buy or sell investments.
                             </p>
@@ -497,14 +539,19 @@
     </div>
 
     <script>
-        document.addEventListener('DOMContentLoaded', () => {
-            const container = document.getElementById(
-                'ask-helmio-messages'
-            );
+        document.addEventListener(
+            'DOMContentLoaded',
+            () => {
+                const container =
+                    document.getElementById(
+                        'ask-helmio-messages'
+                    );
 
-            if (container) {
-                container.scrollTop = container.scrollHeight;
+                if (container) {
+                    container.scrollTop =
+                        container.scrollHeight;
+                }
             }
-        });
+        );
     </script>
 </x-app-layout>

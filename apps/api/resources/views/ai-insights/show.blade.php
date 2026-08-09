@@ -1,20 +1,33 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-wrap items-center justify-between gap-4">
+        <div
+            class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
+        >
             <div>
-                <p class="text-sm font-medium text-blue-600">
+                <p
+                    class="text-xs font-semibold uppercase tracking-[0.16em] text-violet-400"
+                >
                     Portfolio explanation
                 </p>
 
-                <h2 class="mt-1 text-2xl font-semibold text-slate-900">
+                <h2
+                    class="mt-2 text-2xl font-semibold tracking-tight text-white"
+                >
                     AI Insight
                 </h2>
+
+                <p
+                    class="mt-2 text-sm text-slate-400"
+                >
+                    A plain-English explanation grounded in your stored
+                    Helmio portfolio data.
+                </p>
             </div>
 
             <div class="flex flex-wrap gap-3">
                 <a
                     href="{{ route('ai-insights.index') }}"
-                    class="rounded-xl border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:bg-slate-50"
+                    class="rounded-xl border border-slate-700 bg-slate-900 px-5 py-3 text-sm font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white"
                 >
                     Insight history
                 </a>
@@ -27,7 +40,7 @@
 
                     <button
                         type="submit"
-                        class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white hover:bg-blue-500"
+                        class="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500"
                     >
                         Generate new insight
                     </button>
@@ -44,16 +57,16 @@
 
         $statusClasses = match ($insight->status) {
             'completed' =>
-                'bg-emerald-100 text-emerald-800',
+                'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
 
             'failed' =>
-                'bg-red-100 text-red-800',
+                'border-red-500/20 bg-red-500/10 text-red-300',
 
             'blocked' =>
-                'bg-amber-100 text-amber-800',
+                'border-amber-500/20 bg-amber-500/10 text-amber-300',
 
             default =>
-                'bg-slate-100 text-slate-700',
+                'border-slate-700 bg-slate-800 text-slate-400',
         };
 
         $freshnessStatus = data_get(
@@ -91,36 +104,56 @@
             );
     @endphp
 
-    <div class="py-10">
-        <div class="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
+    <div class="min-h-screen bg-slate-950 py-8">
+        <div
+            class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8"
+        >
             @if (session('success'))
-                <div class="rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-4 text-sm font-medium text-emerald-800">
+                <div
+                    class="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.07] px-5 py-4 text-sm font-medium text-emerald-300"
+                >
                     {{ session('success') }}
                 </div>
             @endif
 
+            {{-- Stale warning --}}
             @if ($insight->is_stale)
-                <section class="rounded-3xl border border-amber-300 bg-amber-50 p-6 shadow-sm">
-                    <div class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <section
+                    class="rounded-3xl border border-amber-500/20 bg-amber-500/[0.07] p-6"
+                >
+                    <div
+                        class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"
+                    >
                         <div>
-                            <div class="flex flex-wrap items-center gap-3">
-                                <span class="rounded-full bg-amber-200 px-3 py-1 text-xs font-semibold text-amber-900">
+                            <div
+                                class="flex flex-wrap items-center gap-3"
+                            >
+                                <span
+                                    class="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300"
+                                >
                                     Needs Refresh
                                 </span>
 
                                 @if ($insight->stale_at)
-                                    <span class="text-xs text-amber-700">
+                                    <span
+                                        class="text-xs text-amber-400"
+                                    >
                                         Marked stale
                                         {{ $insight->stale_at->diffForHumans() }}
                                     </span>
                                 @endif
                             </div>
 
-                            <p class="mt-4 font-semibold text-amber-950">
-                                This insight was generated before your latest portfolio update.
+                            <p
+                                class="mt-4 font-semibold text-white"
+                            >
+                                This insight was generated before your
+                                latest portfolio update.
                             </p>
 
-                            <p class="mt-2 max-w-3xl text-sm leading-6 text-amber-800">
+                            <p
+                                class="mt-2 max-w-3xl text-sm leading-6 text-slate-400"
+                            >
                                 {{ $insight->stale_reason
                                     ?: 'Your portfolio changed after this insight was generated.' }}
                             </p>
@@ -137,7 +170,7 @@
 
                             <button
                                 type="submit"
-                                class="rounded-xl bg-amber-500 px-5 py-3 text-sm font-semibold text-slate-950 shadow-sm hover:bg-amber-400"
+                                class="rounded-xl bg-amber-400 px-5 py-3 text-sm font-semibold text-slate-950 transition hover:bg-amber-300"
                             >
                                 Regenerate with Current Data
                             </button>
@@ -146,56 +179,87 @@
                 </section>
             @endif
 
-            <section class="overflow-hidden rounded-3xl bg-slate-950 text-white shadow-xl">
-                <div class="p-8 lg:p-10">
-                    <div class="flex flex-wrap items-start justify-between gap-8">
+            {{-- Main insight --}}
+            <section
+                class="overflow-hidden rounded-3xl border border-violet-500/20 bg-slate-900 shadow-xl"
+            >
+                <div class="p-7 lg:p-9">
+                    <div
+                        class="flex flex-col gap-8 lg:flex-row lg:items-start lg:justify-between"
+                    >
                         <div class="max-w-4xl">
-                            <div class="flex flex-wrap items-center gap-3">
-                                <span class="rounded-full px-3 py-1 text-xs font-semibold {{ $statusClasses }}">
+                            <div
+                                class="flex flex-wrap items-center gap-3"
+                            >
+                                <span
+                                    class="rounded-full border px-3 py-1 text-xs font-semibold {{ $statusClasses }}"
+                                >
                                     {{ str($insight->status)->title() }}
                                 </span>
 
                                 @if ($insight->is_stale)
-                                    <span class="rounded-full bg-amber-400/20 px-3 py-1 text-xs font-semibold text-amber-200">
+                                    <span
+                                        class="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300"
+                                    >
                                         Needs Refresh
                                     </span>
                                 @else
-                                    <span class="rounded-full bg-blue-500/20 px-3 py-1 text-xs font-semibold text-blue-200">
+                                    <span
+                                        class="rounded-full border border-blue-500/20 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-300"
+                                    >
                                         Current
                                     </span>
                                 @endif
 
                                 @if ($confidence)
-                                    <span class="rounded-full bg-violet-500/20 px-3 py-1 text-xs font-semibold text-violet-200">
+                                    <span
+                                        class="rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-300"
+                                    >
                                         {{ str($confidence)->title() }}
                                         confidence
                                     </span>
                                 @endif
                             </div>
 
-                            <h3 class="mt-6 text-3xl font-semibold tracking-tight">
+                            <p
+                                class="mt-7 text-xs font-semibold uppercase tracking-[0.16em] text-violet-400"
+                            >
+                                Portfolio explanation
+                            </p>
+
+                            <h3
+                                class="mt-3 text-3xl font-semibold tracking-tight text-white"
+                            >
                                 {{ $insight->headline
                                     ?: 'Portfolio insight' }}
                             </h3>
 
-                            <p class="mt-5 text-base leading-8 text-slate-300">
+                            <p
+                                class="mt-5 text-base leading-8 text-slate-300"
+                            >
                                 {{ $insight->summary
                                     ?: 'No summary was generated.' }}
                             </p>
                         </div>
 
-                        <div class="rounded-2xl border border-white/10 bg-white/5 p-5">
-                            <p class="text-sm text-slate-400">
+                        <div
+                            class="shrink-0 rounded-2xl border border-slate-800 bg-slate-950 p-5 lg:w-52"
+                        >
+                            <p class="text-sm text-slate-500">
                                 Generated
                             </p>
 
-                            <p class="mt-2 font-semibold">
+                            <p
+                                class="mt-2 font-semibold text-white"
+                            >
                                 {{ $insight->generated_at->format(
                                     'M j, Y'
                                 ) }}
                             </p>
 
-                            <p class="mt-1 text-sm text-slate-400">
+                            <p
+                                class="mt-1 text-sm text-slate-500"
+                            >
                                 {{ $insight->generated_at->format(
                                     'g:i A'
                                 ) }}
@@ -205,43 +269,65 @@
                 </div>
             </section>
 
-            <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+            {{-- Context metrics --}}
+            <section
+                class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
+            >
+                <article
+                    class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
+                >
                     <p class="text-sm text-slate-500">
                         Portfolio value
                     </p>
 
-                    <p class="mt-3 text-2xl font-semibold text-slate-900">
-                        ${{ number_format($portfolioValue, 2) }}
+                    <p
+                        class="mt-3 text-2xl font-semibold text-white"
+                    >
+                        ${{ number_format(
+                            $portfolioValue,
+                            2
+                        ) }}
                     </p>
                 </article>
 
-                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <p class="text-sm text-slate-500">
+                <article
+                    class="rounded-2xl border border-blue-500/20 bg-blue-500/[0.05] p-6"
+                >
+                    <p class="text-sm text-blue-300">
                         Helm Score
                     </p>
 
-                    <p class="mt-3 text-2xl font-semibold text-slate-900">
+                    <p
+                        class="mt-3 text-2xl font-semibold text-white"
+                    >
                         {{ $helmScore ?? '—' }}
                     </p>
                 </article>
 
-                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <article
+                    class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
+                >
                     <p class="text-sm text-slate-500">
                         Advisor Audit
                     </p>
 
-                    <p class="mt-3 text-2xl font-semibold text-slate-900">
+                    <p
+                        class="mt-3 text-2xl font-semibold text-white"
+                    >
                         {{ $auditGrade ?? '—' }}
                     </p>
                 </article>
 
-                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+                <article
+                    class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
+                >
                     <p class="text-sm text-slate-500">
                         Data freshness
                     </p>
 
-                    <p class="mt-3 text-2xl font-semibold text-slate-900">
+                    <p
+                        class="mt-3 text-2xl font-semibold text-white"
+                    >
                         {{ str($freshnessStatus)
                             ->replace('_', ' ')
                             ->title() }}
@@ -249,10 +335,18 @@
                 </article>
             </section>
 
-            <section class="grid gap-8 xl:grid-cols-2">
-                <article class="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+            {{-- Priorities and positives --}}
+            <section
+                class="grid gap-6 xl:grid-cols-2"
+            >
+                {{-- Priorities --}}
+                <article
+                    class="rounded-3xl border border-slate-800 bg-slate-900 p-7 shadow-xl"
+                >
                     <div class="flex items-center gap-3">
-                        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-100 text-amber-700">
+                        <div
+                            class="flex h-11 w-11 items-center justify-center rounded-xl border border-amber-500/20 bg-amber-500/10 text-amber-300"
+                        >
                             <svg
                                 class="h-6 w-6"
                                 fill="none"
@@ -269,11 +363,15 @@
                         </div>
 
                         <div>
-                            <p class="text-sm font-medium text-slate-500">
+                            <p
+                                class="text-sm font-medium text-amber-300"
+                            >
                                 Review priorities
                             </p>
 
-                            <h3 class="text-lg font-semibold text-slate-900">
+                            <h3
+                                class="text-lg font-semibold text-white"
+                            >
                                 What deserves attention
                             </h3>
                         </div>
@@ -281,16 +379,24 @@
 
                     <div class="mt-6 space-y-4">
                         @forelse ($insight->priorities ?? [] as $priority)
-                            <div class="rounded-2xl border border-slate-200 p-5">
-                                <div class="flex flex-wrap items-center gap-2">
+                            <div
+                                class="rounded-2xl border border-slate-800 bg-slate-950 p-5"
+                            >
+                                <div
+                                    class="flex flex-wrap items-center gap-2"
+                                >
                                     @if (! empty($priority['severity']))
-                                        <span class="rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold text-amber-800">
+                                        <span
+                                            class="rounded-full border border-amber-500/20 bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300"
+                                        >
                                             {{ str($priority['severity'])->title() }}
                                         </span>
                                     @endif
 
                                     @if (! empty($priority['category']))
-                                        <span class="text-xs font-medium uppercase tracking-wide text-slate-400">
+                                        <span
+                                            class="text-xs font-medium uppercase tracking-wide text-slate-600"
+                                        >
                                             {{ str($priority['category'])
                                                 ->replace('_', ' ')
                                                 ->title() }}
@@ -298,47 +404,65 @@
                                     @endif
                                 </div>
 
-                                <h4 class="mt-3 font-semibold text-slate-900">
+                                <h4
+                                    class="mt-3 font-semibold text-white"
+                                >
                                     {{ $priority['title']
                                         ?? 'Portfolio review item' }}
                                 </h4>
 
-                                <p class="mt-2 text-sm leading-6 text-slate-600">
+                                <p
+                                    class="mt-2 text-sm leading-6 text-slate-400"
+                                >
                                     {{ $priority['reason']
                                         ?? 'Review the supporting analysis.' }}
                                 </p>
 
                                 @if (
                                     ! empty($priority['route_name'])
-                                    && Route::has($priority['route_name'])
+                                    && Route::has(
+                                        $priority['route_name']
+                                    )
                                 )
                                     <a
                                         href="{{ route(
                                             $priority['route_name']
                                         ) }}"
-                                        class="mt-4 inline-flex text-sm font-semibold text-blue-600 hover:text-blue-500"
+                                        class="mt-4 inline-flex text-sm font-semibold text-blue-400 transition hover:text-blue-300"
                                     >
                                         Show supporting analysis →
                                     </a>
                                 @endif
                             </div>
                         @empty
-                            <div class="rounded-2xl border border-dashed border-slate-300 p-6 text-center">
-                                <p class="font-medium text-slate-900">
+                            <div
+                                class="rounded-2xl border border-dashed border-slate-700 bg-slate-950 p-6 text-center"
+                            >
+                                <p
+                                    class="font-medium text-white"
+                                >
                                     No priority issues identified
                                 </p>
 
-                                <p class="mt-2 text-sm text-slate-500">
-                                    The current context did not produce a priority review item.
+                                <p
+                                    class="mt-2 text-sm text-slate-500"
+                                >
+                                    The current context did not produce
+                                    a priority review item.
                                 </p>
                             </div>
                         @endforelse
                     </div>
                 </article>
 
-                <article class="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
+                {{-- Positives --}}
+                <article
+                    class="rounded-3xl border border-slate-800 bg-slate-900 p-7 shadow-xl"
+                >
                     <div class="flex items-center gap-3">
-                        <div class="flex h-11 w-11 items-center justify-center rounded-xl bg-emerald-100 text-emerald-700">
+                        <div
+                            class="flex h-11 w-11 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
+                        >
                             <svg
                                 class="h-6 w-6"
                                 fill="none"
@@ -355,21 +479,30 @@
                         </div>
 
                         <div>
-                            <p class="text-sm font-medium text-slate-500">
+                            <p
+                                class="text-sm font-medium text-emerald-300"
+                            >
                                 Positive signals
                             </p>
 
-                            <h3 class="text-lg font-semibold text-slate-900">
+                            <h3
+                                class="text-lg font-semibold text-white"
+                            >
                                 What is going well
                             </h3>
                         </div>
                     </div>
 
                     <div class="mt-6 space-y-3">
-                        @forelse ($insight->positive_changes ?? [] as $positive)
-                            <div class="flex gap-3 rounded-2xl bg-emerald-50 p-4">
+                        @forelse (
+                            $insight->positive_changes ?? []
+                            as $positive
+                        )
+                            <div
+                                class="flex gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-4"
+                            >
                                 <svg
-                                    class="mt-0.5 h-5 w-5 shrink-0 text-emerald-700"
+                                    class="mt-0.5 h-5 w-5 shrink-0 text-emerald-300"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -382,13 +515,19 @@
                                     />
                                 </svg>
 
-                                <p class="text-sm leading-6 text-emerald-900">
+                                <p
+                                    class="text-sm leading-6 text-slate-300"
+                                >
                                     {{ $positive }}
                                 </p>
                             </div>
                         @empty
-                            <div class="rounded-2xl border border-dashed border-slate-300 p-6 text-center">
-                                <p class="font-medium text-slate-900">
+                            <div
+                                class="rounded-2xl border border-dashed border-slate-700 bg-slate-950 p-6 text-center"
+                            >
+                                <p
+                                    class="font-medium text-white"
+                                >
                                     No positive changes recorded
                                 </p>
                             </div>
@@ -397,18 +536,33 @@
                 </article>
             </section>
 
+            {{-- Limitations --}}
             @if (! empty($insight->limitations))
-                <section class="rounded-3xl border border-amber-200 bg-amber-50 p-7">
-                    <p class="text-sm font-semibold text-amber-950">
-                        Data and analysis limitations
+                <section
+                    class="rounded-3xl border border-amber-500/20 bg-amber-500/[0.06] p-7"
+                >
+                    <p
+                        class="text-xs font-semibold uppercase tracking-[0.16em] text-amber-400"
+                    >
+                        Data limitations
                     </p>
 
-                    <div class="mt-4 space-y-3">
+                    <h3
+                        class="mt-2 font-semibold text-white"
+                    >
+                        What Helmio could not fully assess
+                    </h3>
+
+                    <div class="mt-5 space-y-3">
                         @foreach ($insight->limitations as $limitation)
                             <div class="flex gap-3">
-                                <span class="mt-2 h-2 w-2 shrink-0 rounded-full bg-amber-500"></span>
+                                <span
+                                    class="mt-2 h-2 w-2 shrink-0 rounded-full bg-amber-400"
+                                ></span>
 
-                                <p class="text-sm leading-6 text-amber-900">
+                                <p
+                                    class="text-sm leading-6 text-slate-400"
+                                >
                                     {{ $limitation }}
                                 </p>
                             </div>
@@ -417,70 +571,136 @@
                 </section>
             @endif
 
+            {{-- Error --}}
             @if ($insight->error_message)
-                <section class="rounded-3xl border border-red-200 bg-red-50 p-7">
-                    <p class="font-semibold text-red-900">
-                        Insight-generation error
+                <section
+                    class="rounded-3xl border border-red-500/20 bg-red-500/[0.06] p-7"
+                >
+                    <p
+                        class="text-xs font-semibold uppercase tracking-[0.16em] text-red-400"
+                    >
+                        Provider error
                     </p>
 
-                    <p class="mt-3 text-sm leading-6 text-red-700">
+                    <h3
+                        class="mt-2 font-semibold text-white"
+                    >
+                        Insight-generation error
+                    </h3>
+
+                    <p
+                        class="mt-3 text-sm leading-6 text-slate-400"
+                    >
                         {{ $insight->error_message }}
                     </p>
                 </section>
             @endif
 
-            <section class="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
-                <h3 class="text-lg font-semibold text-slate-900">
-                    Explainability record
-                </h3>
+            {{-- Explainability --}}
+            <section
+                class="rounded-3xl border border-slate-800 bg-slate-900 p-7 shadow-xl"
+            >
+                <div>
+                    <p
+                        class="text-xs font-semibold uppercase tracking-[0.16em] text-violet-400"
+                    >
+                        Explainability
+                    </p>
 
-                <div class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
-                    <div class="rounded-2xl bg-slate-50 p-4">
-                        <p class="text-xs uppercase tracking-wide text-slate-400">
+                    <h3
+                        class="mt-2 text-lg font-semibold text-white"
+                    >
+                        Generation record
+                    </h3>
+
+                    <p
+                        class="mt-2 text-sm leading-6 text-slate-500"
+                    >
+                        Details about the model, context, and portfolio
+                        snapshot used to create this explanation.
+                    </p>
+                </div>
+
+                <div
+                    class="mt-6 grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6"
+                >
+                    <div
+                        class="rounded-2xl border border-slate-800 bg-slate-950 p-4"
+                    >
+                        <p
+                            class="text-xs uppercase tracking-wide text-slate-600"
+                        >
                             Provider
                         </p>
 
-                        <p class="mt-2 text-sm font-semibold text-slate-900">
+                        <p
+                            class="mt-2 text-sm font-semibold text-white"
+                        >
                             {{ str($insight->provider)->title() }}
                         </p>
                     </div>
 
-                    <div class="rounded-2xl bg-slate-50 p-4">
-                        <p class="text-xs uppercase tracking-wide text-slate-400">
+                    <div
+                        class="rounded-2xl border border-slate-800 bg-slate-950 p-4"
+                    >
+                        <p
+                            class="text-xs uppercase tracking-wide text-slate-600"
+                        >
                             Model
                         </p>
 
-                        <p class="mt-2 text-sm font-semibold text-slate-900">
-                            {{ $insight->model ?: 'Not reported' }}
+                        <p
+                            class="mt-2 text-sm font-semibold text-white"
+                        >
+                            {{ $insight->model
+                                ?: 'Not reported' }}
                         </p>
                     </div>
 
-                    <div class="rounded-2xl bg-slate-50 p-4">
-                        <p class="text-xs uppercase tracking-wide text-slate-400">
+                    <div
+                        class="rounded-2xl border border-slate-800 bg-slate-950 p-4"
+                    >
+                        <p
+                            class="text-xs uppercase tracking-wide text-slate-600"
+                        >
                             Context version
                         </p>
 
-                        <p class="mt-2 break-all text-sm font-semibold text-slate-900">
+                        <p
+                            class="mt-2 break-all text-sm font-semibold text-white"
+                        >
                             {{ $insight->context_version }}
                         </p>
                     </div>
 
-                    <div class="rounded-2xl bg-slate-50 p-4">
-                        <p class="text-xs uppercase tracking-wide text-slate-400">
+                    <div
+                        class="rounded-2xl border border-slate-800 bg-slate-950 p-4"
+                    >
+                        <p
+                            class="text-xs uppercase tracking-wide text-slate-600"
+                        >
                             Prompt version
                         </p>
 
-                        <p class="mt-2 break-all text-sm font-semibold text-slate-900">
+                        <p
+                            class="mt-2 break-all text-sm font-semibold text-white"
+                        >
                             {{ $insight->prompt_version }}
                         </p>
                     </div>
 
-                    <div class="rounded-2xl bg-slate-50 p-4">
-                        <p class="text-xs uppercase tracking-wide text-slate-400">
-                            Portfolio value at generation
+                    <div
+                        class="rounded-2xl border border-slate-800 bg-slate-950 p-4"
+                    >
+                        <p
+                            class="text-xs uppercase tracking-wide text-slate-600"
+                        >
+                            Value at generation
                         </p>
 
-                        <p class="mt-2 text-sm font-semibold text-slate-900">
+                        <p
+                            class="mt-2 text-sm font-semibold text-white"
+                        >
                             ${{ number_format(
                                 (float) $portfolioValueAtGeneration,
                                 2
@@ -488,12 +708,18 @@
                         </p>
                     </div>
 
-                    <div class="rounded-2xl bg-slate-50 p-4">
-                        <p class="text-xs uppercase tracking-wide text-slate-400">
-                            Accounts at generation
+                    <div
+                        class="rounded-2xl border border-slate-800 bg-slate-950 p-4"
+                    >
+                        <p
+                            class="text-xs uppercase tracking-wide text-slate-600"
+                        >
+                            Accounts
                         </p>
 
-                        <p class="mt-2 text-sm font-semibold text-slate-900">
+                        <p
+                            class="mt-2 text-sm font-semibold text-white"
+                        >
                             {{ number_format(
                                 (int) $accountCountAtGeneration
                             ) }}
@@ -501,11 +727,18 @@
                     </div>
                 </div>
 
-                <p class="mt-6 text-sm leading-7 text-slate-500">
-                    This explanation is generated from the stored context snapshot.
-                    It does not modify account data or calculate the underlying
-                    Helm Score and Advisor Audit metrics.
-                </p>
+                <div
+                    class="mt-6 rounded-2xl border border-violet-500/20 bg-violet-500/[0.05] p-5"
+                >
+                    <p
+                        class="text-sm leading-7 text-slate-400"
+                    >
+                        This explanation is generated from the stored
+                        context snapshot. It does not modify account data
+                        or calculate the underlying Helm Score and Advisor
+                        Audit metrics.
+                    </p>
+                </div>
             </section>
         </div>
     </div>

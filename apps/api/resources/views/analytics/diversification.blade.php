@@ -1,121 +1,128 @@
 <x-app-layout>
     <x-slot name="header">
         <div>
-            <p class="text-sm font-medium text-blue-600">
-                Phase 2 analytics
+            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400">
+                Portfolio construction
             </p>
 
-            <h2 class="mt-1 text-2xl font-semibold text-slate-900">
-                Diversification analysis
+            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-white">
+                Diversification Analysis
             </h2>
+
+            <p class="mt-2 text-sm text-slate-400">
+                Review concentration across securities, sectors, and asset classes.
+            </p>
         </div>
     </x-slot>
 
-    <div class="py-10">
-        <div class="mx-auto max-w-7xl space-y-8 px-4 sm:px-6 lg:px-8">
-            <section class="grid gap-5 sm:grid-cols-2 xl:grid-cols-4">
-                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <p class="text-sm font-medium text-slate-500">
-                        Diversification score
-                    </p>
+    <div class="bg-slate-950 py-8">
+        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
 
-                    <p class="mt-3 text-4xl font-semibold text-slate-900">
-                        {{ $analytics['score'] ?? '—' }}
-                    </p>
+            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+                <x-analytics.metric-card
+                    label="Diversification score"
+                    description="{{ $analytics['label'] }}"
+                >
+                    {{ $analytics['score'] ?? '—' }}
+                </x-analytics.metric-card>
 
-                    <p class="mt-2 text-sm text-slate-500">
-                        {{ $analytics['label'] }}
-                    </p>
-                </article>
+                <x-analytics.metric-card label="Securities">
+                    {{ $analytics['metrics']['security_count'] ?? 0 }}
+                </x-analytics.metric-card>
 
-                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <p class="text-sm font-medium text-slate-500">
-                        Securities
-                    </p>
+                <x-analytics.metric-card label="Largest holding">
+                    @if (isset($analytics['metrics']['largest_security_weight']))
+                        {{ number_format(
+                            $analytics['metrics']['largest_security_weight'] * 100,
+                            1
+                        ) }}%
+                    @else
+                        —
+                    @endif
+                </x-analytics.metric-card>
 
-                    <p class="mt-3 text-3xl font-semibold text-slate-900">
-                        {{ $analytics['metrics']['security_count'] ?? 0 }}
-                    </p>
-                </article>
+                <x-analytics.metric-card label="Largest sector">
+                    @if (isset($analytics['metrics']['largest_sector_weight']))
+                        {{ number_format(
+                            $analytics['metrics']['largest_sector_weight'] * 100,
+                            1
+                        ) }}%
+                    @else
+                        —
+                    @endif
+                </x-analytics.metric-card>
+            </div>
 
-                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <p class="text-sm font-medium text-slate-500">
-                        Largest holding
-                    </p>
+            <div class="grid gap-6 lg:grid-cols-2">
+                <x-analytics.panel title="Why This Score?">
+                    <div class="space-y-4">
+                        @forelse ($analytics['reasons'] as $reason)
+                            <div class="flex gap-3">
+                                <span
+                                    class="mt-2 h-1.5 w-1.5 shrink-0 rounded-full bg-blue-400"
+                                ></span>
 
-                    <p class="mt-3 text-3xl font-semibold text-slate-900">
-                        @if (isset($analytics['metrics']['largest_security_weight']))
-                            {{ number_format(
-                                $analytics['metrics']['largest_security_weight'] * 100,
-                                1
-                            ) }}%
-                        @else
-                            —
-                        @endif
-                    </p>
-                </article>
-
-                <article class="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-                    <p class="text-sm font-medium text-slate-500">
-                        Largest sector
-                    </p>
-
-                    <p class="mt-3 text-3xl font-semibold text-slate-900">
-                        @if (isset($analytics['metrics']['largest_sector_weight']))
-                            {{ number_format(
-                                $analytics['metrics']['largest_sector_weight'] * 100,
-                                1
-                            ) }}%
-                        @else
-                            —
-                        @endif
-                    </p>
-                </article>
-            </section>
-
-            <section class="grid gap-6 lg:grid-cols-2">
-                <article class="rounded-3xl border border-slate-200 bg-white p-7 shadow-sm">
-                    <h3 class="text-lg font-semibold text-slate-900">
-                        Why this score?
-                    </h3>
-
-                    <div class="mt-5 space-y-3">
-                        @foreach ($analytics['reasons'] as $reason)
-                            <p class="text-sm leading-6 text-slate-600">
-                                {{ $reason }}
+                                <p class="text-sm leading-6 text-slate-400">
+                                    {{ $reason }}
+                                </p>
+                            </div>
+                        @empty
+                            <p class="text-sm text-slate-500">
+                                No scoring reasons are currently available.
                             </p>
-                        @endforeach
+                        @endforelse
                     </div>
-                </article>
+                </x-analytics.panel>
 
-                <article class="rounded-3xl border border-blue-200 bg-blue-50 p-7">
-                    <h3 class="text-lg font-semibold text-blue-950">
-                        Recommended review
-                    </h3>
+                <section
+                    class="rounded-3xl border border-blue-500/20 bg-blue-500/[0.06] p-7"
+                >
+                    <p class="text-sm font-semibold text-blue-300">
+                        Recommended Review
+                    </p>
 
-                    <div class="mt-5 space-y-3">
-                        @foreach ($analytics['recommendations'] as $recommendation)
-                            <p class="text-sm leading-6 text-blue-900">
-                                {{ $recommendation }}
+                    <div class="mt-5 space-y-4">
+                        @forelse ($analytics['recommendations'] as $recommendation)
+                            <div class="flex gap-3">
+                                <svg
+                                    class="mt-0.5 h-5 w-5 shrink-0 text-blue-400"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="2"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="m9 18 6-6-6-6"
+                                    />
+                                </svg>
+
+                                <p class="text-sm leading-6 text-slate-300">
+                                    {{ $recommendation }}
+                                </p>
+                            </div>
+                        @empty
+                            <p class="text-sm text-slate-500">
+                                No recommendations currently available.
                             </p>
-                        @endforeach
+                        @endforelse
                     </div>
-                </article>
-            </section>
+                </section>
+            </div>
 
-            <section class="grid gap-6 lg:grid-cols-2">
-                <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                    <div class="border-b border-slate-200 px-6 py-5">
-                        <h3 class="font-semibold text-slate-900">
-                            Largest securities
-                        </h3>
-                    </div>
-
-                    <div class="divide-y divide-slate-200">
+            <div class="grid gap-6 lg:grid-cols-2">
+                <x-analytics.panel
+                    title="Largest Securities"
+                    :padding="false"
+                >
+                    <div class="divide-y divide-slate-800">
                         @forelse ($analytics['securities']->take(10) as $security)
-                            <div class="flex items-center justify-between gap-5 px-6 py-5">
+                            <div
+                                class="flex items-center justify-between gap-5 px-6 py-5"
+                            >
                                 <div>
-                                    <p class="font-semibold text-slate-900">
+                                    <p class="font-semibold text-white">
                                         {{ $security['symbol'] ?: $security['name'] }}
                                     </p>
 
@@ -125,7 +132,7 @@
                                 </div>
 
                                 <div class="text-right">
-                                    <p class="font-semibold text-slate-900">
+                                    <p class="font-semibold text-white">
                                         {{ number_format(
                                             $security['weight'] * 100,
                                             1
@@ -146,24 +153,21 @@
                             </div>
                         @endforelse
                     </div>
-                </article>
+                </x-analytics.panel>
 
-                <article class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                    <div class="border-b border-slate-200 px-6 py-5">
-                        <h3 class="font-semibold text-slate-900">
-                            Sector exposure
-                        </h3>
-                    </div>
-
-                    <div class="divide-y divide-slate-200">
+                <x-analytics.panel
+                    title="Sector Exposure"
+                    :padding="false"
+                >
+                    <div class="divide-y divide-slate-800">
                         @forelse ($analytics['sectors'] as $sector)
                             <div class="px-6 py-5">
-                                <div class="flex items-center justify-between gap-5">
-                                    <p class="font-medium text-slate-900">
+                                <div class="flex justify-between gap-5">
+                                    <p class="font-medium text-slate-300">
                                         {{ $sector['name'] }}
                                     </p>
 
-                                    <p class="font-semibold text-slate-900">
+                                    <p class="font-semibold text-white">
                                         {{ number_format(
                                             $sector['weight'] * 100,
                                             1
@@ -171,10 +175,15 @@
                                     </p>
                                 </div>
 
-                                <div class="mt-3 h-2 overflow-hidden rounded-full bg-slate-100">
+                                <div
+                                    class="mt-3 h-2 overflow-hidden rounded-full bg-slate-800"
+                                >
                                     <div
-                                        class="h-full rounded-full bg-blue-600"
-                                        style="width: {{ min(100, $sector['weight'] * 100) }}%"
+                                        class="h-full rounded-full bg-blue-500"
+                                        style="width: {{ min(
+                                            100,
+                                            $sector['weight'] * 100
+                                        ) }}%"
                                     ></div>
                                 </div>
                             </div>
@@ -184,25 +193,21 @@
                             </div>
                         @endforelse
                     </div>
-                </article>
-            </section>
+                </x-analytics.panel>
+            </div>
 
-            <section class="overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-sm">
-                <div class="border-b border-slate-200 px-6 py-5">
-                    <h3 class="font-semibold text-slate-900">
-                        Asset-class exposure
-                    </h3>
-                </div>
-
-                <div class="grid gap-5 p-6 sm:grid-cols-2 lg:grid-cols-3">
+            <x-analytics.panel title="Asset-Class Exposure">
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     @forelse ($analytics['asset_classes'] as $assetClass)
-                        <article class="rounded-2xl border border-slate-200 p-5">
-                            <div class="flex items-center justify-between gap-4">
-                                <p class="font-medium text-slate-900">
+                        <article
+                            class="rounded-2xl border border-slate-800 bg-slate-950 p-5"
+                        >
+                            <div class="flex justify-between gap-4">
+                                <p class="font-medium text-slate-300">
                                     {{ $assetClass['name'] }}
                                 </p>
 
-                                <p class="font-semibold text-slate-900">
+                                <p class="font-semibold text-white">
                                     {{ number_format(
                                         $assetClass['weight'] * 100,
                                         1
@@ -223,27 +228,18 @@
                         </p>
                     @endforelse
                 </div>
-            </section>
+            </x-analytics.panel>
 
-            <section class="rounded-3xl bg-slate-950 p-8 text-white">
-                <p class="text-sm font-medium text-blue-300">
-                    Methodology
-                </p>
-
-                <p class="mt-4 max-w-4xl text-sm leading-7 text-slate-300">
-                    The initial diversification score evaluates individual
-                    security concentration, top-five concentration, sector
-                    exposure, asset-class exposure and classification
-                    completeness. It does not yet measure correlations,
-                    geographic exposure, look-through fund holdings or factor
-                    concentration.
-                </p>
-
-                <p class="mt-4 text-xs text-slate-500">
-                    Formula version:
-                    {{ $analytics['formula_version'] }}
-                </p>
-            </section>
+            <x-analytics.methodology
+                :formula-version="$analytics['formula_version']"
+            >
+                The initial diversification score evaluates individual
+                security concentration, top-five concentration, sector
+                exposure, asset-class exposure, and classification
+                completeness. It does not yet measure correlations,
+                geographic exposure, look-through fund holdings, or
+                factor concentration.
+            </x-analytics.methodology>
         </div>
     </div>
 </x-app-layout>

@@ -423,104 +423,192 @@ class TimelineComparisonService
      * @return Collection<int, TimelineEvent>
      */
     private function categoryScoreEvents(
-        User $user,
-        AuditRun $previous,
-        AuditRun $current,
-    ): Collection {
-        $previousScores = collect(
-            $previous->category_scores ?? [],
-        );
+    User $user,
+    AuditRun $previous,
+    AuditRun $current,
+): Collection {
+    $previousScores = collect(
+        $previous->category_scores ?? [],
+    );
 
-        $currentScores = collect(
-            $current->category_scores ?? [],
-        );
+    $currentScores = collect(
+        $current->category_scores ?? [],
+    );
 
-        return $currentScores
-            ->map(
-                function (
-                    array $category,
-                    string $key,
-                ) use (
-                    $user,
-                    $previous,
-                    $current,
-                    $previousScores,
-                ): ?TimelineEvent {
-                    $before = data_get(
-                        $previousScores->get($key),
-                        'score',
+    /*
+     * Only these keys represent Advisor Audit categories.
+     *
+     * category_scores may also contain scalar metadata such as
+     * overall_score, completeness, or other summary values.
+     * Those values must not be passed into the category callback.
+     */
+    $validCategories = [
+        'cost',
+        'diversification',
+        'performance',
+        'risk',
+        'trading',
+        'cash',
+        'tax',
+        'suitability',
+    ];
+
+    return $currentScores
+        ->filter(
+            function (
+                mixed $category,
+                mixed $key,
+            ) use (
+                $validCategories,
+            ): bool {
+                return is_string($key)
+                    && in_array(
+                        $key,
+                        $validCategories,
+                        true,
+                    )
+                    && is_array($category);
+            },
+        )
+        ->map(
+            function (
+                array $category,
+                string $key,
+            ) use (
+                $user,
+                $previous,
+                $current,
+                $previousScores,
+            ): ?TimelineEvent {
+                $previousCategory =
+                    $previousScores->get(
+                        $key,
                     );
 
-                    $after = $category['score'] ?? null;
+                /*
+                 * The previous audit may have been generated using
+                 * an older payload structure. Ignore the comparison
+                 * if the prior category is not an array.
+                 */
+                if (
+                    ! is_array(
+                        $previousCategory,
+                    )
+                ) {
+                    return null;
+                }
 
-                    if (
-                        $before === null
-                        || $after === null
-                        || (int) $before === (int) $after
-                    ) {
-                        return null;
-                    }
+                $before = data_get(
+                    $previousCategory,
+                    'score',
+                );
 
-                    $change =
-                        (int) $after
-                        - (int) $before;
+                $after = data_get(
+                    $category,
+                    'score',
+                );
 
-                    /*
-                     * Avoid filling the timeline with negligible changes.
-                     */
-                    if (abs($change) < 3) {
-                        return null;
-                    }
+                if (
+                    $before === null
+                    || $after === null
+                    || ! is_numeric($before)
+                    || ! is_numeric($after)
+                    || (int) $before === (int) $after
+                ) {
+                    return null;
+                }
 
-                    $improved = $change > 0;
+                $before =
+                    (int) $before;
 
-                    return $this->storeEvent(
-                        user: $user,
-                        current: $current,
-                        type: $improved
-                            ? TimelineEventType::CategoryScoreImproved
-                            : TimelineEventType::CategoryScoreDeclined,
-                        category: $key,
-                        severity: $improved
-                            ? 'positive'
-                            : $this->declineSeverity(
-                                abs($change),
-                            ),
-                        headline: sprintf(
-                            '%s score %s',
-                            str($key)
-                                ->replace('_', ' ')
-                                ->title(),
-                            $improved
-                                ? 'improved'
-                                : 'declined',
+                $after =
+                    (int) $after;
+
+                $change =
+                    $after - $before;
+
+                /*
+                 * Avoid filling the timeline with negligible changes.
+                 */
+                if (
+                    abs($change) < 3
+                ) {
+                    return null;
+                }
+
+                $improved =
+                    $change > 0;
+
+                return $this->storeEvent(
+                    user: $user,
+
+                    current: $current,
+
+                    type: $improved
+                        ? TimelineEventType::CategoryScoreImproved
+                        : TimelineEventType::CategoryScoreDeclined,
+
+                    category: $key,
+
+                    severity: $improved
+                        ? 'positive'
+                        : $this->declineSeverity(
+                            abs($change),
                         ),
-                        summary: sprintf(
-                            'The %s score changed from %d to %d.',
-                            str($key)
-                                ->replace('_', ' ')
-                                ->lower(),
+
+                    headline: sprintf(
+                        '%s score %s',
+                        str($key)
+                            ->replace(
+                                '_',
+                                ' ',
+                            )
+                            ->title(),
+                        $improved
+                            ? 'improved'
+                            : 'declined',
+                    ),
+
+                    summary: sprintf(
+                        'The %s score changed from %d to %d.',
+                        str($key)
+                            ->replace(
+                                '_',
+                                ' ',
+                            )
+                            ->lower(),
+                        $before,
+                        $after,
+                    ),
+
+                    before: [
+                        'score' =>
                             $before,
+                    ],
+
+                    after: [
+                        'score' =>
                             $after,
+                    ],
+
+                    metrics: [
+                        'change' =>
+                            $change,
+                    ],
+
+                    routeName:
+                        $this->categoryRoute(
+                            $key,
                         ),
-                        before: [
-                            'score' => (int) $before,
-                        ],
-                        after: [
-                            'score' => (int) $after,
-                        ],
-                        metrics: [
-                            'change' => $change,
-                        ],
-                        routeName:
-                            $this->categoryRoute($key),
-                        suffix: 'category-'.$key,
-                    );
-                },
-            )
-            ->filter()
-            ->values();
-    }
+
+                    suffix:
+                        'category-'.$key,
+                );
+            },
+        )
+        ->filter()
+        ->values();
+}
 
     /**
      * @param array<string, mixed> $before

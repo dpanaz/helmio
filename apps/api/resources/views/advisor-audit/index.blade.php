@@ -1,34 +1,47 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div
+            class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        >
             <div>
-                <h2 class="text-xl font-semibold text-gray-900">
+                <p
+                    class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400"
+                >
+                    Independent advisor oversight
+                </p>
+
+                <h2
+                    class="mt-2 text-2xl font-semibold tracking-tight text-white"
+                >
                     Advisor Audit
                 </h2>
 
-                <p class="mt-1 text-sm text-gray-500">
-                    Review advisor performance, costs, risk, trading behavior, cash management, diversification, and tax efficiency.
+                <p
+                    class="mt-2 max-w-3xl text-sm leading-6 text-slate-400"
+                >
+                    Review advisor performance, costs, risk, trading behavior,
+                    cash management, diversification, and tax efficiency.
                 </p>
             </div>
 
             <div class="flex flex-wrap gap-2">
                 <a
                     href="{{ route('advisor-audit.report') }}"
-                    class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    class="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white"
                 >
                     View Report
                 </a>
 
                 <a
                     href="{{ route('advisor-audit.report.pdf') }}"
-                    class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                    class="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white"
                 >
                     Download PDF
                 </a>
 
                 <a
                     href="{{ route('advisor-audit.history') }}"
-                    class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700"
+                    class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
                 >
                     Audit History
                 </a>
@@ -36,19 +49,34 @@
         </div>
     </x-slot>
 
-    <div class="py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="min-h-screen bg-slate-950 py-8">
+        <div
+            class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8"
+        >
+            {{-- Analysis controls --}}
+            <section
+                class="rounded-3xl border border-slate-800 bg-slate-900/80 p-6 shadow-xl shadow-black/10"
+            >
+                <div class="mb-5">
+                    <p class="text-sm font-semibold text-white">
+                        Audit controls
+                    </p>
 
-            <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+                    <p class="mt-1 text-xs text-slate-500">
+                        Choose the review period and comparison benchmark.
+                    </p>
+                </div>
+
                 <form
                     id="advisor-audit-form"
-                    class="grid gap-4 md:grid-cols-4"
+                    class="grid gap-5 md:grid-cols-4"
                 >
                     @csrf
+
                     <div>
                         <label
                             for="start_date"
-                            class="block text-sm font-medium text-gray-700"
+                            class="block text-sm font-medium text-slate-400"
                         >
                             Start date
                         </label>
@@ -58,7 +86,7 @@
                             name="start_date"
                             type="date"
                             value="{{ now()->subYear()->format('Y-m-d') }}"
-                            class="mt-1 block w-full rounded-lg border-gray-300"
+                            class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 px-4 py-3 text-slate-200 shadow-none focus:border-blue-500 focus:ring-blue-500"
                             required
                         >
                     </div>
@@ -66,7 +94,7 @@
                     <div>
                         <label
                             for="end_date"
-                            class="block text-sm font-medium text-gray-700"
+                            class="block text-sm font-medium text-slate-400"
                         >
                             End date
                         </label>
@@ -76,7 +104,7 @@
                             name="end_date"
                             type="date"
                             value="{{ now()->format('Y-m-d') }}"
-                            class="mt-1 block w-full rounded-lg border-gray-300"
+                            class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 px-4 py-3 text-slate-200 shadow-none focus:border-blue-500 focus:ring-blue-500"
                             required
                         >
                     </div>
@@ -84,7 +112,7 @@
                     <div>
                         <label
                             for="benchmark_id"
-                            class="block text-sm font-medium text-gray-700"
+                            class="block text-sm font-medium text-slate-400"
                         >
                             Benchmark
                         </label>
@@ -92,7 +120,7 @@
                         <select
                             id="benchmark_id"
                             name="benchmark_id"
-                            class="mt-1 block w-full rounded-lg border-gray-300"
+                            class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 px-4 py-3 text-slate-200 shadow-none focus:border-blue-500 focus:ring-blue-500"
                         >
                             @foreach ($benchmarks as $benchmark)
                                 <option
@@ -109,219 +137,328 @@
                     <div class="flex items-end">
                         <button
                             type="submit"
-                            class="w-full rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-gray-700"
+                            class="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
                         >
                             Run Advisor Audit
                         </button>
                     </div>
                 </form>
-            </div>
+            </section>
 
+            {{-- Loading --}}
             <div
                 id="loading-state"
-                class="hidden rounded-xl bg-white p-10 text-center shadow-sm ring-1 ring-gray-200"
+                class="hidden rounded-3xl border border-slate-800 bg-slate-900 p-10 text-center"
             >
-                <p class="text-sm font-medium text-gray-700">
+                <div
+                    class="mx-auto h-8 w-8 animate-spin rounded-full border-2 border-slate-700 border-t-blue-400"
+                ></div>
+
+                <p class="mt-4 text-sm font-medium text-slate-300">
                     Running Advisor Audit…
                 </p>
 
-                <p class="mt-1 text-sm text-gray-500">
+                <p class="mt-1 text-sm text-slate-500">
                     Reviewing all available analytics categories.
                 </p>
             </div>
 
+            {{-- Error --}}
             <div
                 id="error-state"
-                class="hidden rounded-xl border border-red-200 bg-red-50 p-5 text-sm text-red-700"
+                class="hidden rounded-2xl border border-red-500/20 bg-red-500/[0.07] p-5 text-sm text-red-300"
             ></div>
 
+            {{-- Insufficient data --}}
             <div
                 id="insufficient-state"
-                class="hidden rounded-xl border border-amber-200 bg-amber-50 p-6"
+                class="hidden rounded-2xl border border-amber-500/20 bg-amber-500/[0.07] p-5"
             >
-                <h3 class="font-semibold text-amber-900">
-                    More account data is needed
-                </h3>
+                <div class="flex gap-4">
+                    <div
+                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-amber-500/10 text-amber-300"
+                    >
+                        <svg
+                            class="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M12 9v4m0 4h.01M10.3 4.5 2.6 18a1 1 0 0 0 .87 1.5h17.06a1 1 0 0 0 .87-1.5L13.7 4.5a1 1 0 0 0-1.74 0Z"
+                            />
+                        </svg>
+                    </div>
 
-                <p
-                    id="insufficient-message"
-                    class="mt-2 text-sm text-amber-800"
-                ></p>
+                    <div>
+                        <h3 class="font-semibold text-amber-300">
+                            More account data is needed
+                        </h3>
+
+                        <p
+                            id="insufficient-message"
+                            class="mt-1 text-sm leading-6 text-slate-400"
+                        ></p>
+                    </div>
+                </div>
             </div>
 
             <div
                 id="results"
                 class="hidden space-y-6"
             >
-                <div class="grid gap-6 lg:grid-cols-[1.1fr_1.9fr]">
-                    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                        <p class="text-sm text-gray-500">
-                            Advisor Audit Score
+                {{-- Score + summary --}}
+                <div
+                    class="grid gap-6 lg:grid-cols-[1.05fr_1.95fr]"
+                >
+                    {{-- Score --}}
+                    <section
+                        class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
+                    >
+                        <div
+                            class="flex items-center justify-between"
+                        >
+                            <div>
+                                <p class="text-sm font-semibold text-white">
+                                    Advisor Audit Score
+                                </p>
+
+                                <p class="mt-1 text-xs text-slate-500">
+                                    Overall oversight assessment
+                                </p>
+                            </div>
+                        </div>
+
+                        <div
+                            class="mt-6 flex justify-center"
+                        >
+                            <div
+                                id="advisor-score-dial"
+                                data-score="0"
+                                class="relative flex h-56 w-56 items-center justify-center"
+                            >
+                                <svg
+                                    class="absolute inset-0 h-full w-full -rotate-90"
+                                    viewBox="0 0 220 220"
+                                >
+                                    <circle
+                                        cx="110"
+                                        cy="110"
+                                        r="88"
+                                        fill="none"
+                                        stroke="#1e293b"
+                                        stroke-width="15"
+                                    />
+
+                                    <circle
+                                        id="advisor-score-ring"
+                                        cx="110"
+                                        cy="110"
+                                        r="88"
+                                        fill="none"
+                                        stroke="#3b82f6"
+                                        stroke-width="15"
+                                        stroke-linecap="round"
+                                        pathLength="100"
+                                        stroke-dasharray="100"
+                                        stroke-dashoffset="100"
+                                    />
+                                </svg>
+
+                                <div
+                                    class="relative flex h-40 w-40 flex-col items-center justify-center rounded-full border border-slate-800 bg-slate-950"
+                                >
+                                    <div class="flex items-baseline">
+                                        <span
+                                            id="overall-score"
+                                            class="text-5xl font-semibold tracking-tight text-white"
+                                        >
+                                            —
+                                        </span>
+
+                                        <span
+                                            class="ml-1 text-sm text-slate-600"
+                                        >
+                                            /100
+                                        </span>
+                                    </div>
+
+                                    <span
+                                        id="overall-label"
+                                        class="mt-3 inline-flex rounded-full border border-slate-700 bg-slate-800 px-3 py-1 text-xs font-semibold text-slate-300"
+                                    >
+                                        —
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <p
+                            id="advisor-rating"
+                            class="mt-5 text-center text-sm font-medium text-slate-400"
+                        >
+                            —
                         </p>
 
-                        <div class="mt-3 flex items-end gap-3">
-                            <span
-                                id="overall-score"
-                                class="text-6xl font-bold tracking-tight text-gray-900"
-                            >
-                                —
-                            </span>
-
-                            <span class="pb-2 text-lg font-medium text-gray-400">
-                                / 100
-                            </span>
-                        </div>
-
-                        <div class="mt-4 flex flex-wrap items-center gap-3">
-                            <span
-                                id="overall-label"
-                                class="inline-flex rounded-full px-3 py-1 text-sm font-semibold"
-                            >
-                                —
-                            </span>
-
-                            <span
-                                id="advisor-rating"
-                                class="text-sm font-medium text-gray-600"
-                            >
-                                —
-                            </span>
-                        </div>
-
                         <div class="mt-6">
-                            <div class="flex items-center justify-between text-sm">
-                                <span class="text-gray-500">
+                            <div
+                                class="flex items-center justify-between text-sm"
+                            >
+                                <span class="text-slate-500">
                                     Data completeness
                                 </span>
 
                                 <span
                                     id="data-completeness"
-                                    class="font-semibold text-gray-900"
+                                    class="font-semibold text-white"
                                 >
                                     —
                                 </span>
                             </div>
 
-                            <div class="mt-2 h-2 overflow-hidden rounded-full bg-gray-100">
+                            <div
+                                class="mt-2 h-2 overflow-hidden rounded-full bg-slate-800"
+                            >
                                 <div
                                     id="data-completeness-bar"
-                                    class="h-full rounded-full bg-gray-900"
+                                    class="h-full rounded-full bg-blue-500"
                                     style="width: 0%"
                                 ></div>
                             </div>
                         </div>
 
-                        <dl class="mt-6 space-y-3 text-sm">
+                        <dl
+                            class="mt-6 space-y-4 border-t border-slate-800 pt-5 text-sm"
+                        >
                             <div class="flex justify-between gap-4">
-                                <dt class="text-gray-500">
+                                <dt class="text-slate-500">
                                     Analysis period
                                 </dt>
 
                                 <dd
                                     id="analysis-period"
-                                    class="text-right font-medium text-gray-900"
+                                    class="text-right font-medium text-slate-300"
                                 >
                                     —
                                 </dd>
                             </div>
 
                             <div class="flex justify-between gap-4">
-                                <dt class="text-gray-500">
+                                <dt class="text-slate-500">
                                     Benchmark
                                 </dt>
 
                                 <dd
                                     id="benchmark-name"
-                                    class="text-right font-medium text-gray-900"
+                                    class="text-right font-medium text-slate-300"
                                 >
                                     —
                                 </dd>
                             </div>
 
                             <div class="flex justify-between gap-4">
-                                <dt class="text-gray-500">
+                                <dt class="text-slate-500">
                                     Accounts reviewed
                                 </dt>
 
                                 <dd
                                     id="account-count"
-                                    class="text-right font-medium text-gray-900"
+                                    class="text-right font-medium text-slate-300"
                                 >
                                     —
                                 </dd>
                             </div>
                         </dl>
-                    </div>
+                    </section>
 
-                    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                        <p class="text-sm font-medium text-gray-500">
+                    {{-- Executive summary --}}
+                    <section
+                        class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
+                    >
+                        <p
+                            class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400"
+                        >
                             Executive Summary
                         </p>
 
                         <h3
                             id="executive-headline"
-                            class="mt-2 text-2xl font-semibold text-gray-900"
+                            class="mt-3 text-2xl font-semibold tracking-tight text-white"
                         >
                             —
                         </h3>
 
                         <p
                             id="executive-summary"
-                            class="mt-4 text-sm leading-6 text-gray-600"
+                            class="mt-4 max-w-3xl text-sm leading-7 text-slate-400"
                         >
                             —
                         </p>
 
-                        <div class="mt-6 grid gap-4 sm:grid-cols-3">
-                            <div class="rounded-lg bg-red-50 p-4">
-                                <p class="text-sm text-red-700">
+                        <div
+                            class="mt-7 grid gap-4 sm:grid-cols-3"
+                        >
+                            <div
+                                class="rounded-2xl border border-red-500/20 bg-red-500/[0.06] p-5"
+                            >
+                                <p class="text-sm text-red-300">
                                     Critical concerns
                                 </p>
 
                                 <p
                                     id="critical-count"
-                                    class="mt-1 text-2xl font-semibold text-red-900"
+                                    class="mt-2 text-3xl font-semibold text-white"
                                 >
                                     —
                                 </p>
                             </div>
 
-                            <div class="rounded-lg bg-amber-50 p-4">
-                                <p class="text-sm text-amber-700">
+                            <div
+                                class="rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] p-5"
+                            >
+                                <p class="text-sm text-amber-300">
                                     Important findings
                                 </p>
 
                                 <p
                                     id="important-count"
-                                    class="mt-1 text-2xl font-semibold text-amber-900"
+                                    class="mt-2 text-3xl font-semibold text-white"
                                 >
                                     —
                                 </p>
                             </div>
 
-                            <div class="rounded-lg bg-emerald-50 p-4">
-                                <p class="text-sm text-emerald-700">
+                            <div
+                                class="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.06] p-5"
+                            >
+                                <p class="text-sm text-emerald-300">
                                     Opportunities
                                 </p>
 
                                 <p
                                     id="opportunity-count"
-                                    class="mt-1 text-2xl font-semibold text-emerald-900"
+                                    class="mt-2 text-3xl font-semibold text-white"
                                 >
                                     —
                                 </p>
                             </div>
                         </div>
-                    </div>
+                    </section>
                 </div>
 
-                <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+                {{-- Category scores --}}
+                <section
+                    class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
+                >
                     <div>
-                        <h3 class="text-lg font-semibold text-gray-900">
+                        <h3 class="text-lg font-semibold text-white">
                             Category Scores
                         </h3>
 
-                        <p class="mt-1 text-sm text-gray-500">
+                        <p class="mt-1 text-sm text-slate-500">
                             Each category contributes to the overall advisor assessment.
                         </p>
                     </div>
@@ -330,18 +467,19 @@
                         id="category-grid"
                         class="mt-6 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
                     ></div>
-                </div>
+                </section>
 
-                <div
+                {{-- Critical --}}
+                <section
                     id="critical-section"
-                    class="hidden rounded-xl border border-red-200 bg-red-50 p-6"
+                    class="hidden rounded-3xl border border-red-500/20 bg-red-500/[0.05] p-6"
                 >
                     <div>
-                        <h3 class="text-lg font-semibold text-red-900">
+                        <h3 class="text-lg font-semibold text-red-300">
                             Critical Findings
                         </h3>
 
-                        <p class="mt-1 text-sm text-red-700">
+                        <p class="mt-1 text-sm text-slate-400">
                             These findings should be reviewed promptly.
                         </p>
                     </div>
@@ -350,11 +488,14 @@
                         id="critical-findings"
                         class="mt-5 space-y-4"
                     ></div>
-                </div>
+                </section>
 
+                {{-- Important + opportunities --}}
                 <div class="grid gap-6 lg:grid-cols-2">
-                    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900">
+                    <section
+                        class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
+                    >
+                        <h3 class="text-lg font-semibold text-white">
                             Important Findings
                         </h3>
 
@@ -362,10 +503,12 @@
                             id="important-findings"
                             class="mt-5 space-y-4"
                         ></div>
-                    </div>
+                    </section>
 
-                    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900">
+                    <section
+                        class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
+                    >
+                        <h3 class="text-lg font-semibold text-white">
                             Opportunities
                         </h3>
 
@@ -373,11 +516,14 @@
                             id="opportunity-findings"
                             class="mt-5 space-y-4"
                         ></div>
-                    </div>
+                    </section>
                 </div>
 
-                <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900">
+                {{-- Recommended actions --}}
+                <section
+                    class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
+                >
+                    <h3 class="text-lg font-semibold text-white">
                         Recommended Actions
                     </h3>
 
@@ -385,44 +531,50 @@
                         id="recommended-actions"
                         class="mt-5 grid gap-4 lg:grid-cols-2"
                     ></div>
-                </div>
+                </section>
 
-                <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                {{-- Next steps --}}
+                <section
+                    class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
+                >
+                    <div
+                        class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+                    >
                         <div>
-                            <h3 class="text-lg font-semibold text-gray-900">
+                            <h3 class="text-lg font-semibold text-white">
                                 Next Steps
                             </h3>
 
-                            <p class="mt-1 text-sm text-gray-500">
-                                Review the full report, compare prior audits, or schedule recurring monthly reviews.
+                            <p class="mt-1 text-sm text-slate-500">
+                                Review the full report, compare prior audits,
+                                or schedule recurring monthly reviews.
                             </p>
                         </div>
 
                         <div class="flex flex-wrap gap-2">
                             <a
                                 href="{{ route('advisor-audit.report') }}"
-                                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                class="rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
                             >
                                 Full Report
                             </a>
 
                             <a
                                 href="{{ route('advisor-audit.history') }}"
-                                class="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-semibold text-gray-700 hover:bg-gray-50"
+                                class="rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-slate-300 hover:border-slate-600 hover:text-white"
                             >
                                 Compare History
                             </a>
 
                             <a
                                 href="{{ route('advisor-audit.monthly-settings') }}"
-                                class="rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white hover:bg-gray-700"
+                                class="rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-500"
                             >
                                 Monthly Audit Settings
                             </a>
                         </div>
                     </div>
-                </div>
+                </section>
             </div>
         </div>
     </div>
@@ -430,19 +582,31 @@
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const form =
-                document.getElementById('advisor-audit-form');
+                document.getElementById(
+                    'advisor-audit-form'
+                );
 
             const results =
-                document.getElementById('results');
+                document.getElementById(
+                    'results'
+                );
 
             const loadingState =
-                document.getElementById('loading-state');
+                document.getElementById(
+                    'loading-state'
+                );
 
             const errorState =
-                document.getElementById('error-state');
+                document.getElementById(
+                    'error-state'
+                );
 
             const insufficientState =
-                document.getElementById('insufficient-state');
+                document.getElementById(
+                    'insufficient-state'
+                );
+
+            let scoreAnimationFrame = null;
 
             const formatPercent = (value) => {
                 if (
@@ -452,11 +616,14 @@
                     return '—';
                 }
 
-                return new Intl.NumberFormat('en-US', {
-                    style: 'percent',
-                    minimumFractionDigits: 0,
-                    maximumFractionDigits: 0,
-                }).format(value);
+                return new Intl.NumberFormat(
+                    'en-US',
+                    {
+                        style: 'percent',
+                        minimumFractionDigits: 0,
+                        maximumFractionDigits: 0,
+                    }
+                ).format(value);
             };
 
             const formatCurrency = (value) => {
@@ -467,146 +634,343 @@
                     return null;
                 }
 
-                return new Intl.NumberFormat('en-US', {
-                    style: 'currency',
-                    currency: 'USD',
-                    maximumFractionDigits: 0,
-                }).format(value);
+                return new Intl.NumberFormat(
+                    'en-US',
+                    {
+                        style: 'currency',
+                        currency: 'USD',
+                        maximumFractionDigits: 0,
+                    }
+                ).format(value);
             };
 
             const labelClasses = (score) => {
-                if (score === null || score === undefined) {
-                    return 'bg-gray-100 text-gray-700';
+                if (
+                    score === null
+                    || score === undefined
+                ) {
+                    return 'border-slate-700 bg-slate-800 text-slate-400';
                 }
 
                 if (score >= 90) {
-                    return 'bg-green-100 text-green-800';
+                    return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300';
                 }
 
                 if (score >= 80) {
-                    return 'bg-emerald-100 text-emerald-800';
+                    return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300';
                 }
 
                 if (score >= 70) {
-                    return 'bg-blue-100 text-blue-800';
+                    return 'border-blue-500/20 bg-blue-500/10 text-blue-300';
                 }
 
                 if (score >= 60) {
-                    return 'bg-amber-100 text-amber-800';
+                    return 'border-amber-500/20 bg-amber-500/10 text-amber-300';
                 }
 
                 if (score >= 40) {
-                    return 'bg-orange-100 text-orange-800';
+                    return 'border-orange-500/20 bg-orange-500/10 text-orange-300';
                 }
 
-                return 'bg-red-100 text-red-800';
+                return 'border-red-500/20 bg-red-500/10 text-red-300';
+            };
+
+            const scoreColor = (score) => {
+                if (
+                    score === null
+                    || score === undefined
+                ) {
+                    return '#64748b';
+                }
+
+                if (score >= 80) {
+                    return '#10b981';
+                }
+
+                if (score >= 70) {
+                    return '#3b82f6';
+                }
+
+                if (score >= 60) {
+                    return '#f59e0b';
+                }
+
+                if (score >= 40) {
+                    return '#f97316';
+                }
+
+                return '#ef4444';
+            };
+
+            const animateScore = (score) => {
+                const numberElement =
+                    document.getElementById(
+                        'overall-score'
+                    );
+
+                const ring =
+                    document.getElementById(
+                        'advisor-score-ring'
+                    );
+
+                if (
+                    scoreAnimationFrame
+                    !== null
+                ) {
+                    cancelAnimationFrame(
+                        scoreAnimationFrame
+                    );
+                }
+
+                if (
+                    score === null
+                    || score === undefined
+                ) {
+                    numberElement.textContent =
+                        '—';
+
+                    ring.style.strokeDashoffset =
+                        '100';
+
+                    ring.style.stroke =
+                        '#64748b';
+
+                    return;
+                }
+
+                const target =
+                    Math.max(
+                        0,
+                        Math.min(
+                            100,
+                            Number(score)
+                        )
+                    );
+
+                ring.style.stroke =
+                    scoreColor(target);
+
+                ring.style.strokeDashoffset =
+                    '100';
+
+                numberElement.textContent =
+                    '0';
+
+                const duration = 1400;
+
+                const start =
+                    performance.now();
+
+                const animate = (now) => {
+                    const progress =
+                        Math.min(
+                            (now - start)
+                            / duration,
+                            1
+                        );
+
+                    const eased =
+                        1 -
+                        Math.pow(
+                            1 - progress,
+                            3
+                        );
+
+                    const current =
+                        target * eased;
+
+                    numberElement.textContent =
+                        Math.round(current);
+
+                    ring.style.strokeDashoffset =
+                        String(
+                            100 - current
+                        );
+
+                    if (progress < 1) {
+                        scoreAnimationFrame =
+                            requestAnimationFrame(
+                                animate
+                            );
+                    } else {
+                        numberElement.textContent =
+                            Math.round(target);
+
+                        ring.style.strokeDashoffset =
+                            String(
+                                100 - target
+                            );
+                    }
+                };
+
+                scoreAnimationFrame =
+                    requestAnimationFrame(
+                        animate
+                    );
             };
 
             const advisorRatingLabel = (rating) => {
                 const labels = {
-                    strong: 'Strong oversight',
-                    generally_sound: 'Generally sound',
-                    mixed: 'Mixed results',
-                    concerning: 'Concerning',
-                    high_concern: 'High concern',
+                    strong:
+                        'Strong oversight',
+
+                    generally_sound:
+                        'Generally sound',
+
+                    mixed:
+                        'Mixed results',
+
+                    concerning:
+                        'Concerning',
+
+                    high_concern:
+                        'High concern',
                 };
 
-                return labels[rating] ?? 'Not available';
+                return labels[rating]
+                    ?? 'Not available';
             };
 
             const categoryLabel = (category) => {
                 const labels = {
-                    cost: 'Cost',
-                    diversification: 'Diversification',
-                    performance: 'Performance',
-                    risk: 'Risk',
-                    trading: 'Trading Discipline',
-                    cash: 'Cash Drag',
-                    tax: 'Tax Efficiency',
+                    cost:
+                        'Cost',
+
+                    diversification:
+                        'Diversification',
+
+                    performance:
+                        'Performance',
+
+                    risk:
+                        'Risk',
+
+                    trading:
+                        'Trading Discipline',
+
+                    cash:
+                        'Cash Drag',
+
+                    tax:
+                        'Tax Efficiency',
                 };
 
-                return labels[category] ?? category;
+                return labels[category]
+                    ?? category;
             };
 
             const categoryRoute = (category) => {
                 const routes = {
-                    cost: '{{ route('analytics.costs') }}',
-                    diversification: '{{ route('analytics.diversification') }}',
-                    performance: '{{ route('analytics.performance') }}',
-                    risk: '{{ route('analytics.risk') }}',
-                    trading: '{{ route('analytics.trading-discipline') }}',
-                    cash: '{{ route('analytics.cash-drag') }}',
-                    tax: '{{ route('analytics.tax-efficiency') }}',
+                    cost:
+                        '{{ route('analytics.costs') }}',
+
+                    diversification:
+                        '{{ route('analytics.diversification') }}',
+
+                    performance:
+                        '{{ route('analytics.performance') }}',
+
+                    risk:
+                        '{{ route('analytics.risk') }}',
+
+                    trading:
+                        '{{ route('analytics.trading-discipline') }}',
+
+                    cash:
+                        '{{ route('analytics.cash-drag') }}',
+
+                    tax:
+                        '{{ route('analytics.tax-efficiency') }}',
                 };
 
-                return routes[category] ?? '#';
+                return routes[category]
+                    ?? '#';
             };
 
             const severityClasses = (severity) => {
                 const classes = {
-                    critical: 'border-red-300 bg-white text-red-900',
-                    high: 'border-red-200 bg-red-50 text-red-900',
-                    moderate: 'border-amber-200 bg-amber-50 text-amber-900',
-                    informational: 'border-blue-200 bg-blue-50 text-blue-900',
+                    critical:
+                        'border-red-500/30 bg-red-500/[0.07] text-red-300',
+
+                    high:
+                        'border-red-500/20 bg-red-500/[0.06] text-red-300',
+
+                    moderate:
+                        'border-amber-500/20 bg-amber-500/[0.06] text-amber-300',
+
+                    informational:
+                        'border-blue-500/20 bg-blue-500/[0.06] text-blue-300',
                 };
 
                 return classes[severity]
-                    ?? 'border-gray-200 bg-gray-50 text-gray-900';
+                    ?? 'border-slate-700 bg-slate-800 text-slate-300';
             };
 
-            const renderCategories = (categories) => {
+            const renderCategories = (
+                categories
+            ) => {
                 const grid =
-                    document.getElementById('category-grid');
+                    document.getElementById(
+                        'category-grid'
+                    );
 
                 grid.innerHTML = '';
 
-                Object.entries(categories ?? {})
-                    .forEach(([key, category]) => {
+                Object.entries(
+                    categories ?? {}
+                ).forEach(
+                    ([key, category]) => {
                         const score =
-                            category.score ?? null;
+                            category.score
+                            ?? null;
 
                         const card =
-                            document.createElement('a');
+                            document.createElement(
+                                'a'
+                            );
 
                         card.href =
                             categoryRoute(key);
 
                         card.className =
-                            'block rounded-xl border border-gray-200 bg-white p-5 transition hover:border-gray-300 hover:shadow-sm';
+                            'block rounded-2xl border border-slate-800 bg-slate-950 p-5 transition hover:-translate-y-0.5 hover:border-blue-500/40';
 
                         card.innerHTML = `
                             <div class="flex items-start justify-between gap-3">
                                 <div>
-                                    <p class="text-sm font-medium text-gray-500">
+                                    <p class="text-sm font-medium text-slate-500">
                                         ${categoryLabel(key)}
                                     </p>
 
-                                    <p class="mt-2 text-3xl font-bold text-gray-900">
+                                    <p class="mt-2 text-3xl font-semibold text-white">
                                         ${score ?? '—'}
                                     </p>
                                 </div>
 
-                                <span class="inline-flex rounded-full px-2.5 py-1 text-xs font-semibold ${labelClasses(score)}">
+                                <span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${labelClasses(score)}">
                                     ${category.label ?? 'Insufficient data'}
                                 </span>
                             </div>
 
-                            <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-gray-100">
+                            <div class="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-800">
                                 <div
-                                    class="h-full rounded-full bg-gray-900"
+                                    class="h-full rounded-full bg-blue-500"
                                     style="width: ${score ?? 0}%"
                                 ></div>
                             </div>
 
-                            <p class="mt-4 text-xs text-gray-500">
-                                ${category.available === false
-                                    ? 'More data is required.'
-                                    : 'Open category details'}
+                            <p class="mt-4 text-xs text-slate-600">
+                                ${
+                                    category.available === false
+                                        ? 'More data is required.'
+                                        : 'Open category details →'
+                                }
                             </p>
                         `;
 
                         grid.appendChild(card);
-                    });
+                    }
+                );
             };
 
             const renderFindings = (
@@ -615,13 +979,18 @@
                 emptyMessage
             ) => {
                 const container =
-                    document.getElementById(containerId);
+                    document.getElementById(
+                        containerId
+                    );
 
                 container.innerHTML = '';
 
-                if (!findings || findings.length === 0) {
+                if (
+                    !findings
+                    || findings.length === 0
+                ) {
                     container.innerHTML = `
-                        <div class="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+                        <div class="rounded-xl border border-slate-800 bg-slate-950 p-4 text-sm text-slate-500">
                             ${emptyMessage}
                         </div>
                     `;
@@ -629,62 +998,84 @@
                     return;
                 }
 
-                findings.forEach((finding) => {
-                    const element =
-                        document.createElement('div');
+                findings.forEach(
+                    (finding) => {
+                        const element =
+                            document.createElement(
+                                'div'
+                            );
 
-                    element.className =
-                        `rounded-lg border p-4 ${severityClasses(finding.severity)}`;
+                        element.className =
+                            `rounded-2xl border p-5 ${severityClasses(finding.severity)}`;
 
-                    const impact = formatCurrency(
-                        finding.financial_impact
-                    );
+                        const impact =
+                            formatCurrency(
+                                finding.financial_impact
+                            );
 
-                    element.innerHTML = `
-                        <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-                            <div>
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <span class="text-xs font-semibold uppercase tracking-wide opacity-70">
-                                        ${finding.category_label ?? categoryLabel(finding.category)}
-                                    </span>
+                        element.innerHTML = `
+                            <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                <div>
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        <span class="text-xs font-semibold uppercase tracking-wide opacity-80">
+                                            ${
+                                                finding.category_label
+                                                ?? categoryLabel(
+                                                    finding.category
+                                                )
+                                            }
+                                        </span>
 
-                                    <span class="rounded-full bg-white/70 px-2 py-0.5 text-xs font-semibold capitalize">
-                                        ${finding.severity}
-                                    </span>
+                                        <span class="rounded-full border border-white/10 bg-black/10 px-2 py-0.5 text-xs font-semibold capitalize">
+                                            ${finding.severity}
+                                        </span>
+                                    </div>
+
+                                    <h4 class="mt-3 font-semibold text-white">
+                                        ${finding.title}
+                                    </h4>
+
+                                    <p class="mt-2 text-sm leading-6 text-slate-400">
+                                        ${finding.message}
+                                    </p>
                                 </div>
 
-                                <h4 class="mt-2 font-semibold">
-                                    ${finding.title}
-                                </h4>
+                                <div class="shrink-0 text-right">
+                                    <p class="text-xs text-slate-500">
+                                        Priority
+                                    </p>
 
-                                <p class="mt-1 text-sm leading-6 opacity-90">
-                                    ${finding.message}
-                                </p>
+                                    <p class="mt-1 font-semibold text-white">
+                                        ${finding.priority}
+                                    </p>
+
+                                    ${
+                                        impact
+                                        ? `
+                                            <p class="mt-2 text-sm font-semibold text-white">
+                                                ${impact}
+                                            </p>
+                                        `
+                                        : ''
+                                    }
+                                </div>
                             </div>
+                        `;
 
-                            <div class="shrink-0 text-right">
-                                <p class="text-xs opacity-70">
-                                    Priority
-                                </p>
-
-                                <p class="font-semibold">
-                                    ${finding.priority}
-                                </p>
-
-                                ${impact
-                                    ? `<p class="mt-2 text-sm font-semibold">${impact}</p>`
-                                    : ''}
-                            </div>
-                        </div>
-                    `;
-
-                    container.appendChild(element);
-                });
+                        container.appendChild(
+                            element
+                        );
+                    }
+                );
             };
 
-            const renderRecommendations = (recommendations) => {
+            const renderRecommendations = (
+                recommendations
+            ) => {
                 const container =
-                    document.getElementById('recommended-actions');
+                    document.getElementById(
+                        'recommended-actions'
+                    );
 
                 container.innerHTML = '';
 
@@ -693,7 +1084,7 @@
                     || recommendations.length === 0
                 ) {
                     container.innerHTML = `
-                        <div class="rounded-lg bg-gray-50 p-4 text-sm text-gray-600">
+                        <div class="rounded-xl border border-slate-800 bg-slate-950 p-4 text-sm text-slate-500">
                             No specific actions were generated.
                         </div>
                     `;
@@ -701,252 +1092,381 @@
                     return;
                 }
 
-                recommendations.forEach((recommendation, index) => {
-                    const element =
-                        document.createElement('div');
+                recommendations.forEach(
+                    (
+                        recommendation,
+                        index
+                    ) => {
+                        const element =
+                            document.createElement(
+                                'div'
+                            );
 
-                    element.className =
-                        'rounded-lg border border-gray-200 bg-gray-50 p-4';
+                        element.className =
+                            'rounded-2xl border border-slate-800 bg-slate-950 p-5';
 
-                    element.innerHTML = `
-                        <div class="flex gap-3">
-                            <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-gray-900 text-xs font-semibold text-white">
-                                ${index + 1}
+                        element.innerHTML = `
+                            <div class="flex gap-4">
+                                <div class="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-blue-600 text-xs font-semibold text-white">
+                                    ${index + 1}
+                                </div>
+
+                                <div>
+                                    <p class="text-xs font-semibold uppercase tracking-wide text-blue-400">
+                                        ${
+                                            recommendation.category_label
+                                            ?? categoryLabel(
+                                                recommendation.category
+                                            )
+                                        }
+                                    </p>
+
+                                    <p class="mt-2 text-sm leading-6 text-slate-300">
+                                        ${recommendation.message}
+                                    </p>
+                                </div>
                             </div>
+                        `;
 
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-wide text-gray-500">
-                                    ${recommendation.category_label ?? categoryLabel(recommendation.category)}
-                                </p>
-
-                                <p class="mt-1 text-sm leading-6 text-gray-800">
-                                    ${recommendation.message}
-                                </p>
-                            </div>
-                        </div>
-                    `;
-
-                    container.appendChild(element);
-                });
+                        container.appendChild(
+                            element
+                        );
+                    }
+                );
             };
 
-            const loadAdvisorAudit = async (
-                persist = false
-            ) => {
-                loadingState.classList.remove('hidden');
-                errorState.classList.add('hidden');
-                insufficientState.classList.add('hidden');
-                results.classList.add('hidden');
-
-                const formData =
-                    new FormData(form);
-
-                const query =
-                    new URLSearchParams(
-                        formData
-                    );
-
-                const url = persist
-                    ? `{{ route('advisor-audit.run') }}`
-                    : `{{ route('advisor-audit.data') }}?${query.toString()}`;
-
-                const options = persist
-                    ? {
-                        method: 'POST',
-
-                        headers: {
-                            Accept: 'application/json',
-                            'X-CSRF-TOKEN':
-                                document.querySelector(
-                                    'input[name="_token"]'
-                                ).value,
-                        },
-
-                        body: formData,
-                    }
-                    : {
-                        headers: {
-                            Accept: 'application/json',
-                        },
-                    };
-
-                try {
-                    const response = await fetch(
-                        url,
-                        options
-                    );
-
-                    const payload =
-                        await response.json();
-
-                    if (!response.ok) {
-                        throw new Error(
-                            payload.message
-                            ?? 'Unable to load the Advisor Audit.'
-                        );
-                    }
-
-                    const data = payload.data;
-
-                    if (
-                        data.status === 'insufficient_data'
-                        && data.overall_score === null
-                    ) {
-                        document.getElementById(
-                            'insufficient-message'
-                        ).textContent =
-                            data.message
-                            ?? 'More complete account data is required.';
-
-                        insufficientState.classList.remove('hidden');
-                    }
-
-                    document.getElementById(
-                        'overall-score'
-                    ).textContent =
-                        data.overall_score ?? '—';
-
-                    const label =
-                        document.getElementById(
-                            'overall-label'
+            const loadAdvisorAudit =
+                async (
+                    persist = false
+                ) => {
+                    loadingState
+                        .classList
+                        .remove(
+                            'hidden'
                         );
 
-                    label.textContent =
-                        data.overall_label
-                        ?? 'Building your score';
-
-                    label.className =
-                        `inline-flex rounded-full px-3 py-1 text-sm font-semibold ${labelClasses(data.overall_score)}`;
-
-                    document.getElementById(
-                        'advisor-rating'
-                    ).textContent =
-                        advisorRatingLabel(
-                            data.advisor_rating
+                    errorState
+                        .classList
+                        .add(
+                            'hidden'
                         );
 
-                    document.getElementById(
-                        'data-completeness'
-                    ).textContent =
-                        formatPercent(
-                            data.data_completeness
+                    insufficientState
+                        .classList
+                        .add(
+                            'hidden'
                         );
 
-                    document.getElementById(
-                        'data-completeness-bar'
-                    ).style.width =
-                        `${Math.round((data.data_completeness ?? 0) * 100)}%`;
-
-                    document.getElementById(
-                        'analysis-period'
-                    ).textContent =
-                        data.period
-                            ? `${data.period.start_date} to ${data.period.end_date}`
-                            : '—';
-
-                    document.getElementById(
-                        'benchmark-name'
-                    ).textContent =
-                        data.benchmark?.name
-                            ? `${data.benchmark.name} (${data.benchmark.symbol})`
-                            : 'No benchmark';
-
-                    document.getElementById(
-                        'account-count'
-                    ).textContent =
-                        data.period?.account_count ?? 0;
-
-                    const executive =
-                        data.executive_summary ?? {};
-
-                    document.getElementById(
-                        'executive-headline'
-                    ).textContent =
-                        executive.headline
-                        ?? 'Advisor audit complete';
-
-                    document.getElementById(
-                        'executive-summary'
-                    ).textContent =
-                        executive.summary
-                        ?? 'No executive summary was generated.';
-
-                    const summary =
-                        data.findings?.summary ?? {};
-
-                    document.getElementById(
-                        'critical-count'
-                    ).textContent =
-                        summary.critical_count ?? 0;
-
-                    document.getElementById(
-                        'important-count'
-                    ).textContent =
-                        summary.important_count ?? 0;
-
-                    document.getElementById(
-                        'opportunity-count'
-                    ).textContent =
-                        summary.opportunity_count ?? 0;
-
-                    renderCategories(
-                        data.categories ?? {}
-                    );
-
-                    const critical =
-                        data.findings?.critical ?? [];
-
-                    const criticalSection =
-                        document.getElementById(
-                            'critical-section'
+                    results
+                        .classList
+                        .add(
+                            'hidden'
                         );
 
-                    if (critical.length > 0) {
+                    const formData =
+                        new FormData(
+                            form
+                        );
+
+                    const query =
+                        new URLSearchParams(
+                            formData
+                        );
+
+                    const url =
+                        persist
+                            ? `{{ route('advisor-audit.run') }}`
+                            : `{{ route('advisor-audit.data') }}?${query.toString()}`;
+
+                    const options =
+                        persist
+                            ? {
+                                method:
+                                    'POST',
+
+                                headers: {
+                                    Accept:
+                                        'application/json',
+
+                                    'X-CSRF-TOKEN':
+                                        document.querySelector(
+                                            'input[name="_token"]'
+                                        ).value,
+                                },
+
+                                body:
+                                    formData,
+                            }
+                            : {
+                                headers: {
+                                    Accept:
+                                        'application/json',
+                                },
+                            };
+
+                    try {
+                        const response =
+                            await fetch(
+                                url,
+                                options
+                            );
+
+                        const payload =
+                            await response.json();
+
+                        if (!response.ok) {
+                            throw new Error(
+                                payload.message
+                                ?? 'Unable to load the Advisor Audit.'
+                            );
+                        }
+
+                        const data =
+                            payload.data;
+
+                        if (
+                            data.status
+                                === 'insufficient_data'
+                            && data.overall_score
+                                === null
+                        ) {
+                            document
+                                .getElementById(
+                                    'insufficient-message'
+                                )
+                                .textContent =
+                                    data.message
+                                    ?? 'More complete account data is required.';
+
+                            insufficientState
+                                .classList
+                                .remove(
+                                    'hidden'
+                                );
+                        }
+
+                        animateScore(
+                            data.overall_score
+                        );
+
+                        const label =
+                            document.getElementById(
+                                'overall-label'
+                            );
+
+                        label.textContent =
+                            data.overall_label
+                            ?? 'Building your score';
+
+                        label.className =
+                            `mt-3 inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${labelClasses(data.overall_score)}`;
+
+                        document
+                            .getElementById(
+                                'advisor-rating'
+                            )
+                            .textContent =
+                                advisorRatingLabel(
+                                    data.advisor_rating
+                                );
+
+                        document
+                            .getElementById(
+                                'data-completeness'
+                            )
+                            .textContent =
+                                formatPercent(
+                                    data.data_completeness
+                                );
+
+                        document
+                            .getElementById(
+                                'data-completeness-bar'
+                            )
+                            .style.width =
+                                `${
+                                    Math.round(
+                                        (
+                                            data.data_completeness
+                                            ?? 0
+                                        )
+                                        * 100
+                                    )
+                                }%`;
+
+                        document
+                            .getElementById(
+                                'analysis-period'
+                            )
+                            .textContent =
+                                data.period
+                                    ? `${data.period.start_date} to ${data.period.end_date}`
+                                    : '—';
+
+                        document
+                            .getElementById(
+                                'benchmark-name'
+                            )
+                            .textContent =
+                                data.benchmark?.name
+                                    ? `${data.benchmark.name} (${data.benchmark.symbol})`
+                                    : 'No benchmark';
+
+                        document
+                            .getElementById(
+                                'account-count'
+                            )
+                            .textContent =
+                                data.period
+                                    ?.account_count
+                                ?? 0;
+
+                        const executive =
+                            data.executive_summary
+                            ?? {};
+
+                        document
+                            .getElementById(
+                                'executive-headline'
+                            )
+                            .textContent =
+                                executive.headline
+                                ?? 'Advisor audit complete';
+
+                        document
+                            .getElementById(
+                                'executive-summary'
+                            )
+                            .textContent =
+                                executive.summary
+                                ?? 'No executive summary was generated.';
+
+                        const summary =
+                            data.findings
+                                ?.summary
+                            ?? {};
+
+                        document
+                            .getElementById(
+                                'critical-count'
+                            )
+                            .textContent =
+                                summary.critical_count
+                                ?? 0;
+
+                        document
+                            .getElementById(
+                                'important-count'
+                            )
+                            .textContent =
+                                summary.important_count
+                                ?? 0;
+
+                        document
+                            .getElementById(
+                                'opportunity-count'
+                            )
+                            .textContent =
+                                summary.opportunity_count
+                                ?? 0;
+
+                        renderCategories(
+                            data.categories
+                            ?? {}
+                        );
+
+                        const critical =
+                            data.findings
+                                ?.critical
+                            ?? [];
+
+                        const criticalSection =
+                            document.getElementById(
+                                'critical-section'
+                            );
+
+                        if (
+                            critical.length > 0
+                        ) {
+                            renderFindings(
+                                'critical-findings',
+                                critical,
+                                'No critical findings detected.'
+                            );
+
+                            criticalSection
+                                .classList
+                                .remove(
+                                    'hidden'
+                                );
+                        } else {
+                            criticalSection
+                                .classList
+                                .add(
+                                    'hidden'
+                                );
+                        }
+
                         renderFindings(
-                            'critical-findings',
-                            critical,
-                            'No critical findings detected.'
+                            'important-findings',
+                            data.findings
+                                ?.important
+                            ?? [],
+                            'No important concerns were detected.'
                         );
 
-                        criticalSection.classList.remove('hidden');
-                    } else {
-                        criticalSection.classList.add('hidden');
+                        renderFindings(
+                            'opportunity-findings',
+                            data.findings
+                                ?.opportunities
+                            ?? [],
+                            'No major opportunities were identified.'
+                        );
+
+                        renderRecommendations(
+                            data.findings
+                                ?.recommendations
+                            ?? []
+                        );
+
+                        results
+                            .classList
+                            .remove(
+                                'hidden'
+                            );
+                    } catch (error) {
+                        errorState
+                            .textContent =
+                                error.message;
+
+                        errorState
+                            .classList
+                            .remove(
+                                'hidden'
+                            );
+                    } finally {
+                        loadingState
+                            .classList
+                            .add(
+                                'hidden'
+                            );
                     }
+                };
 
-                    renderFindings(
-                        'important-findings',
-                        data.findings?.important ?? [],
-                        'No important concerns were detected.'
+            form.addEventListener(
+                'submit',
+                (event) => {
+                    event.preventDefault();
+
+                    loadAdvisorAudit(
+                        true
                     );
-
-                    renderFindings(
-                        'opportunity-findings',
-                        data.findings?.opportunities ?? [],
-                        'No major opportunities were identified.'
-                    );
-
-                    renderRecommendations(
-                        data.findings?.recommendations ?? []
-                    );
-
-                    results.classList.remove('hidden');
-                } catch (error) {
-                    errorState.textContent =
-                        error.message;
-
-                    errorState.classList.remove('hidden');
-                } finally {
-                    loadingState.classList.add('hidden');
                 }
-            };
+            );
 
-            form.addEventListener('submit', (event) => {
-                event.preventDefault();
-
-                loadAdvisorAudit(true);
-            });
-
-            loadAdvisorAudit(false);
+            loadAdvisorAudit(
+                false
+            );
         });
     </script>
 </x-app-layout>

@@ -1,30 +1,36 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-xl font-semibold text-gray-900">
-                    Risk Analytics
-                </h2>
+        <div>
+            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400">
+                Portfolio risk
+            </p>
 
-                <p class="mt-1 text-sm text-gray-500">
-                    Measure volatility, drawdowns, risk-adjusted returns, and benchmark sensitivity.
-                </p>
-            </div>
+            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-white">
+                Risk Analytics
+            </h2>
+
+            <p class="mt-2 text-sm text-slate-400">
+                Measure volatility, drawdowns, risk-adjusted returns,
+                and benchmark sensitivity.
+            </p>
         </div>
     </x-slot>
 
-    <div class="py-8">
+    <div class="bg-slate-950 py-8">
         <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
 
-            <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
+            <x-analytics.filter-panel
+                title="Risk analysis controls"
+                subtitle="Choose the analysis period, benchmark, and annual risk-free rate."
+            >
                 <form
                     id="risk-form"
-                    class="grid gap-4 md:grid-cols-4"
+                    class="grid gap-5 md:grid-cols-4"
                 >
                     <div>
                         <label
                             for="start_date"
-                            class="block text-sm font-medium text-gray-700"
+                            class="block text-sm font-medium text-slate-400"
                         >
                             Start date
                         </label>
@@ -34,7 +40,7 @@
                             name="start_date"
                             type="date"
                             value="{{ now()->subYear()->format('Y-m-d') }}"
-                            class="mt-1 block w-full rounded-lg border-gray-300"
+                            class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 px-4 py-3 text-slate-200 shadow-none focus:border-blue-500 focus:ring-blue-500"
                             required
                         >
                     </div>
@@ -42,7 +48,7 @@
                     <div>
                         <label
                             for="end_date"
-                            class="block text-sm font-medium text-gray-700"
+                            class="block text-sm font-medium text-slate-400"
                         >
                             End date
                         </label>
@@ -52,7 +58,7 @@
                             name="end_date"
                             type="date"
                             value="{{ now()->format('Y-m-d') }}"
-                            class="mt-1 block w-full rounded-lg border-gray-300"
+                            class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 px-4 py-3 text-slate-200 shadow-none focus:border-blue-500 focus:ring-blue-500"
                             required
                         >
                     </div>
@@ -60,7 +66,7 @@
                     <div>
                         <label
                             for="benchmark_id"
-                            class="block text-sm font-medium text-gray-700"
+                            class="block text-sm font-medium text-slate-400"
                         >
                             Benchmark
                         </label>
@@ -68,7 +74,7 @@
                         <select
                             id="benchmark_id"
                             name="benchmark_id"
-                            class="mt-1 block w-full rounded-lg border-gray-300"
+                            class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 px-4 py-3 text-slate-200 shadow-none focus:border-blue-500 focus:ring-blue-500"
                         >
                             @foreach ($benchmarks as $benchmark)
                                 <option
@@ -85,27 +91,29 @@
                     <div>
                         <label
                             for="annual_risk_free_rate"
-                            class="block text-sm font-medium text-gray-700"
+                            class="block text-sm font-medium text-slate-400"
                         >
                             Risk-free rate
                         </label>
 
-                        <div class="mt-1 flex rounded-lg shadow-sm">
+                        <div class="mt-2 flex">
                             <input
                                 id="annual_risk_free_rate"
                                 name="annual_risk_free_rate"
                                 type="number"
                                 step="0.001"
                                 value="0"
-                                class="block w-full rounded-l-lg border-gray-300"
+                                class="block w-full rounded-l-xl border-slate-700 bg-slate-950 px-4 py-3 text-slate-200 focus:border-blue-500 focus:ring-blue-500"
                             >
 
-                            <span class="inline-flex items-center rounded-r-lg border border-l-0 border-gray-300 bg-gray-50 px-3 text-sm text-gray-500">
+                            <span
+                                class="inline-flex items-center rounded-r-xl border border-l-0 border-slate-700 bg-slate-800 px-4 text-sm text-slate-400"
+                            >
                                 Decimal
                             </span>
                         </div>
 
-                        <p class="mt-1 text-xs text-gray-500">
+                        <p class="mt-2 text-xs text-slate-600">
                             Example: 0.04 means 4%.
                         </p>
                     </div>
@@ -113,280 +121,186 @@
                     <div class="md:col-span-4">
                         <button
                             type="submit"
-                            class="rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white hover:bg-gray-700"
+                            class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
                         >
                             Analyze Risk
                         </button>
                     </div>
                 </form>
-            </div>
+            </x-analytics.filter-panel>
 
             <div
                 id="loading-state"
-                class="hidden rounded-xl bg-white p-8 text-center shadow-sm ring-1 ring-gray-200"
+                class="hidden rounded-2xl border border-slate-800 bg-slate-900 p-8 text-center"
             >
-                <p class="text-sm text-gray-600">
+                <div
+                    class="mx-auto h-7 w-7 animate-spin rounded-full border-2 border-slate-700 border-t-blue-400"
+                ></div>
+
+                <p class="mt-4 text-sm text-slate-400">
                     Calculating portfolio risk…
                 </p>
             </div>
 
             <div
                 id="error-state"
-                class="hidden rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700"
+                class="hidden rounded-2xl border border-red-500/20 bg-red-500/[0.07] p-5 text-sm text-red-300"
             ></div>
 
             <div
                 id="insufficient-state"
-                class="hidden rounded-xl border border-amber-200 bg-amber-50 p-6"
+                class="hidden"
             >
-                <h3 class="font-semibold text-amber-900">
-                    More return history is needed
-                </h3>
-
-                <p
-                    id="insufficient-message"
-                    class="mt-2 text-sm text-amber-800"
-                ></p>
+                <x-analytics.message-card
+                    tone="warning"
+                    title="More return history is needed"
+                >
+                    <p id="insufficient-message"></p>
+                </x-analytics.message-card>
             </div>
 
-            <div
-                id="results"
-                class="hidden space-y-6"
-            >
-                <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                    <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+            <div id="results" class="hidden space-y-6">
+
+                <x-analytics.panel>
+                    <div
+                        class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"
+                    >
                         <div>
-                            <p class="text-sm text-gray-500">
+                            <p class="text-sm font-medium text-slate-500">
                                 Overall risk level
                             </p>
 
-                            <div class="mt-2 flex items-center gap-3">
+                            <div class="mt-3 flex flex-wrap items-center gap-3">
                                 <span
                                     id="risk-level-badge"
-                                    class="inline-flex rounded-full px-3 py-1 text-sm font-semibold"
+                                    class="inline-flex rounded-full border px-3 py-1 text-sm font-semibold"
                                 >
                                     —
                                 </span>
 
                                 <span
                                     id="benchmark-name"
-                                    class="text-sm text-gray-500"
+                                    class="text-sm text-slate-400"
                                 >
                                     —
                                 </span>
                             </div>
                         </div>
 
-                        <div class="text-sm text-gray-500">
-                            <span id="return-period-count">—</span>
-                            return periods analyzed
+                        <div
+                            class="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-right"
+                        >
+                            <p class="text-xs text-slate-600">
+                                Return periods
+                            </p>
+
+                            <p
+                                id="return-period-count"
+                                class="mt-1 text-xl font-semibold text-white"
+                            >
+                                —
+                            </p>
                         </div>
                     </div>
-                </div>
+                </x-analytics.panel>
 
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
-                        <p class="text-sm text-gray-500">
-                            Annualized volatility
-                        </p>
+                    <x-analytics.metric-card
+                        label="Annualized volatility"
+                        description="Variation in portfolio returns."
+                    >
+                        <span id="annualized-volatility">—</span>
+                    </x-analytics.metric-card>
 
-                        <p
-                            id="annualized-volatility"
-                            class="mt-2 text-3xl font-bold text-gray-900"
-                        >
-                            —
-                        </p>
+                    <x-analytics.metric-card
+                        label="Maximum drawdown"
+                        description="Largest peak-to-trough decline."
+                    >
+                        <span id="maximum-drawdown">—</span>
+                    </x-analytics.metric-card>
 
-                        <p class="mt-1 text-xs text-gray-500">
-                            Variation in portfolio returns.
-                        </p>
-                    </div>
+                    <x-analytics.metric-card
+                        label="Downside deviation"
+                        description="Harmful volatility below the target return."
+                    >
+                        <span id="downside-deviation">—</span>
+                    </x-analytics.metric-card>
 
-                    <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
-                        <p class="text-sm text-gray-500">
-                            Maximum drawdown
-                        </p>
+                    <x-analytics.metric-card
+                        label="Sharpe ratio"
+                        description="Return earned per unit of total risk."
+                    >
+                        <span id="sharpe-ratio">—</span>
+                    </x-analytics.metric-card>
 
-                        <p
-                            id="maximum-drawdown"
-                            class="mt-2 text-3xl font-bold text-gray-900"
-                        >
-                            —
-                        </p>
+                    <x-analytics.metric-card
+                        label="Sortino ratio"
+                        description="Return earned per unit of downside risk."
+                    >
+                        <span id="sortino-ratio">—</span>
+                    </x-analytics.metric-card>
 
-                        <p class="mt-1 text-xs text-gray-500">
-                            Largest peak-to-trough decline.
-                        </p>
-                    </div>
-
-                    <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
-                        <p class="text-sm text-gray-500">
-                            Downside deviation
-                        </p>
-
-                        <p
-                            id="downside-deviation"
-                            class="mt-2 text-3xl font-bold text-gray-900"
-                        >
-                            —
-                        </p>
-
-                        <p class="mt-1 text-xs text-gray-500">
-                            Harmful volatility below the target return.
-                        </p>
-                    </div>
-
-                    <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
-                        <p class="text-sm text-gray-500">
-                            Sharpe ratio
-                        </p>
-
-                        <p
-                            id="sharpe-ratio"
-                            class="mt-2 text-3xl font-bold text-gray-900"
-                        >
-                            —
-                        </p>
-
-                        <p class="mt-1 text-xs text-gray-500">
-                            Return earned per unit of total risk.
-                        </p>
-                    </div>
-
-                    <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
-                        <p class="text-sm text-gray-500">
-                            Sortino ratio
-                        </p>
-
-                        <p
-                            id="sortino-ratio"
-                            class="mt-2 text-3xl font-bold text-gray-900"
-                        >
-                            —
-                        </p>
-
-                        <p class="mt-1 text-xs text-gray-500">
-                            Return earned per unit of downside risk.
-                        </p>
-                    </div>
-
-                    <div class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200">
-                        <p class="text-sm text-gray-500">
-                            Beta
-                        </p>
-
-                        <p
-                            id="beta"
-                            class="mt-2 text-3xl font-bold text-gray-900"
-                        >
-                            —
-                        </p>
-
-                        <p class="mt-1 text-xs text-gray-500">
-                            Sensitivity relative to the benchmark.
-                        </p>
-                    </div>
+                    <x-analytics.metric-card
+                        label="Beta"
+                        description="Sensitivity relative to the benchmark."
+                    >
+                        <span id="beta">—</span>
+                    </x-analytics.metric-card>
                 </div>
 
-                <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                    <div>
-                        <h3 class="text-lg font-semibold text-gray-900">
-                            Daily Return Comparison
-                        </h3>
-
-                        <p class="mt-1 text-sm text-gray-500">
-                            Portfolio and benchmark returns by period.
-                        </p>
-                    </div>
-
-                    <div class="mt-6 h-80">
+                <x-analytics.panel
+                    title="Daily Return Comparison"
+                    subtitle="Portfolio and benchmark returns by period."
+                >
+                    <div class="h-80">
                         <canvas id="risk-chart"></canvas>
                     </div>
-                </div>
+                </x-analytics.panel>
 
                 <div class="grid gap-6 lg:grid-cols-2">
-                    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900">
-                            Risk Findings
-                        </h3>
-
+                    <x-analytics.panel title="Risk Findings">
                         <div
                             id="risk-flags"
-                            class="mt-5 space-y-3"
+                            class="space-y-3"
                         ></div>
-                    </div>
+                    </x-analytics.panel>
 
-                    <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                        <h3 class="text-lg font-semibold text-gray-900">
-                            Data Quality
-                        </h3>
-
+                    <x-analytics.panel title="Data Quality">
                         <div
                             id="risk-warnings"
-                            class="mt-5 space-y-3"
+                            class="space-y-3"
                         ></div>
-                    </div>
+                    </x-analytics.panel>
                 </div>
 
-                <div class="rounded-xl bg-white p-6 shadow-sm ring-1 ring-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900">
-                        Observation Summary
-                    </h3>
-
-                    <dl class="mt-5 grid gap-4 text-sm sm:grid-cols-2 lg:grid-cols-4">
-                        <div class="rounded-lg bg-gray-50 p-4">
-                            <dt class="text-gray-500">
-                                Positive days
-                            </dt>
-
-                            <dd
-                                id="positive-days"
-                                class="mt-1 text-xl font-semibold text-gray-900"
+                <x-analytics.panel
+                    title="Observation Summary"
+                    subtitle="Distribution of analyzed portfolio return periods."
+                >
+                    <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                        @foreach ([
+                            ['Positive days', 'positive-days'],
+                            ['Negative days', 'negative-days'],
+                            ['Flat days', 'flat-days'],
+                            ['Benchmark matches', 'aligned-return-count'],
+                        ] as [$label, $id])
+                            <div
+                                class="rounded-xl border border-slate-800 bg-slate-950 p-4"
                             >
-                                —
-                            </dd>
-                        </div>
+                                <dt class="text-sm text-slate-500">
+                                    {{ $label }}
+                                </dt>
 
-                        <div class="rounded-lg bg-gray-50 p-4">
-                            <dt class="text-gray-500">
-                                Negative days
-                            </dt>
-
-                            <dd
-                                id="negative-days"
-                                class="mt-1 text-xl font-semibold text-gray-900"
-                            >
-                                —
-                            </dd>
-                        </div>
-
-                        <div class="rounded-lg bg-gray-50 p-4">
-                            <dt class="text-gray-500">
-                                Flat days
-                            </dt>
-
-                            <dd
-                                id="flat-days"
-                                class="mt-1 text-xl font-semibold text-gray-900"
-                            >
-                                —
-                            </dd>
-                        </div>
-
-                        <div class="rounded-lg bg-gray-50 p-4">
-                            <dt class="text-gray-500">
-                                Benchmark matches
-                            </dt>
-
-                            <dd
-                                id="aligned-return-count"
-                                class="mt-1 text-xl font-semibold text-gray-900"
-                            >
-                                —
-                            </dd>
-                        </div>
+                                <dd
+                                    id="{{ $id }}"
+                                    class="mt-2 text-2xl font-semibold text-white"
+                                >
+                                    —
+                                </dd>
+                            </div>
+                        @endforeach
                     </dl>
-                </div>
+                </x-analytics.panel>
             </div>
         </div>
     </div>
@@ -426,40 +340,27 @@
                 }).format(value);
             };
 
-            const riskLevelLabel = (level) => {
-                const labels = {
-                    very_low: 'Very Low',
-                    low: 'Low',
-                    moderate: 'Moderate',
-                    high: 'High',
-                    very_high: 'Very High',
-                };
+            const riskLevelLabel = (level) => ({
+                very_low: 'Very Low',
+                low: 'Low',
+                moderate: 'Moderate',
+                high: 'High',
+                very_high: 'Very High',
+            })[level] ?? 'Unknown';
 
-                return labels[level] ?? 'Unknown';
-            };
+            const riskLevelClasses = (level) => ({
+                very_low: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
+                low: 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300',
+                moderate: 'border-amber-500/20 bg-amber-500/10 text-amber-300',
+                high: 'border-orange-500/20 bg-orange-500/10 text-orange-300',
+                very_high: 'border-red-500/20 bg-red-500/10 text-red-300',
+            })[level] ?? 'border-slate-700 bg-slate-800 text-slate-300';
 
-            const riskLevelClasses = (level) => {
-                const classes = {
-                    very_low: 'bg-green-100 text-green-800',
-                    low: 'bg-emerald-100 text-emerald-800',
-                    moderate: 'bg-amber-100 text-amber-800',
-                    high: 'bg-orange-100 text-orange-800',
-                    very_high: 'bg-red-100 text-red-800',
-                };
-
-                return classes[level] ?? 'bg-gray-100 text-gray-800';
-            };
-
-            const flagClasses = (severity) => {
-                const classes = {
-                    informational: 'border-blue-200 bg-blue-50 text-blue-800',
-                    moderate: 'border-amber-200 bg-amber-50 text-amber-800',
-                    high: 'border-red-200 bg-red-50 text-red-800',
-                };
-
-                return classes[severity] ??
-                    'border-gray-200 bg-gray-50 text-gray-800';
-            };
+            const flagClasses = (severity) => ({
+                informational: 'border-blue-500/20 bg-blue-500/[0.07] text-blue-300',
+                moderate: 'border-amber-500/20 bg-amber-500/[0.07] text-amber-300',
+                high: 'border-red-500/20 bg-red-500/[0.07] text-red-300',
+            })[severity] ?? 'border-slate-700 bg-slate-800 text-slate-300';
 
             const renderRiskChart = (series, benchmarkName) => {
                 const canvas = document.getElementById('risk-chart');
@@ -489,6 +390,8 @@
                                             ? null
                                             : point.portfolio_return * 100
                                 ),
+                                borderColor: '#3b82f6',
+                                backgroundColor: '#3b82f6',
                                 borderWidth: 2,
                                 pointRadius: 0,
                                 pointHoverRadius: 4,
@@ -503,6 +406,8 @@
                                             ? null
                                             : point.benchmark_return * 100
                                 ),
+                                borderColor: '#94a3b8',
+                                backgroundColor: '#94a3b8',
                                 borderWidth: 2,
                                 pointRadius: 0,
                                 pointHoverRadius: 4,
@@ -523,7 +428,9 @@
 
                         plugins: {
                             legend: {
-                                position: 'top',
+                                labels: {
+                                    color: '#94a3b8',
+                                },
                             },
 
                             tooltip: {
@@ -546,21 +453,33 @@
 
                         scales: {
                             x: {
+                                grid: {
+                                    color: 'rgba(51,65,85,.35)',
+                                },
+
                                 ticks: {
+                                    color: '#64748b',
                                     maxTicksLimit: 8,
                                 },
                             },
 
                             y: {
-                                title: {
-                                    display: true,
-                                    text: 'Return',
+                                grid: {
+                                    color: 'rgba(51,65,85,.35)',
                                 },
 
                                 ticks: {
+                                    color: '#64748b',
+
                                     callback(value) {
                                         return `${value}%`;
                                     },
+                                },
+
+                                title: {
+                                    display: true,
+                                    text: 'Return',
+                                    color: '#64748b',
                                 },
                             },
                         },
@@ -576,7 +495,7 @@
 
                 if (!flags || flags.length === 0) {
                     container.innerHTML = `
-                        <div class="rounded-lg bg-green-50 p-3 text-sm text-green-700">
+                        <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] p-4 text-sm text-emerald-300">
                             No major risk findings detected.
                         </div>
                     `;
@@ -589,7 +508,7 @@
                         document.createElement('div');
 
                     element.className =
-                        `rounded-lg border p-4 ${flagClasses(flag.severity)}`;
+                        `rounded-xl border p-4 ${flagClasses(flag.severity)}`;
 
                     const title =
                         document.createElement('p');
@@ -600,7 +519,9 @@
                     const message =
                         document.createElement('p');
 
-                    message.className = 'mt-1 text-sm';
+                    message.className =
+                        'mt-1 text-sm leading-6 text-slate-400';
+
                     message.textContent = flag.message;
 
                     element.appendChild(title);
@@ -618,7 +539,7 @@
 
                 if (!warnings || warnings.length === 0) {
                     container.innerHTML = `
-                        <div class="rounded-lg bg-green-50 p-3 text-sm text-green-700">
+                        <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.07] p-4 text-sm text-emerald-300">
                             No data-quality warnings detected.
                         </div>
                     `;
@@ -631,9 +552,10 @@
                         document.createElement('div');
 
                     element.className =
-                        'rounded-lg bg-amber-50 p-3 text-sm text-amber-800';
+                        'rounded-xl border border-amber-500/20 bg-amber-500/[0.07] p-4 text-sm leading-6 text-amber-300';
 
-                    element.textContent = warning.message;
+                    element.textContent =
+                        warning.message;
 
                     container.appendChild(element);
                 });
@@ -645,8 +567,10 @@
                 insufficientState.classList.add('hidden');
                 results.classList.add('hidden');
 
-                const formData = new FormData(form);
-                const query = new URLSearchParams(formData);
+                const query =
+                    new URLSearchParams(
+                        new FormData(form)
+                    );
 
                 try {
                     const response = await fetch(
@@ -658,68 +582,85 @@
                         }
                     );
 
-                    const payload = await response.json();
+                    const payload =
+                        await response.json();
 
                     if (!response.ok) {
-                        const message =
+                        throw new Error(
                             payload.message ??
-                            'Unable to load risk analytics.';
-
-                        throw new Error(message);
+                            'Unable to load risk analytics.'
+                        );
                     }
 
                     const data = payload.data;
 
-                    if (data.status === 'insufficient_data') {
+                    if (
+                        data.status ===
+                        'insufficient_data'
+                    ) {
                         document.getElementById(
                             'insufficient-message'
                         ).textContent =
                             data.message ??
                             'More portfolio history is required.';
 
-                        insufficientState.classList.remove('hidden');
+                        insufficientState.classList.remove(
+                            'hidden'
+                        );
+
                         return;
                     }
 
-                    const metrics = data.metrics ?? {};
-                    const observations = data.observations ?? {};
-                    const period = data.period ?? {};
+                    const metrics =
+                        data.metrics ?? {};
+
+                    const observations =
+                        data.observations ?? {};
+
+                    const period =
+                        data.period ?? {};
 
                     document.getElementById(
                         'annualized-volatility'
-                    ).textContent = formatPercent(
-                        metrics.annualized_volatility
-                    );
+                    ).textContent =
+                        formatPercent(
+                            metrics.annualized_volatility
+                        );
 
                     document.getElementById(
                         'maximum-drawdown'
-                    ).textContent = formatPercent(
-                        metrics.maximum_drawdown
-                    );
+                    ).textContent =
+                        formatPercent(
+                            metrics.maximum_drawdown
+                        );
 
                     document.getElementById(
                         'downside-deviation'
-                    ).textContent = formatPercent(
-                        metrics.downside_deviation
-                    );
+                    ).textContent =
+                        formatPercent(
+                            metrics.downside_deviation
+                        );
 
                     document.getElementById(
                         'sharpe-ratio'
-                    ).textContent = formatNumber(
-                        metrics.sharpe_ratio
-                    );
+                    ).textContent =
+                        formatNumber(
+                            metrics.sharpe_ratio
+                        );
 
                     document.getElementById(
                         'sortino-ratio'
-                    ).textContent = formatNumber(
-                        metrics.sortino_ratio
-                    );
+                    ).textContent =
+                        formatNumber(
+                            metrics.sortino_ratio
+                        );
 
                     document.getElementById(
                         'beta'
-                    ).textContent = formatNumber(
-                        metrics.beta
-                    );
+                    ).textContent =
+                        formatNumber(
+                            metrics.beta
+                        );
 
                     const riskBadge =
                         document.getElementById(
@@ -732,7 +673,7 @@
                         );
 
                     riskBadge.className =
-                        `inline-flex rounded-full px-3 py-1 text-sm font-semibold ${riskLevelClasses(data.risk_level)}`;
+                        `inline-flex rounded-full border px-3 py-1 text-sm font-semibold ${riskLevelClasses(data.risk_level)}`;
 
                     document.getElementById(
                         'benchmark-name'
@@ -779,19 +720,30 @@
                         data.warnings ?? []
                     );
 
-                    results.classList.remove('hidden');
+                    results.classList.remove(
+                        'hidden'
+                    );
                 } catch (error) {
-                    errorState.textContent = error.message;
-                    errorState.classList.remove('hidden');
+                    errorState.textContent =
+                        error.message;
+
+                    errorState.classList.remove(
+                        'hidden'
+                    );
                 } finally {
-                    loadingState.classList.add('hidden');
+                    loadingState.classList.add(
+                        'hidden'
+                    );
                 }
             };
 
-            form.addEventListener('submit', (event) => {
-                event.preventDefault();
-                loadRisk();
-            });
+            form.addEventListener(
+                'submit',
+                (event) => {
+                    event.preventDefault();
+                    loadRisk();
+                }
+            );
 
             loadRisk();
         });
