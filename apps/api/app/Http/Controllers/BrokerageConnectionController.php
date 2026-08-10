@@ -7,6 +7,7 @@ use App\Services\Brokerage\BrokerageProviderManager;
 use App\Services\Brokerage\BrokerageSyncService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\View\View;
 use Throwable;
 
@@ -76,14 +77,6 @@ class BrokerageConnectionController extends Controller
         Request $request,
         BrokerageProviderManager $manager,
     ): RedirectResponse {
-        /*
-         * Only providers allowed in the current environment
-         * may be submitted.
-         *
-         * This prevents the fake provider from being used in
-         * production even if someone manually submits the
-         * provider value.
-         */
         $providers = $this->availableProviders(
             $manager,
         );
@@ -126,6 +119,18 @@ class BrokerageConnectionController extends Controller
         $providerName =
             $validated['provider'];
 
+        /*
+         * Defense in depth:
+         * even if a bad request somehow reaches this point,
+         * never allow the fake provider in production.
+         */
+        if (
+            app()->environment('production')
+            && $providerName === 'fake'
+        ) {
+            abort(404);
+        }
+
         $provider = $manager->driver(
             $providerName,
         );
@@ -134,6 +139,11 @@ class BrokerageConnectionController extends Controller
             $request->user(),
         );
 
+        /*
+         * Capture the user's remote SnapTrade connections before
+         * opening the connection portal. When the callback returns,
+         * Helmio can compare this list against the new remote state.
+         */
         $existingRemoteIds =
             $providerName === 'snaptrade'
                 ? $provider
@@ -196,16 +206,7 @@ class BrokerageConnectionController extends Controller
                 ],
             ]);
 
-        /*
-         * Fake brokerage connections are available only
-         * outside production.
-         */
         if ($providerName === 'fake') {
-            abort_if(
-                app()->environment('production'),
-                404,
-            );
-
             return redirect()->to(
                 $provider->createConnectionUrl(
                     user: $request->user(),
@@ -270,42 +271,172 @@ class BrokerageConnectionController extends Controller
                     'metadata.remote_connections_before',
                     [],
                 ),
-            )->filter();
+            )
+                ->filter()
+                ->values();
 
+            /*
+             * SnapTrade may return the user from the Connection Portal
+             * before Helmio can immediately distinguish the new remote
+             * authorization from prior ones.
+             *
+             * Retry briefly before giving up.
+             */
             $remoteConnections =
-                $provider->listConnections(
-                    $request->user(),
+                $this->loadRemoteConnectionsWithRetry(
+                    provider: $provider,
+                    request: $request,
                 );
 
+            /*
+             * Log safe metadata so we can diagnose provider timing or
+             * connection matching problems without logging credentials.
+             */
+            logger()->info(
+                'SnapTrade callback connection comparison',
+                [
+                    'user_id' =>
+                        $request->user()->id,
+
+                    'pending_connection_id' =>
+                        $brokerageConnection->id,
+
+                    'known_remote_ids' =>
+                        $knownIds
+                            ->values()
+                            ->all(),
+
+                    'returned_connections' =>
+                        $remoteConnections
+                            ->map(
+                                fn (
+                                    BrokerageConnection $candidate,
+                                ): array => [
+                                    'local_id' =>
+                                        $candidate->id,
+
+                                    'provider_connection_id' =>
+                                        $candidate
+                                            ->provider_connection_id,
+
+                                    'status' =>
+                                        $candidate->status,
+
+                                    'brokerage_name' =>
+                                        $candidate
+                                            ->brokerage_name,
+
+                                    'connected_at' =>
+                                        $candidate
+                                            ->connected_at
+                                            ?->toIso8601String(),
+
+                                    'updated_at' =>
+                                        $candidate
+                                            ->updated_at
+                                            ?->toIso8601String(),
+                                ],
+                            )
+                            ->values()
+                            ->all(),
+                ],
+            );
+
+            /*
+             * First choice:
+             * use a remote connection whose provider_connection_id
+             * did not exist before the user opened SnapTrade.
+             */
             $remote = $remoteConnections
                 ->filter(
                     fn (
                         BrokerageConnection $candidate,
                     ): bool =>
-                        $candidate
-                            ->provider_connection_id
-                            !== null
+                        filled(
+                            $candidate
+                                ->provider_connection_id,
+                        )
                         && ! $knownIds->contains(
                             $candidate
                                 ->provider_connection_id,
                         ),
                 )
-                ->sortByDesc('id')
-                ->first();
-
-            $remote ??= $remoteConnections
-                ->filter(
+                ->sortByDesc(
                     fn (
                         BrokerageConnection $candidate,
-                    ): bool =>
-                        $candidate->id
-                            !== $brokerageConnection->id
-                        && $candidate
-                            ->provider_connection_id
-                            !== null,
+                    ) =>
+                        $this->connectionSortTimestamp(
+                            $candidate,
+                        ),
                 )
-                ->sortByDesc('id')
                 ->first();
+
+            /*
+             * Fallback:
+             * some Connection Portal flows may return a usable
+             * authorization without making the new ID immediately
+             * distinguishable from the pre-portal list.
+             *
+             * In that case, take the newest valid non-error connection.
+             */
+            if ($remote === null) {
+                $remote = $remoteConnections
+                    ->filter(
+                        fn (
+                            BrokerageConnection $candidate,
+                        ): bool =>
+                            filled(
+                                $candidate
+                                    ->provider_connection_id,
+                            )
+                            && ! in_array(
+                                $candidate->status,
+                                [
+                                    BrokerageConnection::STATUS_ERROR,
+                                    BrokerageConnection::STATUS_PENDING,
+                                ],
+                                true,
+                            ),
+                    )
+                    ->sortByDesc(
+                        fn (
+                            BrokerageConnection $candidate,
+                        ) =>
+                            $this->connectionSortTimestamp(
+                                $candidate,
+                            ),
+                    )
+                    ->first();
+            }
+
+            /*
+             * Last fallback:
+             * if SnapTrade returned a connection with a valid remote ID
+             * but its local status mapping is still pending, use the
+             * newest valid remote authorization rather than failing the
+             * entire user flow.
+             */
+            if ($remote === null) {
+                $remote = $remoteConnections
+                    ->filter(
+                        fn (
+                            BrokerageConnection $candidate,
+                        ): bool =>
+                            filled(
+                                $candidate
+                                    ->provider_connection_id,
+                            ),
+                    )
+                    ->sortByDesc(
+                        fn (
+                            BrokerageConnection $candidate,
+                        ) =>
+                            $this->connectionSortTimestamp(
+                                $candidate,
+                            ),
+                    )
+                    ->first();
+            }
 
             if ($remote === null) {
                 $brokerageConnection->update([
@@ -313,18 +444,19 @@ class BrokerageConnectionController extends Controller
                         BrokerageConnection::STATUS_ERROR,
 
                     'last_error' =>
-                        'No new SnapTrade connection was found.',
+                        'SnapTrade returned from the connection portal, but no usable brokerage authorization was available.',
                 ]);
 
                 return $this->redirectAfterFailure(
                     $request,
-                    'No new brokerage connection was found. Please try again.',
+                    'Your brokerage authorization completed, but Helmio could not retrieve the connected account yet. Please try again.',
                 );
             }
 
             $brokerageConnection->update([
                 'provider_connection_id' =>
-                    $remote->provider_connection_id,
+                    $remote
+                        ->provider_connection_id,
 
                 'brokerage_name' =>
                     $remote->brokerage_name
@@ -335,7 +467,8 @@ class BrokerageConnectionController extends Controller
                     $remote->brokerage_slug,
 
                 'status' =>
-                    $remote->status,
+                    $remote->status
+                    ?: BrokerageConnection::STATUS_ACTIVE,
 
                 'connected_at' =>
                     $remote->connected_at
@@ -359,13 +492,24 @@ class BrokerageConnectionController extends Controller
 
                         'callback_completed_at' =>
                             now()->toIso8601String(),
+
+                        'matched_provider_connection_id' =>
+                            $remote
+                                ->provider_connection_id,
                     ],
                 ),
             ]);
 
+            /*
+             * listConnections() may materialize a temporary local
+             * BrokerageConnection model representing the remote
+             * authorization. Remove that duplicate after merging it
+             * into the pending connection created by this flow.
+             */
             if (
-                $remote->id
-                !== $brokerageConnection->id
+                $remote->id !== null
+                && $remote->id
+                    !== $brokerageConnection->id
             ) {
                 $remote->delete();
             }
@@ -413,8 +557,7 @@ class BrokerageConnectionController extends Controller
         BrokerageSyncService $syncService,
     ): RedirectResponse {
         /*
-         * Fake brokerage completion must never run in
-         * production even if someone discovers the route.
+         * Never allow fake brokerage completion in production.
          */
         abort_if(
             app()->environment('production'),
@@ -589,12 +732,64 @@ class BrokerageConnectionController extends Controller
     }
 
     /**
-     * Return brokerage providers that are allowed in
-     * the current application environment.
+     * Retry SnapTrade connection retrieval briefly.
      *
-     * The fake provider remains available for local
-     * development and testing but is never exposed
-     * in production.
+     * Some brokerages complete authorization successfully but
+     * SnapTrade's connection list may lag behind the browser
+     * redirect by a fraction of a second.
+     */
+    private function loadRemoteConnectionsWithRetry(
+        mixed $provider,
+        Request $request,
+    ): Collection {
+        $attempts = 3;
+
+        for (
+            $attempt = 1;
+            $attempt <= $attempts;
+            $attempt++
+        ) {
+            $connections = $provider
+                ->listConnections(
+                    $request->user(),
+                );
+
+            if ($connections->isNotEmpty()) {
+                return $connections;
+            }
+
+            if ($attempt < $attempts) {
+                usleep(
+                    500_000,
+                );
+            }
+        }
+
+        return collect();
+    }
+
+    /**
+     * Produce a sortable timestamp for remote connections.
+     */
+    private function connectionSortTimestamp(
+        BrokerageConnection $connection,
+    ): int {
+        $timestamp =
+            $connection->connected_at
+            ?? $connection->updated_at
+            ?? $connection->created_at;
+
+        return $timestamp
+            ? $timestamp->getTimestamp()
+            : 0;
+    }
+
+    /**
+     * Return brokerage providers permitted in the current
+     * application environment.
+     *
+     * FakeBrokerageProvider remains available locally and in
+     * automated tests, but it is never exposed in production.
      *
      * @return array<int, string>
      */
@@ -607,7 +802,9 @@ class BrokerageConnectionController extends Controller
 
         if (app()->environment('production')) {
             $providers = $providers->reject(
-                fn (string $provider): bool =>
+                fn (
+                    string $provider,
+                ): bool =>
                     $provider === 'fake',
             );
         }
