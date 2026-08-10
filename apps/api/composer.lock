@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "e2f302b78d7a4b7fbfecda12b7818eb5",
+    "content-hash": "26da68941017e8b8275a61fa0b6d95c5",
     "packages": [
         {
             "name": "barryvdh/laravel-dompdf",
@@ -1291,16 +1291,16 @@
         },
         {
             "name": "konfig/snaptrade-php-sdk",
-            "version": "v2.0.217",
+            "version": "v2.1.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/passiv/snaptrade-php-sdk.git",
-                "reference": "2915ca5d9c08ab8d927648fcf57d352223b192d2"
+                "reference": "10d234a84ee494a117e3c674850537152d5ba511"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/passiv/snaptrade-php-sdk/zipball/2915ca5d9c08ab8d927648fcf57d352223b192d2",
-                "reference": "2915ca5d9c08ab8d927648fcf57d352223b192d2",
+                "url": "https://api.github.com/repos/passiv/snaptrade-php-sdk/zipball/10d234a84ee494a117e3c674850537152d5ba511",
+                "reference": "10d234a84ee494a117e3c674850537152d5ba511",
                 "shasum": ""
             },
             "require": {
@@ -1342,9 +1342,9 @@
             ],
             "support": {
                 "issues": "https://github.com/passiv/snaptrade-php-sdk/issues",
-                "source": "https://github.com/passiv/snaptrade-php-sdk/tree/v2.0.217"
+                "source": "https://github.com/passiv/snaptrade-php-sdk/tree/v2.1.0"
             },
-            "time": "2026-07-30T19:14:30+00:00"
+            "time": "2026-08-07T15:43:30+00:00"
         },
         {
             "name": "laravel/cashier",
