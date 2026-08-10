@@ -107,7 +107,7 @@
 
                     <div class="mt-6 flex items-end gap-2">
                         <span class="text-5xl font-bold tracking-tight text-white">
-                            $19
+                            $19.95
                         </span>
 
                         <span class="pb-2 text-slate-500">
@@ -217,7 +217,7 @@
 
                     <div class="mt-6 flex items-end gap-2">
                         <span class="text-5xl font-bold tracking-tight text-white">
-                            $190
+                            $199.95
                         </span>
 
                         <span class="pb-2 text-slate-500">
