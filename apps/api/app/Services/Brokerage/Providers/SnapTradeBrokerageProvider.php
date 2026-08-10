@@ -60,15 +60,27 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
 
             $returnedUserId =
                 $this->stringValue(
-                    data_get($data, 'userId')
-                    ?? data_get($data, 'user_id'),
+                    data_get(
+                        $data,
+                        'userId',
+                    )
+                    ?? data_get(
+                        $data,
+                        'user_id',
+                    ),
                 )
                 ?: $providerUserId;
 
             $userSecret =
                 $this->stringValue(
-                    data_get($data, 'userSecret')
-                    ?? data_get($data, 'user_secret'),
+                    data_get(
+                        $data,
+                        'userSecret',
+                    )
+                    ?? data_get(
+                        $data,
+                        'user_secret',
+                    ),
                 );
 
             if ($userSecret === null) {
@@ -162,10 +174,22 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
 
         $url =
             $this->stringValue(
-                data_get($data, 'redirectURI')
-                ?? data_get($data, 'redirectUri')
-                ?? data_get($data, 'redirect_uri')
-                ?? data_get($data, 'url'),
+                data_get(
+                    $data,
+                    'redirectURI',
+                )
+                ?? data_get(
+                    $data,
+                    'redirectUri',
+                )
+                ?? data_get(
+                    $data,
+                    'redirect_uri',
+                )
+                ?? data_get(
+                    $data,
+                    'url',
+                ),
             );
 
         if ($url === null) {
@@ -178,6 +202,8 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
     }
 
     /**
+     * Reconcile remote SnapTrade connections into Helmio.
+     *
      * @return Collection<int, BrokerageConnection>
      */
     public function listConnections(
@@ -211,9 +237,18 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                 ): BrokerageConnection {
                     $connectionId =
                         $this->stringValue(
-                            data_get($remote, 'id')
-                            ?? data_get($remote, 'authorizationId')
-                            ?? data_get($remote, 'authorization_id'),
+                            data_get(
+                                $remote,
+                                'id',
+                            )
+                            ?? data_get(
+                                $remote,
+                                'authorizationId',
+                            )
+                            ?? data_get(
+                                $remote,
+                                'authorization_id',
+                            ),
                         );
 
                     if ($connectionId === null) {
@@ -224,21 +259,39 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
 
                     $brokerageName =
                         $this->stringValue(
-                            data_get($remote, 'brokerage.name')
-                            ?? data_get($remote, 'brokerage_name')
-                            ?? data_get($remote, 'name'),
+                            data_get(
+                                $remote,
+                                'brokerage.name',
+                            )
+                            ?? data_get(
+                                $remote,
+                                'brokerage_name',
+                            )
+                            ?? data_get(
+                                $remote,
+                                'name',
+                            ),
                         )
                         ?: 'Connected Brokerage';
 
                     $brokerageSlug =
                         $this->stringValue(
-                            data_get($remote, 'brokerage.slug')
-                            ?? data_get($remote, 'brokerage_slug'),
+                            data_get(
+                                $remote,
+                                'brokerage.slug',
+                            )
+                            ?? data_get(
+                                $remote,
+                                'brokerage_slug',
+                            ),
                         );
 
                     $remoteDisabled =
                         (bool) (
-                            data_get($remote, 'disabled')
+                            data_get(
+                                $remote,
+                                'disabled',
+                            )
                             ?? false
                         );
 
@@ -304,23 +357,28 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                 ->connections
                 ->listBrokerageAuthorizationAccounts(
                     authorization_id:
-                        $connection->provider_connection_id,
+                        $connection
+                            ->provider_connection_id,
 
                     user_id:
-                        $providerUser->provider_user_id,
+                        $providerUser
+                            ->provider_user_id,
 
                     user_secret:
-                        $providerUser->provider_user_secret,
+                        $providerUser
+                            ->provider_user_secret,
                 );
         } else {
             $response = $this->client
                 ->accountInformation
                 ->listUserAccounts(
                     user_id:
-                        $providerUser->provider_user_id,
+                        $providerUser
+                            ->provider_user_id,
 
                     user_secret:
-                        $providerUser->provider_user_secret,
+                        $providerUser
+                            ->provider_user_secret,
                 );
         }
 
@@ -336,7 +394,8 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                     $connection,
                 ): bool {
                     if (
-                        $connection->provider_connection_id
+                        $connection
+                            ->provider_connection_id
                         === null
                     ) {
                         return true;
@@ -360,7 +419,8 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
 
                     return $authorizationId === null
                         || $authorizationId
-                            === $connection->provider_connection_id;
+                            === $connection
+                                ->provider_connection_id;
                 },
             )
             ->map(
@@ -369,13 +429,19 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                 ): BrokerageAccountData {
                     $accountId =
                         $this->requiredString(
-                            data_get($account, 'id'),
+                            data_get(
+                                $account,
+                                'id',
+                            ),
                             'SnapTrade account ID',
                         );
 
                     $accountNumber =
                         $this->stringValue(
-                            data_get($account, 'number'),
+                            data_get(
+                                $account,
+                                'number',
+                            ),
                         );
 
                     $totalValue =
@@ -424,7 +490,10 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
 
                         name:
                             $this->stringValue(
-                                data_get($account, 'name'),
+                                data_get(
+                                    $account,
+                                    'name',
+                                ),
                             )
                             ?: 'SnapTrade Account',
 
@@ -488,32 +557,31 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
             );
 
         /*
-         * IMPORTANT:
-         *
-         * We intentionally use getUserAccountPositions() here instead
-         * of getAllAccountPositions().
+         * Use the compatible positions endpoint.
          *
          * SnapTrade PHP SDK 2.1.0 currently has a generated-model
-         * discriminator issue with the unified positions endpoint.
-         * For example, SnapTrade can return:
+         * discriminator issue with getAllAccountPositions().
+         *
+         * The unified endpoint may return:
          *
          *     kind = "etf"
          *
-         * while the generic Instrument model only accepts:
+         * while the SDK generic Instrument model only accepts:
          *
          *     kind = "other"
          *
-         * That causes the SDK to throw before Helmio can normalize
-         * the position.
+         * This endpoint avoids that SDK deserialization failure.
          */
         $response = $this->client
             ->accountInformation
             ->getUserAccountPositions(
                 user_id:
-                    $providerUser->provider_user_id,
+                    $providerUser
+                        ->provider_user_id,
 
                 user_secret:
-                    $providerUser->provider_user_secret,
+                    $providerUser
+                        ->provider_user_secret,
 
                 account_id:
                     $providerAccountId,
@@ -539,15 +607,28 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                 ) use (
                     $providerAccountId,
                 ): BrokeragePositionData {
-                    $instrument =
+                    /*
+                     * The older SnapTrade positions endpoint nests the
+                     * security underneath:
+                     *
+                     * symbol.symbol
+                     *
+                     * Example:
+                     *
+                     * symbol.symbol.symbol
+                     * symbol.symbol.description
+                     * symbol.symbol.type.code
+                     * symbol.symbol.type.description
+                     */
+                    $security =
                         (array) (
                             data_get(
                                 $position,
-                                'instrument',
+                                'symbol.symbol',
                             )
                             ?? data_get(
                                 $position,
-                                'symbol',
+                                'instrument',
                             )
                             ?? []
                         );
@@ -555,20 +636,16 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                     $symbol =
                         $this->stringValue(
                             data_get(
-                                $instrument,
-                                'symbol.symbol',
-                            )
-                            ?? data_get(
-                                $instrument,
+                                $security,
                                 'symbol',
                             )
                             ?? data_get(
-                                $instrument,
-                                'ticker',
+                                $security,
+                                'raw_symbol',
                             )
                             ?? data_get(
                                 $position,
-                                'symbol.symbol',
+                                'symbol.symbol.symbol',
                             )
                             ?? data_get(
                                 $position,
@@ -579,16 +656,12 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                     $instrumentId =
                         $this->stringValue(
                             data_get(
-                                $instrument,
-                                'id',
-                            )
-                            ?? data_get(
-                                $instrument,
-                                'symbol.id',
-                            )
-                            ?? data_get(
                                 $position,
                                 'symbol.id',
+                            )
+                            ?? data_get(
+                                $security,
+                                'id',
                             )
                             ?? data_get(
                                 $position,
@@ -605,6 +678,10 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                             ?? data_get(
                                 $position,
                                 'quantity',
+                            )
+                            ?? data_get(
+                                $position,
+                                'fractional_units',
                             ),
                         );
 
@@ -636,18 +713,21 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                             )
                             ?? (
                                 $price !== null
-                                    ? $quantity * $price
+                                    ? $quantity
+                                        * $price
                                     : 0
                             ),
                         );
 
-                    $costBasis =
+                    /*
+                     * SnapTrade's compatible positions endpoint exposes
+                     * average_purchase_price rather than total cost basis.
+                     *
+                     * Convert average purchase price into total basis.
+                     */
+                    $averagePurchasePrice =
                         $this->nullableFloat(
                             data_get(
-                                $position,
-                                'cost_basis',
-                            )
-                            ?? data_get(
                                 $position,
                                 'average_purchase_price',
                             )
@@ -657,17 +737,86 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                             ),
                         );
 
-                    if (
-                        $costBasis !== null
-                        && $costBasis > 0
-                        && $quantity > 0
-                        && $marketValue > 0
-                        && $costBasis
-                            < $marketValue / 2
-                    ) {
-                        $costBasis *=
-                            $quantity;
-                    }
+                    $explicitCostBasis =
+                        $this->nullableFloat(
+                            data_get(
+                                $position,
+                                'cost_basis',
+                            )
+                            ?? data_get(
+                                $position,
+                                'total_cost_basis',
+                            ),
+                        );
+
+                    $costBasis =
+                        $explicitCostBasis
+                        ?? (
+                            $averagePurchasePrice !== null
+                                ? $averagePurchasePrice
+                                    * $quantity
+                                : null
+                        );
+
+                    /*
+                     * Determine security type from SnapTrade's type
+                     * description/code.
+                     *
+                     * Fidelity examples:
+                     *
+                     * VOO:
+                     *   code = "et"
+                     *   description = "ETF"
+                     *
+                     * SPAXX:
+                     *   code = "oef"
+                     *   description = "Open Ended Fund"
+                     *   cash_equivalent = true
+                     */
+                    $securityTypeCode =
+                        $this->stringValue(
+                            data_get(
+                                $security,
+                                'type.code',
+                            )
+                            ?? data_get(
+                                $position,
+                                'symbol.symbol.type.code',
+                            ),
+                        );
+
+                    $securityTypeDescription =
+                        $this->stringValue(
+                            data_get(
+                                $security,
+                                'type.description',
+                            )
+                            ?? data_get(
+                                $position,
+                                'symbol.symbol.type.description',
+                            ),
+                        );
+
+                    $cashEquivalent =
+                        (bool) (
+                            data_get(
+                                $position,
+                                'cash_equivalent',
+                            )
+                            ?? false
+                        );
+
+                    $securityType =
+                        $this->normalizePositionSecurityType(
+                            code:
+                                $securityTypeCode,
+
+                            description:
+                                $securityTypeDescription,
+
+                            cashEquivalent:
+                                $cashEquivalent,
+                        );
 
                     $positionId =
                         $this->stringValue(
@@ -703,20 +852,16 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                         name:
                             $this->stringValue(
                                 data_get(
-                                    $instrument,
+                                    $security,
                                     'description',
-                                )
-                                ?? data_get(
-                                    $instrument,
-                                    'name',
-                                )
-                                ?? data_get(
-                                    $instrument,
-                                    'symbol.description',
                                 )
                                 ?? data_get(
                                     $position,
                                     'symbol.description',
+                                )
+                                ?? data_get(
+                                    $position,
+                                    'description',
                                 ),
                             )
                             ?: (
@@ -725,31 +870,12 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                             ),
 
                         securityType:
-                            $this->normalizeSecurityType(
-                                $this->stringValue(
-                                    data_get(
-                                        $instrument,
-                                        'kind',
-                                    )
-                                    ?? data_get(
-                                        $instrument,
-                                        'type',
-                                    )
-                                    ?? data_get(
-                                        $instrument,
-                                        'symbol.type.code',
-                                    )
-                                    ?? data_get(
-                                        $position,
-                                        'symbol.type.code',
-                                    ),
-                                ),
-                            ),
+                            $securityType,
 
                         assetClass:
                             $this->stringValue(
                                 data_get(
-                                    $instrument,
+                                    $security,
                                     'asset_class',
                                 )
                                 ?? data_get(
@@ -761,7 +887,11 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                         sector:
                             $this->stringValue(
                                 data_get(
-                                    $instrument,
+                                    $security,
+                                    'sector',
+                                )
+                                ?? data_get(
+                                    $position,
                                     'sector',
                                 ),
                             ),
@@ -781,7 +911,11 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                         expenseRatio:
                             $this->nullableFloat(
                                 data_get(
-                                    $instrument,
+                                    $security,
+                                    'expense_ratio',
+                                )
+                                ?? data_get(
+                                    $position,
                                     'expense_ratio',
                                 ),
                             ),
@@ -808,7 +942,9 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
             );
 
         $offset =
-            is_numeric($cursor)
+            is_numeric(
+                $cursor,
+            )
                 ? max(
                     0,
                     (int) $cursor,
@@ -826,10 +962,12 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                         $providerAccountId,
 
                     user_id:
-                        $providerUser->provider_user_id,
+                        $providerUser
+                            ->provider_user_id,
 
                     user_secret:
-                        $providerUser->provider_user_secret,
+                        $providerUser
+                            ->provider_user_secret,
 
                     offset:
                         $offset,
@@ -863,10 +1001,14 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
             }
 
             $offset +=
-                count($page);
+                count(
+                    $page,
+                );
 
             $hasMore =
-                count($page)
+                count(
+                    $page,
+                )
                 === self::TRANSACTION_PAGE_SIZE;
 
             $next =
@@ -895,7 +1037,8 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
         BrokerageConnection $connection,
     ): void {
         if (
-            ! $connection->provider_connection_id
+            ! $connection
+                ->provider_connection_id
         ) {
             throw new RuntimeException(
                 'The SnapTrade connection ID is missing.',
@@ -911,13 +1054,16 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
             ->connections
             ->refreshBrokerageAuthorization(
                 authorization_id:
-                    $connection->provider_connection_id,
+                    $connection
+                        ->provider_connection_id,
 
                 user_id:
-                    $providerUser->provider_user_id,
+                    $providerUser
+                        ->provider_user_id,
 
                 user_secret:
-                    $providerUser->provider_user_secret,
+                    $providerUser
+                        ->provider_user_secret,
             );
 
         $connection->update([
@@ -936,7 +1082,8 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
         BrokerageConnection $connection,
     ): void {
         if (
-            $connection->provider_connection_id
+            $connection
+                ->provider_connection_id
         ) {
             $providerUser =
                 $this->providerUser(
@@ -947,13 +1094,16 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                 ->connections
                 ->removeBrokerageAuthorization(
                     authorization_id:
-                        $connection->provider_connection_id,
+                        $connection
+                            ->provider_connection_id,
 
                     user_id:
-                        $providerUser->provider_user_id,
+                        $providerUser
+                            ->provider_user_id,
 
                     user_secret:
-                        $providerUser->provider_user_secret,
+                        $providerUser
+                            ->provider_user_secret,
                 );
         }
 
@@ -1090,7 +1240,8 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
             $price !== null
             && $quantity !== null
                 ? abs(
-                    $price * $quantity,
+                    $price
+                    * $quantity,
                 )
                 : abs(
                     $amount,
@@ -1238,6 +1389,139 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
         };
     }
 
+    /**
+     * Normalize SnapTrade position type information.
+     */
+    private function normalizePositionSecurityType(
+        ?string $code,
+        ?string $description,
+        bool $cashEquivalent,
+    ): string {
+        if ($cashEquivalent) {
+            return 'cash';
+        }
+
+        $code =
+            strtolower(
+                trim(
+                    (string) $code,
+                ),
+            );
+
+        $description =
+            strtolower(
+                trim(
+                    (string) $description,
+                ),
+            );
+
+        if (
+            $code === 'et'
+            || str_contains(
+                $description,
+                'etf',
+            )
+            || str_contains(
+                $description,
+                'exchange traded',
+            )
+        ) {
+            return 'etf';
+        }
+
+        if (
+            in_array(
+                $code,
+                [
+                    'oef',
+                    'mf',
+                ],
+                true,
+            )
+            || str_contains(
+                $description,
+                'mutual fund',
+            )
+            || str_contains(
+                $description,
+                'open ended fund',
+            )
+            || str_contains(
+                $description,
+                'open-end fund',
+            )
+        ) {
+            return 'mutual_fund';
+        }
+
+        if (
+            str_contains(
+                $description,
+                'option',
+            )
+        ) {
+            return 'option';
+        }
+
+        if (
+            str_contains(
+                $description,
+                'crypto',
+            )
+            || str_contains(
+                $description,
+                'digital asset',
+            )
+        ) {
+            return 'crypto';
+        }
+
+        if (
+            str_contains(
+                $description,
+                'future',
+            )
+        ) {
+            return 'future';
+        }
+
+        if (
+            str_contains(
+                $description,
+                'bond',
+            )
+            || str_contains(
+                $description,
+                'fixed income',
+            )
+        ) {
+            return 'bond';
+        }
+
+        if (
+            str_contains(
+                $description,
+                'stock',
+            )
+            || str_contains(
+                $description,
+                'equity',
+            )
+            || str_contains(
+                $description,
+                'adr',
+            )
+            || $code === 'cs'
+        ) {
+            return 'stock';
+        }
+
+        return 'other';
+    }
+
+    /**
+     * General security-type normalizer used for other SnapTrade shapes.
+     */
     private function normalizeSecurityType(
         ?string $type,
     ): string {
@@ -1315,6 +1599,9 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
     }
 
     /**
+     * Convert SDK models and responses into arrays without tying the
+     * provider to generated model classes.
+     *
      * @return array<string, mixed>
      */
     private function toArray(
@@ -1360,7 +1647,9 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                 JSON_THROW_ON_ERROR,
             );
 
-        return is_array($decoded)
+        return is_array(
+            $decoded,
+        )
             ? $decoded
             : [];
     }
@@ -1390,7 +1679,9 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
         array $data,
         array $preferredKeys = [],
     ): array {
-        foreach ($preferredKeys as $key) {
+        foreach (
+            $preferredKeys as $key
+        ) {
             $candidate =
                 data_get(
                     $data,
@@ -1418,7 +1709,8 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
             ] as $key
         ) {
             $candidate =
-                $data[$key] ?? null;
+                $data[$key]
+                ?? null;
 
             if (is_array($candidate)) {
                 return $this->normalizeList(
@@ -1431,6 +1723,8 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
     }
 
     /**
+     * Normalize SDK response items into plain arrays.
+     *
      * @param array<int|string, mixed> $items
      * @return array<int, array<string, mixed>>
      */
@@ -1484,8 +1778,12 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
     ): ?string {
         if (
             $value === null
-            || is_array($value)
-            || is_object($value)
+            || is_array(
+                $value,
+            )
+            || is_object(
+                $value,
+            )
         ) {
             return null;
         }
@@ -1518,7 +1816,9 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                 ?? null;
         }
 
-        return is_numeric($value)
+        return is_numeric(
+            $value,
+        )
             ? (float) $value
             : null;
     }
