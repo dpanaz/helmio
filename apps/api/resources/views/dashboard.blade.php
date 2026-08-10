@@ -123,6 +123,7 @@
                     ->title()
                 : 'Not available';
 
+
         /*
         |--------------------------------------------------------------------------
         | Helm Score
@@ -179,55 +180,25 @@
         */
 
         $categoryLabels = [
-            'cost' =>
-                'Cost',
-
-            'diversification' =>
-                'Diversification',
-
-            'performance' =>
-                'Performance',
-
-            'risk' =>
-                'Risk',
-
-            'suitability' =>
-                'Suitability',
-
-            'trading' =>
-                'Trading',
-
-            'cash' =>
-                'Cash',
-
-            'tax' =>
-                'Tax',
+            'cost' => 'Cost',
+            'diversification' => 'Diversification',
+            'performance' => 'Performance',
+            'risk' => 'Risk',
+            'suitability' => 'Suitability',
+            'trading' => 'Trading',
+            'cash' => 'Cash',
+            'tax' => 'Tax',
         ];
 
         $categoryRoutes = [
-            'cost' =>
-                'analytics.costs',
-
-            'diversification' =>
-                'analytics.diversification',
-
-            'performance' =>
-                'analytics.performance',
-
-            'risk' =>
-                'analytics.risk',
-
-            'suitability' =>
-                'investor-profile.edit',
-
-            'trading' =>
-                'analytics.trading-discipline',
-
-            'cash' =>
-                'analytics.cash-drag',
-
-            'tax' =>
-                'analytics.tax-efficiency',
+            'cost' => 'analytics.costs',
+            'diversification' => 'analytics.diversification',
+            'performance' => 'analytics.performance',
+            'risk' => 'analytics.risk',
+            'suitability' => 'investor-profile.edit',
+            'trading' => 'analytics.trading-discipline',
+            'cash' => 'analytics.cash-drag',
+            'tax' => 'analytics.tax-efficiency',
         ];
 
         $scoreBreakdown = [
@@ -244,16 +215,16 @@
                 'label' => 'Risk',
             ],
             [
+                'key' => 'diversification',
+                'label' => 'Diversification',
+            ],
+            [
                 'key' => 'trading',
-                'label' => 'Trading Discipline',
+                'label' => 'Trading',
             ],
             [
                 'key' => 'tax',
-                'label' => 'Tax Efficiency',
-            ],
-            [
-                'key' => 'diversification',
-                'label' => 'Diversification',
+                'label' => 'Tax',
             ],
         ];
 
@@ -307,17 +278,10 @@
         );
 
         $scoreDirection = match (true) {
-            $scoreChange === null =>
-                null,
-
-            $scoreChange > 0 =>
-                'up',
-
-            $scoreChange < 0 =>
-                'down',
-
-            default =>
-                'flat',
+            $scoreChange === null => null,
+            $scoreChange > 0 => 'up',
+            $scoreChange < 0 => 'down',
+            default => 'flat',
         };
 
         /*
@@ -337,18 +301,6 @@
             data_get(
                 $latestAiInsight,
                 'generated_at'
-            );
-
-        $latestAiInsightPortfolioValue =
-            data_get(
-                $latestAiInsight,
-                'portfolio_value_at_generation'
-            );
-
-        $latestAiInsightAccountCount =
-            data_get(
-                $latestAiInsight,
-                'account_count_at_generation'
             );
 
         /*
@@ -418,14 +370,9 @@
         $hour = now()->hour;
 
         $greeting = match (true) {
-            $hour < 12 =>
-                'Good morning',
-
-            $hour < 17 =>
-                'Good afternoon',
-
-            default =>
-                'Good evening',
+            $hour < 12 => 'Good morning',
+            $hour < 17 => 'Good afternoon',
+            default => 'Good evening',
         };
 
         $firstName =
@@ -434,6 +381,51 @@
                     auth()->user()->name
                 )->before(' ')
                 : 'there';
+
+        /*
+        |--------------------------------------------------------------------------
+        | Main attention state
+        |--------------------------------------------------------------------------
+        */
+
+        $needsAttention =
+            $totalAdvisorFindings > 0;
+
+        $topConcernSeverity =
+            data_get(
+                $topConcern,
+                'severity',
+                'moderate'
+            );
+
+        $topConcernClasses = match ($topConcernSeverity) {
+            'critical',
+            'high' =>
+                [
+                    'border' => 'border-red-500/30',
+                    'background' => 'bg-red-500/[0.06]',
+                    'badge' => 'border-red-500/30 bg-red-500/10 text-red-300',
+                    'icon' => 'bg-red-500/10 text-red-300',
+                ],
+
+            'important',
+            'moderate',
+            'medium' =>
+                [
+                    'border' => 'border-amber-500/30',
+                    'background' => 'bg-amber-500/[0.06]',
+                    'badge' => 'border-amber-500/30 bg-amber-500/10 text-amber-300',
+                    'icon' => 'bg-amber-500/10 text-amber-300',
+                ],
+
+            default =>
+                [
+                    'border' => 'border-blue-500/30',
+                    'background' => 'bg-blue-500/[0.06]',
+                    'badge' => 'border-blue-500/30 bg-blue-500/10 text-blue-300',
+                    'icon' => 'bg-blue-500/10 text-blue-300',
+                ],
+        };
     @endphp
 
     <div class="min-h-screen bg-slate-950">
@@ -441,14 +433,14 @@
         @if (! $hasPremiumAccess)
 
             {{-- ========================================================= --}}
-            {{-- NON-PREMIUM STATE --}}
+            {{-- NON-PREMIUM --}}
             {{-- ========================================================= --}}
 
             <div
                 class="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8"
             >
                 <section
-                    class="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-2xl"
+                    class="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-xl"
                 >
                     <div
                         class="grid gap-10 p-6 sm:p-8 lg:grid-cols-2 lg:p-12"
@@ -457,20 +449,6 @@
                             <span
                                 class="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1 text-xs font-semibold text-blue-300"
                             >
-                                <svg
-                                    class="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M16.5 10.5V7.5a4.5 4.5 0 0 0-9 0v3m-.75 0h10.5A1.5 1.5 0 0 1 18.75 12v7.5A1.5 1.5 0 0 1 17.25 21H6.75a1.5 1.5 0 0 1-1.5-1.5V12a1.5 1.5 0 0 1 1.5-1.5Z"
-                                    />
-                                </svg>
-
                                 Subscription required
                             </span>
 
@@ -481,11 +459,10 @@
                             </h1>
 
                             <p
-                                class="mt-4 max-w-xl text-base leading-8 text-slate-400"
+                                class="mt-4 max-w-xl text-base leading-8 text-slate-300"
                             >
-                                Start your Helmio trial to securely connect
-                                your investment accounts and begin monitoring
-                                fees, performance, risk, diversification,
+                                Connect your investment accounts and let Helmio
+                                monitor fees, performance, risk, diversification,
                                 trading activity, taxes, and advisor behavior.
                             </p>
 
@@ -509,11 +486,9 @@
                         </div>
 
                         <div
-                            class="rounded-2xl border border-slate-700 bg-slate-950 p-6"
+                            class="rounded-2xl border border-slate-800 bg-slate-950 p-6"
                         >
-                            <p
-                                class="text-sm font-semibold text-white"
-                            >
+                            <p class="text-sm font-semibold text-white">
                                 Premium includes
                             </p>
 
@@ -526,9 +501,7 @@
                                     'AI portfolio insights',
                                     'Ongoing monitoring and alerts',
                                 ] as $feature)
-                                    <div
-                                        class="flex items-start gap-3"
-                                    >
+                                    <div class="flex items-start gap-3">
                                         <div
                                             class="mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-emerald-500/10"
                                         >
@@ -563,42 +536,45 @@
         @else
 
             {{-- ========================================================= --}}
-            {{-- PREMIUM DASHBOARD --}}
+            {{-- PREMIUM --}}
             {{-- ========================================================= --}}
 
             <div
-                class="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8"
+                class="mx-auto max-w-7xl px-4 py-7 sm:px-6 sm:py-9 lg:px-8"
             >
 
-                {{-- Greeting --}}
+                {{-- ===================================================== --}}
+                {{-- GREETING --}}
+                {{-- ===================================================== --}}
+
                 <div
-                    class="mb-6 flex flex-col gap-4 md:flex-row md:items-end md:justify-between"
+                    class="mb-7 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between"
                 >
                     <div>
                         <p
-                            class="text-sm font-medium text-slate-500"
+                            class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400"
                         >
                             Portfolio overview
                         </p>
 
                         <h1
-                            class="mt-1 text-3xl font-semibold tracking-tight text-white"
+                            class="mt-2 text-3xl font-semibold tracking-tight text-white"
                         >
                             {{ $greeting }}, {{ $firstName }}.
                         </h1>
 
                         <p
-                            class="mt-2 text-sm text-slate-400"
+                            class="mt-2 text-sm leading-6 text-slate-400"
                         >
-                            Here's how your portfolio is looking today.
+                            Here’s what Helmio sees across your investments.
                         </p>
                     </div>
 
                     <div
-                        class="inline-flex items-center rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm text-slate-300"
+                        class="inline-flex w-fit items-center gap-2 rounded-xl border border-slate-800 bg-slate-900 px-4 py-2.5 text-xs font-medium text-slate-400"
                     >
                         <svg
-                            class="mr-2 h-4 w-4 text-slate-500"
+                            class="h-4 w-4 text-slate-500"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -615,59 +591,28 @@
                     </div>
                 </div>
 
+
                 {{-- ===================================================== --}}
-                {{-- TOP GRID --}}
+                {{-- EXECUTIVE SUMMARY --}}
                 {{-- ===================================================== --}}
 
                 <div
-                    class="grid gap-5 xl:grid-cols-3"
+                    class="grid gap-5 xl:grid-cols-[1.65fr_1fr]"
                 >
 
                     {{-- Helm Score --}}
                     <section
-                        class="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-xl xl:col-span-2"
+                        class="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-xl"
                     >
                         <div
-                            class="border-b border-slate-800 px-6 py-5"
+                            class="grid gap-8 p-6 sm:p-8 md:grid-cols-[auto_1fr] md:items-center"
                         >
-                            <div
-                                class="flex items-center justify-between"
-                            >
-                                <div>
-                                    <p
-                                        class="text-sm font-semibold text-white"
-                                    >
-                                        Helm Score
-                                    </p>
-
-                                    <p
-                                        class="mt-1 text-xs text-slate-500"
-                                    >
-                                        Overall portfolio health
-                                    </p>
-                                </div>
-
-                                <a
-                                    href="{{ route('analytics.helm-score') }}"
-                                    class="text-xs font-semibold text-blue-400 hover:text-blue-300"
-                                >
-                                    View report
-                                </a>
-                            </div>
-                        </div>
-
-                        <div
-                            class="grid gap-8 p-6 lg:grid-cols-2 lg:items-center"
-                        >
-
                             {{-- Dial --}}
-                            <div
-                                class="flex justify-center"
-                            >
+                            <div class="flex justify-center">
                                 <div
                                     data-helm-score-dial
                                     data-score="{{ $helmOverallScore }}"
-                                    class="relative flex h-64 w-64 items-center justify-center"
+                                    class="relative flex h-56 w-56 items-center justify-center"
                                 >
                                     <svg
                                         class="absolute inset-0 h-full w-full -rotate-90"
@@ -699,17 +644,15 @@
                                     </svg>
 
                                     <div
-                                        class="relative flex h-44 w-44 flex-col items-center justify-center rounded-full border border-slate-800 bg-slate-950 shadow-2xl"
+                                        class="relative flex h-40 w-40 flex-col items-center justify-center rounded-full border border-slate-800 bg-slate-950"
                                     >
                                         <p
-                                            class="text-xs font-semibold uppercase tracking-widest text-slate-500"
+                                            class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500"
                                         >
                                             Helm Score
                                         </p>
 
-                                        <div
-                                            class="mt-2 flex items-baseline"
-                                        >
+                                        <div class="mt-1 flex items-baseline">
                                             <span
                                                 data-helm-score-number
                                                 class="text-6xl font-semibold tracking-tight text-white"
@@ -718,14 +661,14 @@
                                             </span>
 
                                             <span
-                                                class="ml-1 text-sm font-medium text-slate-600"
+                                                class="ml-1 text-sm font-medium text-slate-500"
                                             >
                                                 /100
                                             </span>
                                         </div>
 
                                         <p
-                                            class="mt-3 text-sm font-semibold"
+                                            class="mt-2 text-sm font-semibold"
                                             style="color: {{ $helmScoreColor }}"
                                         >
                                             {{ $helmOverallLabel }}
@@ -734,84 +677,265 @@
                                 </div>
                             </div>
 
-                            {{-- Breakdown --}}
+                            {{-- Summary --}}
                             <div>
-                                <div
-                                    class="flex items-center justify-between"
+                                <p
+                                    class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400"
                                 >
+                                    Portfolio health
+                                </p>
+
+                                <h2
+                                    class="mt-2 text-2xl font-semibold tracking-tight text-white"
+                                >
+                                    {{ $helmOverallLabel }}
+                                </h2>
+
+                                @if ($needsAttention)
                                     <p
-                                        class="text-xs font-semibold uppercase tracking-widest text-slate-500"
+                                        class="mt-3 text-base leading-7 text-slate-300"
                                     >
-                                        Score Breakdown
+                                        Your portfolio is being monitored and
+                                        Helmio found
+                                        <span class="font-semibold text-amber-300">
+                                            {{ $totalAdvisorFindings }}
+                                            {{ Str::plural(
+                                                'item',
+                                                $totalAdvisorFindings
+                                            ) }}
+                                        </span>
+                                        that may deserve your attention.
                                     </p>
-
-                                    <span
-                                        class="text-xs text-slate-600"
+                                @else
+                                    <p
+                                        class="mt-3 text-base leading-7 text-slate-300"
                                     >
-                                        /100
-                                    </span>
+                                        Your portfolio is being monitored and
+                                        Helmio has not identified any major
+                                        open concerns.
+                                    </p>
+                                @endif
+
+                                <div
+                                    class="mt-6 flex flex-wrap gap-3"
+                                >
+                                    <a
+                                        href="{{ route('analytics.helm-score') }}"
+                                        class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
+                                    >
+                                        View Helm Score
+                                    </a>
+
+                                    @if ($needsAttention)
+                                        <a
+                                            href="{{ route('advisor-action-center.index') }}"
+                                            class="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white"
+                                        >
+                                            Review Findings
+                                        </a>
+                                    @endif
                                 </div>
+                            </div>
+                        </div>
+                    </section>
 
-                                <div class="mt-5 space-y-4">
-                                    @foreach ($scoreBreakdown as $item)
-                                        @php
-                                            $categoryScore =
-                                                data_get(
-                                                    $auditCategories,
-                                                    $item['key'] . '.score'
-                                                );
 
-                                            $categoryScore =
-                                                $categoryScore !== null
-                                                    ? min(
-                                                        100,
-                                                        max(
-                                                            0,
-                                                            (int) $categoryScore
-                                                        )
-                                                    )
-                                                    : null;
-                                        @endphp
+                    {{-- Key money metrics --}}
+                    <div class="grid gap-5 sm:grid-cols-2 xl:grid-cols-1">
 
-                                        <div>
-                                            <div
-                                                class="flex items-center justify-between gap-4"
+                        <section
+                            class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
+                        >
+                            <p
+                                class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+                            >
+                                Portfolio Value
+                            </p>
+
+                            <p
+                                class="mt-3 text-4xl font-semibold tracking-tight text-white"
+                            >
+                                {{ money($portfolioValue) }}
+                            </p>
+
+                            <p
+                                class="mt-2 text-sm text-slate-400"
+                            >
+                                Across
+                                {{ number_format($connectedAccountCount) }}
+                                {{ Str::plural(
+                                    'connected account',
+                                    $connectedAccountCount
+                                ) }}
+                            </p>
+
+                            <a
+                                href="{{ route('accounts.index') }}"
+                                class="mt-5 inline-flex text-sm font-semibold text-blue-400 hover:text-blue-300"
+                            >
+                                View Accounts →
+                            </a>
+                        </section>
+
+                        <section
+                            class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
+                        >
+                            <p
+                                class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500"
+                            >
+                                Estimated Annual Cost
+                            </p>
+
+                            <p
+                                class="mt-3 text-3xl font-semibold tracking-tight text-white"
+                            >
+                                @if ($allInCostDollars !== null)
+                                    {{ money($allInCostDollars) }}
+                                @else
+                                    —
+                                @endif
+                            </p>
+
+                            <p
+                                class="mt-2 text-sm text-slate-400"
+                            >
+                                @if ($allInCostRate !== null)
+                                    {{ number_format(
+                                        (float) $allInCostRate,
+                                        2
+                                    ) }}%
+                                    of assets annually
+                                @else
+                                    Cost data still being calculated
+                                @endif
+                            </p>
+
+                            <a
+                                href="{{ route('analytics.costs') }}"
+                                class="mt-5 inline-flex text-sm font-semibold text-blue-400 hover:text-blue-300"
+                            >
+                                View Cost Analysis →
+                            </a>
+                        </section>
+
+                    </div>
+                </div>
+
+
+                {{-- ===================================================== --}}
+                {{-- NEEDS ATTENTION --}}
+                {{-- ===================================================== --}}
+
+                <section class="mt-7">
+
+                    <div
+                        class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
+                    >
+                        <div>
+                            <p
+                                class="text-xs font-semibold uppercase tracking-[0.16em] text-amber-400"
+                            >
+                                Needs your attention
+                            </p>
+
+                            <h2
+                                class="mt-1 text-xl font-semibold text-white"
+                            >
+                                What matters most right now
+                            </h2>
+                        </div>
+
+                        <a
+                            href="{{ route('advisor-action-center.index') }}"
+                            class="text-sm font-semibold text-blue-400 hover:text-blue-300"
+                        >
+                            View Action Center
+                        </a>
+                    </div>
+
+                    @if ($topConcern)
+
+                        <article
+                            class="rounded-3xl border {{ $topConcernClasses['border'] }} {{ $topConcernClasses['background'] }} p-6 shadow-xl sm:p-7"
+                        >
+                            <div
+                                class="flex flex-col gap-6 lg:flex-row lg:items-start lg:justify-between"
+                            >
+                                <div class="flex max-w-4xl gap-4">
+
+                                    <div
+                                        class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl {{ $topConcernClasses['icon'] }}"
+                                    >
+                                        <svg
+                                            class="h-5 w-5"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M12 9v4m0 4h.01M10.3 4.5 2.6 18a1 1 0 0 0 .87 1.5h17.06a1 1 0 0 0 .87-1.5L13.7 4.5a1 1 0 0 0-1.74 0Z"
+                                            />
+                                        </svg>
+                                    </div>
+
+                                    <div>
+                                        <div
+                                            class="flex flex-wrap items-center gap-2"
+                                        >
+                                            <span
+                                                class="rounded-full border px-3 py-1 text-xs font-semibold {{ $topConcernClasses['badge'] }}"
                                             >
-                                                <span
-                                                    class="text-xs font-medium text-slate-300"
-                                                >
-                                                    {{ $item['label'] }}
-                                                </span>
+                                                {{ str($topConcernSeverity)
+                                                    ->replace('_', ' ')
+                                                    ->title() }}
+                                            </span>
 
-                                                <span
-                                                    class="text-xs font-semibold text-slate-400"
-                                                >
-                                                    {{ $categoryScore ?? '—' }}
-                                                </span>
-                                            </div>
-
-                                            <div
-                                                class="mt-2 h-2 overflow-hidden rounded-full bg-slate-800"
+                                            <span
+                                                class="text-xs text-slate-500"
                                             >
-                                                @if ($categoryScore !== null)
-                                                    <div
-                                                        class="h-full rounded-full bg-blue-500"
-                                                        style="width: {{ $categoryScore }}%"
-                                                    ></div>
-                                                @endif
-                                            </div>
+                                                Highest-priority finding
+                                            </span>
                                         </div>
-                                    @endforeach
+
+                                        <h3
+                                            class="mt-3 text-xl font-semibold text-white sm:text-2xl"
+                                        >
+                                            {{ $topConcern['title']
+                                                ?? 'Advisor audit finding' }}
+                                        </h3>
+
+                                        <p
+                                            class="mt-3 max-w-3xl text-sm leading-7 text-slate-300"
+                                        >
+                                            {{ $topConcern['message']
+                                                ?? 'Helmio identified a portfolio issue that may deserve review.' }}
+                                        </p>
+                                    </div>
                                 </div>
 
                                 <a
-                                    href="{{ route('advisor-audit.index') }}"
-                                    class="mt-6 inline-flex items-center text-xs font-semibold text-blue-400 hover:text-blue-300"
+                                    href="{{ route('advisor-action-center.index') }}"
+                                    class="inline-flex shrink-0 items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
                                 >
-                                    Scoring methodology
+                                    Review Finding
+                                </a>
+                            </div>
+                        </article>
 
+                    @else
+
+                        <article
+                            class="rounded-3xl border border-emerald-500/20 bg-emerald-500/[0.05] p-6"
+                        >
+                            <div class="flex items-start gap-4">
+                                <div
+                                    class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-emerald-500/10 text-emerald-300"
+                                >
                                     <svg
-                                        class="ml-1 h-3.5 w-3.5"
+                                        class="h-5 w-5"
                                         fill="none"
                                         viewBox="0 0 24 24"
                                         stroke="currentColor"
@@ -820,406 +944,227 @@
                                         <path
                                             stroke-linecap="round"
                                             stroke-linejoin="round"
-                                            d="m9 18 6-6-6-6"
+                                            d="m5 12 4 4L19 6"
                                         />
                                     </svg>
-                                </a>
-                            </div>
-                        </div>
-                    </section>
+                                </div>
 
-                    {{-- Portfolio Value --}}
-                    <section
-                        class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
-                    >
-                        <div
-                            class="flex items-start justify-between"
-                        >
-                            <div>
-                                <p
-                                    class="text-sm font-semibold text-white"
-                                >
-                                    Portfolio Value
-                                </p>
-
-                                <p
-                                    class="mt-1 text-xs text-slate-500"
-                                >
-                                    Across connected accounts
-                                </p>
-                            </div>
-
-                            <div
-                                class="flex h-9 w-9 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-400"
-                            >
-                                <svg
-                                    class="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    stroke-width="2"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M4 18 9 13l3 3 8-9"
-                                    />
-                                </svg>
-                            </div>
-                        </div>
-
-                        <p
-                            class="mt-8 text-4xl font-semibold tracking-tight text-white"
-                        >
-                            {{ money($portfolioValue) }}
-                        </p>
-
-                        <p
-                            class="mt-2 text-sm text-slate-500"
-                        >
-                            {{ number_format($connectedAccountCount) }}
-                            {{ Str::plural(
-                                'connected account',
-                                $connectedAccountCount
-                            ) }}
-                        </p>
-
-                        <div
-                            class="mt-8 flex h-28 items-end gap-1"
-                            aria-hidden="true"
-                        >
-                            @foreach ([
-                                24, 28, 25, 33, 38, 35, 44, 47,
-                                42, 50, 56, 61, 58, 66, 72, 68,
-                                75, 79, 74, 83, 88, 84, 91, 96,
-                            ] as $height)
-                                <div
-                                    class="flex-1 rounded-t bg-blue-500/50"
-                                    style="height: {{ $height }}%"
-                                ></div>
-                            @endforeach
-                        </div>
-
-                        <a
-                            href="{{ route('accounts.index') }}"
-                            class="mt-5 inline-flex text-xs font-semibold text-blue-400 hover:text-blue-300"
-                        >
-                            View accounts →
-                        </a>
-                    </section>
-                </div>
-
-                {{-- ===================================================== --}}
-                {{-- SECOND ROW --}}
-                {{-- ===================================================== --}}
-
-                <div
-                    class="mt-5 grid gap-5 lg:grid-cols-3"
-                >
-
-                    {{-- Cost --}}
-                    <section
-                        class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
-                    >
-                        <div
-                            class="flex items-center justify-between"
-                        >
-                            <div>
-                                <p
-                                    class="text-sm font-semibold text-white"
-                                >
-                                    All-In Cost Rate
-                                </p>
-
-                                <p
-                                    class="mt-1 text-xs text-slate-500"
-                                >
-                                    Portfolio-wide investment costs
-                                </p>
-                            </div>
-
-                            <div
-                                class="flex h-9 w-9 items-center justify-center rounded-xl bg-amber-500/10 text-amber-400"
-                            >
-                                $
-                            </div>
-                        </div>
-
-                        <div
-                            class="mt-7 flex items-end justify-between gap-4"
-                        >
-                            <div>
-                                <p
-                                    class="text-3xl font-semibold text-white"
-                                >
-                                    @if ($allInCostRate !== null)
-                                        {{ number_format(
-                                            (float) $allInCostRate,
-                                            2
-                                        ) }}%
-                                    @else
-                                        —
-                                    @endif
-                                </p>
-
-                                <p
-                                    class="mt-1 text-xs text-slate-500"
-                                >
-                                    of assets annually
-                                </p>
-                            </div>
-
-                            @if ($allInCostDollars !== null)
-                                <div class="text-right">
-                                    <p
-                                        class="text-xs text-slate-500"
+                                <div>
+                                    <h3
+                                        class="font-semibold text-white"
                                     >
-                                        Estimated annual cost
-                                    </p>
+                                        Nothing urgent needs your attention.
+                                    </h3>
 
                                     <p
-                                        class="mt-1 text-sm font-semibold text-amber-300"
+                                        class="mt-2 text-sm leading-6 text-slate-400"
                                     >
-                                        {{ money($allInCostDollars) }}
+                                        Helmio has not identified a major
+                                        concern in the portfolio data currently available.
                                     </p>
                                 </div>
-                            @endif
-                        </div>
-
-                        <div
-                            class="mt-6 h-px bg-slate-800"
-                        ></div>
-
-                        <a
-                            href="{{ route('analytics.costs') }}"
-                            class="mt-5 inline-flex text-xs font-semibold text-blue-400 hover:text-blue-300"
-                        >
-                            View cost analysis →
-                        </a>
-                    </section>
-
-                    {{-- Top Finding --}}
-                    <section
-                        class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
-                    >
-                        <div
-                            class="flex items-center justify-between"
-                        >
-                            <div>
-                                <p
-                                    class="text-sm font-semibold text-white"
-                                >
-                                    Top Finding
-                                </p>
-
-                                <p
-                                    class="mt-1 text-xs text-slate-500"
-                                >
-                                    Highest-priority issue
-                                </p>
                             </div>
+                        </article>
 
-                            <span
-                                class="rounded-full bg-amber-500/10 px-3 py-1 text-xs font-semibold text-amber-300"
-                            >
-                                {{ number_format($totalAdvisorFindings) }}
-                                open
-                            </span>
-                        </div>
+                    @endif
+                </section>
 
-                        @if ($topConcern)
-                            <h3
-                                class="mt-6 text-xl font-semibold text-white"
+
+                {{-- ===================================================== --}}
+                {{-- PORTFOLIO HEALTH --}}
+                {{-- ===================================================== --}}
+
+                <section class="mt-8">
+
+                    <div
+                        class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"
+                    >
+                        <div>
+                            <p
+                                class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400"
                             >
-                                {{ $topConcern['title']
-                                    ?? 'Advisor audit finding' }}
-                            </h3>
+                                Portfolio health
+                            </p>
+
+                            <h2
+                                class="mt-1 text-xl font-semibold text-white"
+                            >
+                                Score Breakdown
+                            </h2>
 
                             <p
-                                class="mt-3 line-clamp-3 text-sm leading-6 text-slate-400"
+                                class="mt-1 text-sm text-slate-400"
                             >
-                                {{ $topConcern['message']
-                                    ?? '' }}
+                                A quick view of how each area is performing.
                             </p>
-                        @else
-                            <h3
-                                class="mt-6 text-xl font-semibold text-white"
-                            >
-                                No major concerns detected
-                            </h3>
-
-                            <p
-                                class="mt-3 text-sm leading-6 text-slate-400"
-                            >
-                                Helmio has not identified a major concern
-                                in the available portfolio data.
-                            </p>
-                        @endif
-
-                        <a
-                            href="{{ route('advisor-audit.index') }}"
-                            class="mt-6 inline-flex rounded-lg border border-slate-700 bg-slate-950 px-4 py-2 text-xs font-semibold text-slate-300 transition hover:border-blue-500 hover:text-white"
-                        >
-                            See recommendation
-                        </a>
-                    </section>
-
-                    {{-- Accounts --}}
-                    <section
-                        class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
-                    >
-                        <div
-                            class="flex items-center justify-between"
-                        >
-                            <div>
-                                <p
-                                    class="text-sm font-semibold text-white"
-                                >
-                                    Accounts
-                                </p>
-
-                                <p
-                                    class="mt-1 text-xs text-slate-500"
-                                >
-                                    Connected to Helmio
-                                </p>
-                            </div>
-
-                            <span
-                                class="text-3xl font-semibold text-white"
-                            >
-                                {{ number_format(
-                                    $connectedAccountCount
-                                ) }}
-                            </span>
                         </div>
 
-                        <div class="mt-6 space-y-3">
-                            @forelse (
-                                $accountsCollection->take(3)
-                                as $account
-                            )
-                                @php
-                                    $accountValue =
-                                        data_get(
-                                            $account,
-                                            'current_value'
-                                        )
-                                        ?? data_get(
-                                            $account,
-                                            'market_value'
-                                        )
-                                        ?? data_get(
-                                            $account,
-                                            'value'
-                                        )
-                                        ?? 0;
+                        <a
+                            href="{{ route('analytics.helm-score') }}"
+                            class="text-sm font-semibold text-blue-400 hover:text-blue-300"
+                        >
+                            Full Score Report
+                        </a>
+                    </div>
 
-                                    $institutionName =
-                                        data_get(
-                                            $account,
-                                            'institution.name'
-                                        )
-                                        ?? data_get(
-                                            $account,
-                                            'institution_name'
-                                        )
-                                        ?? data_get(
-                                            $account,
-                                            'institution'
-                                        )
-                                        ?? 'Investment account';
-                                @endphp
+                    <div
+                        class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+                    >
+                        @foreach ($scoreBreakdown as $item)
 
+                            @php
+                                $categoryScore =
+                                    data_get(
+                                        $auditCategories,
+                                        $item['key'] . '.score'
+                                    );
+
+                                $categoryScore =
+                                    $categoryScore !== null
+                                        ? min(
+                                            100,
+                                            max(
+                                                0,
+                                                (int) $categoryScore
+                                            )
+                                        )
+                                        : null;
+
+                                $categoryStatus = match (true) {
+                                    $categoryScore === null =>
+                                        'Insufficient data',
+
+                                    $categoryScore >= 90 =>
+                                        'Excellent',
+
+                                    $categoryScore >= 80 =>
+                                        'Strong',
+
+                                    $categoryScore >= 70 =>
+                                        'Good',
+
+                                    $categoryScore >= 60 =>
+                                        'Needs review',
+
+                                    default =>
+                                        'Attention needed',
+                                };
+
+                                $categoryScoreClass = match (true) {
+                                    $categoryScore === null =>
+                                        'text-slate-500',
+
+                                    $categoryScore >= 80 =>
+                                        'text-emerald-300',
+
+                                    $categoryScore >= 70 =>
+                                        'text-blue-300',
+
+                                    $categoryScore >= 60 =>
+                                        'text-amber-300',
+
+                                    default =>
+                                        'text-red-300',
+                                };
+                            @endphp
+
+                            <a
+                                href="{{ route(
+                                    $categoryRoutes[$item['key']]
+                                ) }}"
+                                class="group rounded-2xl border border-slate-800 bg-slate-900 p-5 transition hover:border-blue-500/50 hover:bg-slate-800/50"
+                            >
                                 <div
-                                    class="flex items-center justify-between gap-4 rounded-xl border border-slate-800 bg-slate-950 px-4 py-3"
+                                    class="flex items-start justify-between gap-4"
                                 >
-                                    <div class="min-w-0">
+                                    <div>
                                         <p
-                                            class="truncate text-sm font-medium text-slate-200"
+                                            class="font-semibold text-white"
                                         >
-                                            {{ data_get(
-                                                $account,
-                                                'name',
-                                                'Investment Account'
-                                            ) }}
+                                            {{ $item['label'] }}
                                         </p>
 
                                         <p
-                                            class="mt-1 truncate text-xs text-slate-600"
+                                            class="mt-1 text-xs text-slate-500"
                                         >
-                                            {{ $institutionName }}
+                                            {{ $categoryStatus }}
                                         </p>
                                     </div>
 
-                                    <p
-                                        class="shrink-0 text-sm font-semibold text-white"
+                                    <span
+                                        class="text-2xl font-semibold {{ $categoryScoreClass }}"
                                     >
-                                        {{ money(
-                                            $accountValue
-                                        ) }}
-                                    </p>
+                                        {{ $categoryScore ?? '—' }}
+                                    </span>
                                 </div>
-                            @empty
-                                <p
-                                    class="text-sm text-slate-500"
-                                >
-                                    No accounts connected.
-                                </p>
-                            @endforelse
-                        </div>
 
-                        <a
-                            href="{{ route('accounts.index') }}"
-                            class="mt-5 inline-flex text-xs font-semibold text-blue-400 hover:text-blue-300"
-                        >
-                            View accounts →
-                        </a>
-                    </section>
-                </div>
+                                <div
+                                    class="mt-5 h-2 overflow-hidden rounded-full bg-slate-800"
+                                >
+                                    @if ($categoryScore !== null)
+                                        <div
+                                            class="h-full rounded-full bg-blue-500"
+                                            style="width: {{ $categoryScore }}%"
+                                        ></div>
+                                    @endif
+                                </div>
+
+                                <p
+                                    class="mt-4 text-xs font-semibold text-blue-400 opacity-0 transition group-hover:opacity-100"
+                                >
+                                    View analysis →
+                                </p>
+                            </a>
+
+                        @endforeach
+                    </div>
+                </section>
+
 
                 {{-- ===================================================== --}}
-                {{-- THIRD ROW --}}
+                {{-- ACTIVITY + ADVISOR AUDIT --}}
                 {{-- ===================================================== --}}
 
                 <div
-                    class="mt-5 grid gap-5 xl:grid-cols-3"
+                    class="mt-8 grid gap-5 xl:grid-cols-[1.6fr_1fr]"
                 >
 
-                    {{-- Recent Alerts --}}
+                    {{-- Recent Activity --}}
                     <section
-                        class="rounded-3xl border border-slate-800 bg-slate-900 shadow-xl xl:col-span-2"
+                        class="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-xl"
                     >
                         <div
                             class="flex items-center justify-between border-b border-slate-800 px-6 py-5"
                         >
                             <div>
-                                <p
-                                    class="text-sm font-semibold text-white"
+                                <h2
+                                    class="text-lg font-semibold text-white"
                                 >
-                                    Recent Alerts
-                                </p>
+                                    Recent Activity
+                                </h2>
 
                                 <p
-                                    class="mt-1 text-xs text-slate-500"
+                                    class="mt-1 text-sm text-slate-400"
                                 >
-                                    Findings that may need your attention
+                                    Portfolio findings and monitoring events.
                                 </p>
                             </div>
 
                             <a
                                 href="{{ route('advisor-audit.index') }}"
-                                class="text-xs font-semibold text-blue-400 hover:text-blue-300"
+                                class="text-sm font-semibold text-blue-400 hover:text-blue-300"
                             >
-                                View all
+                                View All
                             </a>
                         </div>
 
                         <div class="divide-y divide-slate-800">
+
                             @forelse (
                                 $findingsCollection->take(5)
                                 as $finding
                             )
+
                                 @php
                                     $severity = data_get(
                                         $finding,
@@ -1227,26 +1172,27 @@
                                         'moderate'
                                     );
 
-                                    $alertColor = match (
-                                        $severity
-                                    ) {
+                                    $alertColor = match ($severity) {
                                         'critical',
                                         'high' =>
-                                            'text-red-400 bg-red-500/10',
+                                            'text-red-300 bg-red-500/10',
 
-                                        'moderate' =>
-                                            'text-amber-400 bg-amber-500/10',
+                                        'moderate',
+                                        'medium' =>
+                                            'text-amber-300 bg-amber-500/10',
+
+                                        'positive' =>
+                                            'text-emerald-300 bg-emerald-500/10',
 
                                         default =>
-                                            'text-blue-400 bg-blue-500/10',
+                                            'text-blue-300 bg-blue-500/10',
                                     };
                                 @endphp
 
-                                <div
-                                    class="flex gap-4 px-6 py-5"
-                                >
+                                <div class="flex gap-4 px-6 py-5">
+
                                     <div
-                                        class="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl {{ $alertColor }}"
+                                        class="mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ $alertColor }}"
                                     >
                                         <svg
                                             class="h-4 w-4"
@@ -1264,11 +1210,12 @@
                                     </div>
 
                                     <div class="min-w-0 flex-1">
+
                                         <div
                                             class="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between"
                                         >
                                             <p
-                                                class="font-medium text-slate-200"
+                                                class="font-medium text-white"
                                             >
                                                 {{ data_get(
                                                     $finding,
@@ -1278,14 +1225,14 @@
                                             </p>
 
                                             <span
-                                                class="text-xs capitalize text-slate-600"
+                                                class="text-xs capitalize text-slate-500"
                                             >
                                                 {{ $severity }}
                                             </span>
                                         </div>
 
                                         <p
-                                            class="mt-1 line-clamp-2 text-sm leading-6 text-slate-500"
+                                            class="mt-2 line-clamp-2 text-sm leading-6 text-slate-400"
                                         >
                                             {{ data_get(
                                                 $finding,
@@ -1295,12 +1242,14 @@
                                         </p>
                                     </div>
                                 </div>
+
                             @empty
+
                                 <div
                                     class="px-6 py-10 text-center"
                                 >
                                     <div
-                                        class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-400"
+                                        class="mx-auto flex h-10 w-10 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-300"
                                     >
                                         <svg
                                             class="h-5 w-5"
@@ -1318,164 +1267,161 @@
                                     </div>
 
                                     <p
-                                        class="mt-3 text-sm font-medium text-slate-300"
+                                        class="mt-3 text-sm font-medium text-white"
                                     >
                                         No open alerts
                                     </p>
 
                                     <p
-                                        class="mt-1 text-xs text-slate-600"
+                                        class="mt-1 text-xs text-slate-500"
                                     >
                                         Helmio hasn't identified anything
                                         requiring immediate attention.
                                     </p>
                                 </div>
+
                             @endforelse
                         </div>
                     </section>
 
-                    {{-- Advisor Activity --}}
+
+                    {{-- Advisor Audit --}}
                     <section
                         class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl"
                     >
-                        <div
-                            class="flex items-center justify-between"
-                        >
-                            <div>
-                                <p
-                                    class="text-sm font-semibold text-white"
-                                >
-                                    Advisor Activity
-                                </p>
-
-                                <p
-                                    class="mt-1 text-xs text-slate-500"
-                                >
-                                    Audit changes and status
-                                </p>
-                            </div>
-
-                            <a
-                                href="{{ route('advisor-audit.history') }}"
-                                class="text-xs font-semibold text-blue-400 hover:text-blue-300"
+                        <div>
+                            <p
+                                class="text-xs font-semibold uppercase tracking-[0.14em] text-blue-400"
                             >
-                                History
-                            </a>
+                                Advisor oversight
+                            </p>
+
+                            <h2
+                                class="mt-1 text-lg font-semibold text-white"
+                            >
+                                Advisor Audit
+                            </h2>
+
+                            <p
+                                class="mt-1 text-sm text-slate-400"
+                            >
+                                Independent review of advisor activity.
+                            </p>
                         </div>
 
-                        <dl class="mt-7 space-y-5">
-                            <div
-                                class="flex items-center justify-between border-b border-slate-800 pb-4"
-                            >
-                                <dt
-                                    class="text-sm text-slate-500"
-                                >
-                                    Advisor Audit
-                                </dt>
-
-                                <dd
-                                    class="text-sm font-semibold text-white"
-                                >
-                                    {{ $auditScore ?? '—' }}
-                                    /100
-                                </dd>
-                            </div>
-
-                            <div
-                                class="flex items-center justify-between border-b border-slate-800 pb-4"
-                            >
-                                <dt
-                                    class="text-sm text-slate-500"
-                                >
-                                    Score change
-                                </dt>
-
-                                <dd
-                                    class="text-sm font-semibold
-                                    {{ $scoreDirection === 'up'
-                                        ? 'text-emerald-400'
-                                        : (
-                                            $scoreDirection === 'down'
-                                                ? 'text-red-400'
-                                                : 'text-slate-300'
-                                        )
-                                    }}"
-                                >
-                                    @if ($scoreChange === null)
-                                        —
-                                    @elseif ($scoreChange > 0)
-                                        +{{ number_format(
-                                            (float) $scoreChange
-                                        ) }}
-                                    @else
-                                        {{ number_format(
-                                            (float) $scoreChange
-                                        ) }}
-                                    @endif
-                                </dd>
-                            </div>
-
-                            <div
-                                class="flex items-center justify-between"
-                            >
-                                <dt
-                                    class="text-sm text-slate-500"
-                                >
-                                    Data completeness
-                                </dt>
-
-                                <dd
-                                    class="text-sm font-semibold text-white"
-                                >
-                                    {{ number_format(
-                                        $auditCompleteness * 100
-                                    ) }}%
-                                </dd>
-                            </div>
-                        </dl>
-
                         <div
-                            class="mt-5 h-2 overflow-hidden rounded-full bg-slate-800"
+                            class="mt-6 rounded-2xl border border-slate-800 bg-slate-950 p-5"
                         >
                             <div
-                                class="h-full rounded-full bg-blue-500"
-                                style="width: {{
-                                    min(
-                                        100,
-                                        max(
-                                            0,
+                                class="flex items-end justify-between"
+                            >
+                                <div>
+                                    <p
+                                        class="text-xs uppercase tracking-wide text-slate-500"
+                                    >
+                                        Audit score
+                                    </p>
+
+                                    <p
+                                        class="mt-2 text-4xl font-semibold text-white"
+                                    >
+                                        {{ $auditScore ?? '—' }}
+                                    </p>
+                                </div>
+
+                                @if ($scoreChange !== null)
+                                    <div class="text-right">
+                                        <p
+                                            class="text-xs text-slate-500"
+                                        >
+                                            Change
+                                        </p>
+
+                                        <p
+                                            class="mt-1 text-sm font-semibold
+                                            {{ $scoreDirection === 'up'
+                                                ? 'text-emerald-300'
+                                                : (
+                                                    $scoreDirection === 'down'
+                                                        ? 'text-red-300'
+                                                        : 'text-slate-300'
+                                                )
+                                            }}"
+                                        >
+                                            @if ($scoreChange > 0)
+                                                +{{ number_format(
+                                                    (float) $scoreChange
+                                                ) }}
+                                            @else
+                                                {{ number_format(
+                                                    (float) $scoreChange
+                                                ) }}
+                                            @endif
+                                        </p>
+                                    </div>
+                                @endif
+                            </div>
+
+                            <div class="mt-5">
+                                <div
+                                    class="flex items-center justify-between text-xs"
+                                >
+                                    <span class="text-slate-500">
+                                        Data completeness
+                                    </span>
+
+                                    <span class="font-semibold text-slate-300">
+                                        {{ number_format(
                                             $auditCompleteness * 100
-                                        )
-                                    )
-                                }}%"
-                            ></div>
+                                        ) }}%
+                                    </span>
+                                </div>
+
+                                <div
+                                    class="mt-2 h-2 overflow-hidden rounded-full bg-slate-800"
+                                >
+                                    <div
+                                        class="h-full rounded-full bg-blue-500"
+                                        style="width: {{
+                                            min(
+                                                100,
+                                                max(
+                                                    0,
+                                                    $auditCompleteness * 100
+                                                )
+                                            )
+                                        }}%"
+                                    ></div>
+                                </div>
+                            </div>
                         </div>
 
                         <a
                             href="{{ route('advisor-audit.report') }}"
-                            class="mt-6 inline-flex w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-blue-500 hover:text-white"
+                            class="mt-5 inline-flex w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-950 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-blue-500 hover:text-white"
                         >
                             Full Advisor Audit
                         </a>
                     </section>
                 </div>
 
+
                 {{-- ===================================================== --}}
                 {{-- AI INSIGHT --}}
                 {{-- ===================================================== --}}
 
                 <section
-                    class="mt-5 overflow-hidden rounded-3xl border border-violet-500/20 bg-slate-900 shadow-xl"
+                    class="mt-8 overflow-hidden rounded-3xl border border-violet-500/20 bg-slate-900 shadow-xl"
                 >
                     <div
-                        class="grid gap-8 p-6 lg:grid-cols-3 lg:p-8"
+                        class="grid gap-6 p-6 lg:grid-cols-[0.7fr_1.3fr] lg:p-8"
                     >
                         <div>
                             <div
-                                class="flex h-12 w-12 items-center justify-center rounded-2xl border border-violet-500/30 bg-violet-500/10 text-violet-300"
+                                class="flex h-11 w-11 items-center justify-center rounded-xl border border-violet-500/30 bg-violet-500/10 text-violet-300"
                             >
                                 <svg
-                                    class="h-6 w-6"
+                                    class="h-5 w-5"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -1490,29 +1436,30 @@
                             </div>
 
                             <p
-                                class="mt-5 text-xs font-semibold uppercase tracking-widest text-violet-400"
+                                class="mt-4 text-xs font-semibold uppercase tracking-[0.16em] text-violet-400"
                             >
                                 AI Portfolio Insight
                             </p>
 
                             <h2
-                                class="mt-3 text-2xl font-semibold text-white"
+                                class="mt-2 text-xl font-semibold text-white"
                             >
                                 Your portfolio, explained.
                             </h2>
 
                             <p
-                                class="mt-3 text-sm leading-6 text-slate-500"
+                                class="mt-2 text-sm leading-6 text-slate-400"
                             >
-                                Helmio turns your underlying analytics
-                                into plain-English explanations.
+                                Plain-English context based on your
+                                underlying Helmio analytics.
                             </p>
                         </div>
 
                         <div
-                            class="rounded-2xl border border-slate-800 bg-slate-950 p-6 lg:col-span-2"
+                            class="rounded-2xl border border-slate-800 bg-slate-950 p-6"
                         >
                             @if ($latestAiInsight)
+
                                 <div
                                     class="flex flex-wrap items-center gap-2"
                                 >
@@ -1532,7 +1479,7 @@
 
                                     @if ($latestAiInsightGeneratedAt)
                                         <span
-                                            class="text-xs text-slate-600"
+                                            class="text-xs text-slate-500"
                                         >
                                             Generated
                                             {{ $latestAiInsightGeneratedAt->diffForHumans() }}
@@ -1541,7 +1488,7 @@
                                 </div>
 
                                 <h3
-                                    class="mt-5 text-xl font-semibold text-white"
+                                    class="mt-4 text-lg font-semibold text-white"
                                 >
                                     {{ data_get(
                                         $latestAiInsight,
@@ -1555,7 +1502,7 @@
                                 </h3>
 
                                 <p
-                                    class="mt-3 text-sm leading-7 text-slate-400"
+                                    class="mt-3 text-sm leading-7 text-slate-300"
                                 >
                                     {{ data_get(
                                         $latestAiInsight,
@@ -1569,7 +1516,7 @@
                                 </p>
 
                                 <div
-                                    class="mt-6 flex flex-wrap gap-3"
+                                    class="mt-5 flex flex-wrap gap-3"
                                 >
                                     @if ($latestAiInsightIsStale)
                                         <form
@@ -1601,15 +1548,17 @@
                                                 'ai-insights.show',
                                                 $latestAiInsight
                                             ) }}"
-                                            class="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-violet-500"
+                                            class="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-violet-500 hover:text-white"
                                         >
-                                            Read insight
+                                            Read Insight
                                         </a>
                                     @endif
                                 </div>
+
                             @else
+
                                 <p
-                                    class="text-sm text-slate-500"
+                                    class="text-sm leading-6 text-slate-400"
                                 >
                                     No AI insight has been generated yet.
                                 </p>
@@ -1620,114 +1569,12 @@
                                 >
                                     Generate Insight
                                 </a>
+
                             @endif
                         </div>
                     </div>
                 </section>
 
-                {{-- ===================================================== --}}
-                {{-- CATEGORY CARDS --}}
-                {{-- ===================================================== --}}
-
-                <section class="mt-8">
-                    <div
-                        class="flex items-end justify-between"
-                    >
-                        <div>
-                            <p
-                                class="text-xs font-semibold uppercase tracking-widest text-blue-400"
-                            >
-                                Analytics
-                            </p>
-
-                            <h2
-                                class="mt-2 text-xl font-semibold text-white"
-                            >
-                                Portfolio Health Categories
-                            </h2>
-
-                            <p
-                                class="mt-1 text-sm text-slate-500"
-                            >
-                                Open a category for detailed analysis.
-                            </p>
-                        </div>
-                    </div>
-
-                    <div
-                        class="mt-5 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
-                    >
-                        @foreach (
-                            $categoryLabels
-                            as $key => $label
-                        )
-                            @php
-                                $category =
-                                    $auditCategories[$key]
-                                    ?? [];
-
-                                $categoryScore =
-                                    $category['score']
-                                    ?? null;
-
-                                $categoryLabel =
-                                    $category['label']
-                                    ?? 'Insufficient data';
-                            @endphp
-
-                            <a
-                                href="{{ route(
-                                    $categoryRoutes[$key]
-                                ) }}"
-                                class="group rounded-2xl border border-slate-800 bg-slate-900 p-5 transition hover:-translate-y-1 hover:border-blue-500"
-                            >
-                                <div
-                                    class="flex items-center justify-between gap-3"
-                                >
-                                    <p
-                                        class="text-sm font-semibold text-slate-200"
-                                    >
-                                        {{ $label }}
-                                    </p>
-
-                                    <span
-                                        class="text-xl font-semibold text-white"
-                                    >
-                                        {{ $categoryScore
-                                            ?? '—' }}
-                                    </span>
-                                </div>
-
-                                <div
-                                    class="mt-4 h-1.5 overflow-hidden rounded-full bg-slate-800"
-                                >
-                                    @if (
-                                        $categoryScore !== null
-                                    )
-                                        <div
-                                            class="h-full rounded-full bg-blue-500"
-                                            style="width: {{
-                                                min(
-                                                    100,
-                                                    max(
-                                                        0,
-                                                        $categoryScore
-                                                    )
-                                                )
-                                            }}%"
-                                        ></div>
-                                    @endif
-                                </div>
-
-                                <p
-                                    class="mt-4 truncate text-xs text-slate-600"
-                                >
-                                    {{ $categoryLabel }}
-                                </p>
-                            </a>
-                        @endforeach
-                    </div>
-                </section>
 
                 {{-- ===================================================== --}}
                 {{-- SUITABILITY --}}
@@ -1739,8 +1586,9 @@
                     )
                 </div>
 
+
                 {{-- ===================================================== --}}
-                {{-- ACCOUNT TABLE --}}
+                {{-- ACCOUNTS --}}
                 {{-- ===================================================== --}}
 
                 <section
@@ -1757,26 +1605,24 @@
                             </h2>
 
                             <p
-                                class="mt-1 text-sm text-slate-500"
+                                class="mt-1 text-sm text-slate-400"
                             >
                                 Accounts included in Helmio analytics.
                             </p>
                         </div>
 
                         <a
-                            href="{{ route(
-                                'accounts.index'
-                            ) }}"
+                            href="{{ route('accounts.index') }}"
                             class="text-sm font-semibold text-blue-400 hover:text-blue-300"
                         >
-                            View all
+                            View All
                         </a>
                     </div>
 
                     @if ($accountsCollection->isEmpty())
-                        <div
-                            class="px-6 py-12 text-center"
-                        >
+
+                        <div class="px-6 py-12 text-center">
+
                             <p
                                 class="text-sm font-medium text-slate-300"
                             >
@@ -1784,64 +1630,60 @@
                             </p>
 
                             <a
-                                href="{{ route(
-                                    'accounts.create'
-                                ) }}"
+                                href="{{ route('accounts.create') }}"
                                 class="mt-4 inline-flex rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-500"
                             >
                                 Add Account
                             </a>
                         </div>
+
                     @else
-                        <div
-                            class="overflow-x-auto"
-                        >
-                            <table
-                                class="w-full min-w-full text-sm"
-                            >
-                                <thead
-                                    class="bg-slate-950"
-                                >
+
+                        {{-- Desktop --}}
+                        <div class="hidden overflow-x-auto md:block">
+                            <table class="w-full min-w-full text-sm">
+
+                                <thead class="bg-slate-950">
                                     <tr>
                                         <th
-                                            class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-600"
+                                            class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
                                         >
                                             Account
                                         </th>
 
                                         <th
-                                            class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-600"
+                                            class="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500"
                                         >
                                             Institution
                                         </th>
 
                                         <th
-                                            class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-600"
+                                            class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500"
                                         >
                                             Value
                                         </th>
 
                                         <th
-                                            class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-600"
+                                            class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500"
                                         >
                                             Holdings
                                         </th>
 
                                         <th
-                                            class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-600"
+                                            class="px-6 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500"
                                         >
                                             Profile
                                         </th>
                                     </tr>
                                 </thead>
 
-                                <tbody
-                                    class="divide-y divide-slate-800"
-                                >
+                                <tbody class="divide-y divide-slate-800">
+
                                     @foreach (
                                         $accountsCollection
                                         as $account
                                     )
+
                                         @php
                                             $accountValue =
                                                 data_get(
@@ -1888,7 +1730,7 @@
                                         @endphp
 
                                         <tr
-                                            class="transition hover:bg-slate-800/50"
+                                            class="transition hover:bg-slate-800/40"
                                         >
                                             <td
                                                 class="whitespace-nowrap px-6 py-4"
@@ -1898,7 +1740,7 @@
                                                         'accounts.holdings.index',
                                                         $account
                                                     ) }}"
-                                                    class="font-medium text-slate-200 hover:text-blue-400"
+                                                    class="font-medium text-white hover:text-blue-400"
                                                 >
                                                     {{ data_get(
                                                         $account,
@@ -1909,7 +1751,7 @@
                                             </td>
 
                                             <td
-                                                class="whitespace-nowrap px-6 py-4 text-slate-500"
+                                                class="whitespace-nowrap px-6 py-4 text-slate-400"
                                             >
                                                 {{ $institutionName }}
                                             </td>
@@ -1923,7 +1765,7 @@
                                             </td>
 
                                             <td
-                                                class="whitespace-nowrap px-6 py-4 text-right text-slate-400"
+                                                class="whitespace-nowrap px-6 py-4 text-right text-slate-300"
                                             >
                                                 {{ number_format(
                                                     $holdingCount
@@ -1944,15 +1786,142 @@
                                                 </a>
                                             </td>
                                         </tr>
+
                                     @endforeach
+
                                 </tbody>
                             </table>
                         </div>
+
+
+                        {{-- Mobile --}}
+                        <div
+                            class="divide-y divide-slate-800 md:hidden"
+                        >
+                            @foreach (
+                                $accountsCollection
+                                as $account
+                            )
+
+                                @php
+                                    $accountValue =
+                                        data_get(
+                                            $account,
+                                            'current_value'
+                                        )
+                                        ?? data_get(
+                                            $account,
+                                            'market_value'
+                                        )
+                                        ?? data_get(
+                                            $account,
+                                            'value'
+                                        )
+                                        ?? 0;
+
+                                    $holdingCount =
+                                        data_get(
+                                            $account,
+                                            'holdings_count'
+                                        )
+                                        ?? collect(
+                                            data_get(
+                                                $account,
+                                                'holdings',
+                                                []
+                                            )
+                                        )->count();
+
+                                    $institutionName =
+                                        data_get(
+                                            $account,
+                                            'institution.name'
+                                        )
+                                        ?? data_get(
+                                            $account,
+                                            'institution_name'
+                                        )
+                                        ?? data_get(
+                                            $account,
+                                            'institution'
+                                        )
+                                        ?? 'Investment account';
+                                @endphp
+
+                                <article class="p-5">
+
+                                    <div
+                                        class="flex items-start justify-between gap-4"
+                                    >
+                                        <div class="min-w-0">
+                                            <a
+                                                href="{{ route(
+                                                    'accounts.holdings.index',
+                                                    $account
+                                                ) }}"
+                                                class="truncate font-semibold text-white"
+                                            >
+                                                {{ data_get(
+                                                    $account,
+                                                    'name',
+                                                    'Investment Account'
+                                                ) }}
+                                            </a>
+
+                                            <p
+                                                class="mt-1 truncate text-xs text-slate-500"
+                                            >
+                                                {{ $institutionName }}
+                                            </p>
+                                        </div>
+
+                                        <p
+                                            class="shrink-0 font-semibold text-white"
+                                        >
+                                            {{ money(
+                                                $accountValue
+                                            ) }}
+                                        </p>
+                                    </div>
+
+                                    <div
+                                        class="mt-4 flex items-center justify-between"
+                                    >
+                                        <p
+                                            class="text-xs text-slate-500"
+                                        >
+                                            {{ number_format(
+                                                $holdingCount
+                                            ) }}
+                                            {{ Str::plural(
+                                                'holding',
+                                                $holdingCount
+                                            ) }}
+                                        </p>
+
+                                        <a
+                                            href="{{ route(
+                                                'accounts.profile.edit',
+                                                $account
+                                            ) }}"
+                                            class="text-xs font-semibold text-blue-400"
+                                        >
+                                            Suitability
+                                        </a>
+                                    </div>
+                                </article>
+
+                            @endforeach
+                        </div>
+
                     @endif
                 </section>
+
             </div>
+
         @endif
     </div>
+
 
     {{-- ============================================================= --}}
     {{-- HELM SCORE ANIMATION --}}

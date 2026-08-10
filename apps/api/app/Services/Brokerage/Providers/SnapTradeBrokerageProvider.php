@@ -1335,143 +1335,88 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
     }
 
     /**
-     * @param array<string, mixed>|array<int, mixed> $data
-     * @param array<int, string> $preferredKeys
-     * @return array<int, array<string, mixed>>
-     */
-    private function listFromArray(
-        array $data,
-        array $preferredKeys = [],
-    ): array {
-        foreach ($preferredKeys as $key) {
-            $candidate = data_get(
-                $data,
-                $key
+ * @param array<string, mixed>|array<int, mixed> $data
+ * @param array<int, string> $preferredKeys
+ * @return array<int, array<string, mixed>>
+ */
+private function listFromArray(
+    array $data,
+    array $preferredKeys = [],
+): array {
+    foreach ($preferredKeys as $key) {
+        $candidate = data_get(
+            $data,
+            $key,
+        );
+
+        if (is_array($candidate)) {
+            return $this->normalizeList(
+                $candidate,
             );
-
-            if (is_array($candidate)) {
-                return collect($candidate)
-                    ->filter(
-    fn (mixed $item): bool =>
-        is_array($item)
-)
-                    ->values()
-                    ->all();
-            }
         }
-
-        if (array_is_list($data)) {
-            return collect($data)
-                ->filter(
-    fn (mixed $item): bool =>
-        is_array($item)
-)
-                ->values()
-                ->all();
-        }
-
-        foreach (
-            ['data', 'results', 'items']
-            as $key
-        ) {
-            $candidate =
-                $data[$key] ?? null;
-
-            if (is_array($candidate)) {
-                return collect($candidate)
-                    ->filter(
-    fn (mixed $item): bool =>
-        is_array($item)
-)
-                    ->values()
-                    ->all();
-            }
-        }
-
-        return [];
     }
 
-    private function requiredString(
-        mixed $value,
-        string $field,
-    ): string {
-        return $this->stringValue(
-            $value
+    if (array_is_list($data)) {
+        return $this->normalizeList(
+            $data,
+        );
+    }
+
+    foreach (
+        [
+            'data',
+            'results',
+            'items',
+        ] as $key
+    ) {
+        $candidate =
+            $data[$key] ?? null;
+
+        if (is_array($candidate)) {
+            return $this->normalizeList(
+                $candidate,
+            );
+        }
+    }
+
+    return [];
+}
+
+/**
+ * Normalize SnapTrade SDK response items into plain arrays.
+ *
+ * Generated SnapTrade SDK models may be returned as objects
+ * rather than native PHP arrays.
+ *
+ * @param array<int|string, mixed> $items
+ * @return array<int, array<string, mixed>>
+ */
+private function normalizeList(
+    array $items,
+): array {
+    return collect($items)
+        ->map(
+            function (
+                mixed $item,
+            ): array {
+                if (is_array($item)) {
+                    return $item;
+                }
+
+                if (is_object($item)) {
+                    return $this->toArray(
+                        $item,
+                    );
+                }
+
+                return [];
+            },
         )
-        ?? throw new RuntimeException(
-            "{$field} was missing."
-        );
-    }
-
-    private function stringValue(
-        mixed $value,
-    ): ?string {
-        if (
-            $value === null
-            || is_array($value)
-            || is_object($value)
-        ) {
-            return null;
-        }
-
-        $value = trim(
-            (string) $value
-        );
-
-        return $value !== ''
-            ? $value
-            : null;
-    }
-
-    private function floatValue(
-        mixed $value,
-    ): float {
-        return $this->nullableFloat(
-            $value
-        ) ?? 0.0;
-    }
-
-    private function nullableFloat(
-        mixed $value,
-    ): ?float {
-        if (is_array($value)) {
-            $value =
-                $value['amount']
-                ?? $value['value']
-                ?? null;
-        }
-
-        return is_numeric($value)
-            ? (float) $value
-            : null;
-    }
-
-    private function lastFour(
-        ?string $accountNumber,
-    ): ?string {
-        if ($accountNumber === null) {
-            return null;
-        }
-
-        $digits = preg_replace(
-            '/\D+/',
-            '',
-            $accountNumber
-        );
-
-        if (
-            $digits === null
-            || $digits === ''
-        ) {
-            return Str::substr(
-                $accountNumber,
-                -4
-            );
-        }
-
-        return Str::substr(
-            $digits,
-            -4
-        );
-    }
+        ->filter(
+            fn (array $item): bool =>
+                $item !== [],
+        )
+        ->values()
+        ->all();
+}
 }
