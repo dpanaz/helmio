@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\BrokerageConnection;
 use App\Models\BrokerageProviderUser;
+use App\Services\Analytics\Pipeline\PortfolioAnalyticsDispatcher;
 use App\Services\Brokerage\BrokerageSyncService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -31,6 +32,7 @@ class ProcessSnapTradeWebhook implements ShouldQueue
 
     public function handle(
         BrokerageSyncService $syncService,
+        PortfolioAnalyticsDispatcher $analyticsDispatcher,
     ): void {
         $eventType = strtoupper(
             (string) (
@@ -136,6 +138,10 @@ class ProcessSnapTradeWebhook implements ShouldQueue
             );
         }
 
+        $connection->loadMissing(
+            'user'
+        );
+
         $metadata = array_merge(
             $connection->metadata ?? [],
             [
@@ -217,23 +223,31 @@ class ProcessSnapTradeWebhook implements ShouldQueue
                         $metadata,
                 ]),
 
+            /*
+             * These events indicate that SnapTrade has fresh account
+             * data available. Import it into Helmio and then launch
+             * portfolio analytics.
+             */
             'ACCOUNT_HOLDINGS_UPDATED',
             'ACCOUNT_TRANSACTIONS_INITIAL_UPDATE',
             'ACCOUNT_TRANSACTIONS_UPDATED',
-            'NEW_ACCOUNT_AVAILABLE' =>
-                $this->syncConnection(
-                    $connection,
-                    $syncService,
-                    $metadata,
-                    $eventType
-                ),
-
+            'NEW_ACCOUNT_AVAILABLE',
             'ACCOUNT_REMOVED' =>
                 $this->syncConnection(
-                    $connection,
-                    $syncService,
-                    $metadata,
-                    $eventType
+                    connection:
+                        $connection,
+
+                    syncService:
+                        $syncService,
+
+                    analyticsDispatcher:
+                        $analyticsDispatcher,
+
+                    metadata:
+                        $metadata,
+
+                    eventType:
+                        $eventType,
                 ),
 
             default =>
@@ -250,6 +264,7 @@ class ProcessSnapTradeWebhook implements ShouldQueue
     private function syncConnection(
         BrokerageConnection $connection,
         BrokerageSyncService $syncService,
+        PortfolioAnalyticsDispatcher $analyticsDispatcher,
         array $metadata,
         string $eventType,
     ): void {
@@ -258,11 +273,53 @@ class ProcessSnapTradeWebhook implements ShouldQueue
                 $metadata,
         ]);
 
+        /*
+         * Import the latest accounts, holdings and transactions first.
+         *
+         * If this throws, analytics will NOT be dispatched. The queue
+         * retry will retry the brokerage import first.
+         */
         $syncService->sync(
             $connection->fresh(),
             'webhook:'.strtolower(
                 $eventType
             )
+        );
+
+        $connection =
+            $connection
+                ->fresh([
+                    'user',
+                ]);
+
+        if (
+            $connection === null
+            || $connection->user === null
+        ) {
+            throw new RuntimeException(
+                'Unable to resolve the Helmio user after brokerage synchronization.'
+            );
+        }
+
+        /*
+         * Queue portfolio history, analytics and Helm Score generation.
+         *
+         * PortfolioAnalyticsDispatcher prevents duplicate active runs
+         * for the same user, so multiple SnapTrade events arriving
+         * close together will reuse the existing analysis run.
+         */
+        $analyticsDispatcher->dispatch(
+            user:
+                $connection->user,
+
+            trigger:
+                'snaptrade_webhook:'
+                .strtolower(
+                    $eventType
+                ),
+
+            connection:
+                $connection,
         );
     }
 
@@ -278,6 +335,8 @@ class ProcessSnapTradeWebhook implements ShouldQueue
     public function failed(
         Throwable $exception
     ): void {
-        report($exception);
+        report(
+            $exception
+        );
     }
 }

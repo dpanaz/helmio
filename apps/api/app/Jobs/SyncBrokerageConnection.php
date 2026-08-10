@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\BrokerageConnection;
 use App\Notifications\BrokerageSyncFailedNotification;
+use App\Services\Analytics\Pipeline\PortfolioAnalyticsDispatcher;
 use App\Services\Brokerage\BrokerageProviderManager;
 use App\Services\Brokerage\BrokerageSyncService;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -56,12 +57,14 @@ class SyncBrokerageConnection implements ShouldQueue
     public function handle(
         BrokerageProviderManager $providerManager,
         BrokerageSyncService $syncService,
+        PortfolioAnalyticsDispatcher $analyticsDispatcher,
     ): void {
-        $connection = BrokerageConnection::query()
-            ->with('user')
-            ->find(
-                $this->brokerageConnectionId
-            );
+        $connection =
+            BrokerageConnection::query()
+                ->with('user')
+                ->find(
+                    $this->brokerageConnectionId
+                );
 
         if ($connection === null) {
             return;
@@ -84,11 +87,16 @@ class SyncBrokerageConnection implements ShouldQueue
         }
 
         /*
-         * SnapTrade refreshes provider data asynchronously. Requesting
-         * the refresh here and immediately running the local import can
-         * read the provider's previous cached data. The SnapTrade
-         * webhook will run BrokerageSyncService after refreshed data is
-         * available.
+         * SnapTrade refreshes provider data asynchronously.
+         *
+         * Request the refresh here, but do NOT immediately import.
+         * SnapTrade will send a webhook when refreshed holdings or
+         * transactions are available.
+         *
+         * ProcessSnapTradeWebhook will then:
+         *
+         * 1. run BrokerageSyncService
+         * 2. dispatch PortfolioAnalytics
          */
         if (
             $connection->provider
@@ -105,7 +113,9 @@ class SyncBrokerageConnection implements ShouldQueue
             }
 
             $providerManager
-                ->driver('snaptrade')
+                ->driver(
+                    'snaptrade'
+                )
                 ->requestRefresh(
                     $connection
                 );
@@ -121,41 +131,71 @@ class SyncBrokerageConnection implements ShouldQueue
                 'last_error' =>
                     null,
 
-                'metadata' => array_merge(
-                    $connection->metadata
-                    ?? [],
-                    [
-                        'last_refresh_trigger' =>
-                            $this->trigger,
+                'metadata' =>
+                    array_merge(
+                        $connection->metadata
+                        ?? [],
+                        [
+                            'last_refresh_trigger' =>
+                                $this->trigger,
 
-                        'last_refresh_requested_at' =>
-                            now()
-                                ->toIso8601String(),
-                    ],
-                ),
+                            'last_refresh_requested_at' =>
+                                now()
+                                    ->toIso8601String(),
+                        ],
+                    ),
             ]);
 
             return;
         }
 
         /*
-         * Fake and other synchronous providers can be imported
+         * Fake and future synchronous providers can be imported
          * immediately.
          */
         $syncService->sync(
             $connection,
             $this->trigger,
         );
+
+        $connection =
+            $connection->fresh([
+                'user',
+            ]);
+
+        if (
+            $connection === null
+            || $connection->user === null
+        ) {
+            return;
+        }
+
+        /*
+         * Since synchronous providers do not rely on a later webhook,
+         * start analytics immediately after their successful import.
+         */
+        $analyticsDispatcher->dispatch(
+            user:
+                $connection->user,
+
+            trigger:
+                'brokerage_sync:'
+                .$this->trigger,
+
+            connection:
+                $connection,
+        );
     }
 
     public function failed(
         ?Throwable $exception,
     ): void {
-        $connection = BrokerageConnection::query()
-            ->with('user')
-            ->find(
-                $this->brokerageConnectionId
-            );
+        $connection =
+            BrokerageConnection::query()
+                ->with('user')
+                ->find(
+                    $this->brokerageConnectionId
+                );
 
         if ($connection === null) {
             return;
