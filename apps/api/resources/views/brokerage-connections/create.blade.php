@@ -26,9 +26,26 @@
     </x-slot>
 
     @php
+        /*
+         * SnapTrade is the safe fallback.
+         *
+         * The controller already removes the fake provider
+         * in production. This Blade also refuses to expose
+         * it in production as a second layer of protection.
+         */
         $availableProviders = collect(
-            $providers ?? ['fake']
+            $providers ?? ['snaptrade']
         );
+
+        if (app()->environment('production')) {
+            $availableProviders =
+                $availableProviders
+                    ->reject(
+                        fn ($provider) =>
+                            $provider === 'fake'
+                    )
+                    ->values();
+        }
 
         $snapTradeAvailable =
             $availableProviders->contains(
@@ -45,7 +62,11 @@
                 'provider',
                 $snapTradeAvailable
                     ? 'snaptrade'
-                    : 'fake'
+                    : (
+                        $fakeAvailable
+                            ? 'fake'
+                            : ''
+                    )
             );
     @endphp
 
@@ -76,6 +97,14 @@
             >
                 @csrf
 
+                @if ($isOnboarding ?? false)
+                    <input
+                        type="hidden"
+                        name="onboarding"
+                        value="1"
+                    >
+                @endif
+
                 <section class="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-xl">
                     <div class="border-b border-slate-800 px-6 py-5 sm:px-8">
                         <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400">
@@ -83,16 +112,22 @@
                         </p>
 
                         <h3 class="mt-2 text-lg font-semibold text-white">
-                            Choose a Provider
+                            Connect Your Brokerage
                         </h3>
 
                         <p class="mt-1 text-sm leading-6 text-slate-500">
-                            Use SnapTrade for a real brokerage connection or the
-                            fake provider to test Helmio locally.
+                            Helmio uses a secure, read-only connection to synchronize
+                            the investment information needed to monitor your portfolio.
                         </p>
                     </div>
 
-                    <div class="grid gap-4 p-6 sm:p-8 md:grid-cols-2">
+                    <div
+                        @class([
+                            'grid gap-4 p-6 sm:p-8',
+                            'md:grid-cols-2' => $fakeAvailable,
+                            'grid-cols-1' => ! $fakeAvailable,
+                        ])
+                    >
                         @if ($snapTradeAvailable)
                             <label
                                 class="cursor-pointer rounded-2xl border p-5 transition"
@@ -112,23 +147,24 @@
                                     <div class="min-w-0">
                                         <div class="flex flex-wrap items-center gap-2">
                                             <p class="font-semibold text-white">
-                                                Connect a Real Brokerage
+                                                Connect a Brokerage
                                             </p>
 
                                             <span class="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-semibold text-emerald-300">
-                                                Recommended
+                                                Secure
                                             </span>
                                         </div>
 
                                         <p class="mt-2 text-sm leading-6 text-slate-400">
-                                            Open SnapTrade's secure connection portal
-                                            to select your brokerage and complete authentication.
+                                            Continue to the secure connection portal
+                                            to select your financial institution and
+                                            authenticate your account.
                                         </p>
 
                                         <div class="mt-4 flex flex-wrap gap-2">
                                             @foreach ([
                                                 'Read-only access',
-                                                'Brokerage login portal',
+                                                'Secure authentication',
                                                 'Automatic synchronization',
                                             ] as $benefit)
                                                 <span class="rounded-full border border-slate-800 bg-slate-900 px-3 py-1 text-xs font-medium text-slate-400">
@@ -177,6 +213,18 @@
                                 </div>
                             </label>
                         @endif
+
+                        @if (! $snapTradeAvailable && ! $fakeAvailable)
+                            <div class="rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] p-5">
+                                <p class="font-semibold text-amber-200">
+                                    Brokerage connections are temporarily unavailable.
+                                </p>
+
+                                <p class="mt-2 text-sm leading-6 text-slate-400">
+                                    Please try again later.
+                                </p>
+                            </div>
+                        @endif
                     </div>
 
                     @error('provider')
@@ -188,37 +236,61 @@
                     @enderror
                 </section>
 
-                <section
-                    x-show="provider === 'fake'"
-                    x-cloak
-                    class="rounded-2xl border border-violet-500/20 bg-violet-500/[0.06] p-5"
-                >
-                    <p class="font-semibold text-violet-200">
-                        Development Connection
-                    </p>
+                @if ($fakeAvailable)
+                    <section
+                        x-show="provider === 'fake'"
+                        x-cloak
+                        class="rounded-2xl border border-violet-500/20 bg-violet-500/[0.06] p-5"
+                    >
+                        <p class="font-semibold text-violet-200">
+                            Development Connection
+                        </p>
 
-                    <p class="mt-2 text-sm leading-6 text-slate-400">
-                        This does not connect to a real financial institution.
-                        It creates deterministic sample data for development
-                        and automated testing.
-                    </p>
-                </section>
+                        <p class="mt-2 text-sm leading-6 text-slate-400">
+                            This does not connect to a real financial institution.
+                            It creates deterministic sample data for development
+                            and automated testing.
+                        </p>
+                    </section>
+                @endif
 
-                <section
-                    x-show="provider === 'snaptrade'"
-                    x-cloak
-                    class="rounded-2xl border border-blue-500/20 bg-blue-500/[0.06] p-5"
-                >
-                    <p class="font-semibold text-blue-200">
-                        Secure Hosted Connection
-                    </p>
+                @if ($snapTradeAvailable)
+                    <section
+                        x-show="provider === 'snaptrade'"
+                        x-cloak
+                        class="rounded-2xl border border-blue-500/20 bg-blue-500/[0.06] p-5"
+                    >
+                        <div class="flex gap-4">
+                            <svg
+                                class="mt-0.5 h-6 w-6 shrink-0 text-blue-300"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="2"
+                                aria-hidden="true"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M12 15v2m-6 4h12a2 2 0 0 0 2-2v-6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2Zm10-10V7a4 4 0 0 0-8 0v4"
+                                />
+                            </svg>
 
-                    <p class="mt-2 text-sm leading-6 text-slate-400">
-                        You will leave Helmio briefly to choose your brokerage
-                        and authenticate in the secure SnapTrade connection portal.
-                        You will return automatically when the connection is complete.
-                    </p>
-                </section>
+                            <div>
+                                <p class="font-semibold text-blue-200">
+                                    Secure Hosted Connection
+                                </p>
+
+                                <p class="mt-2 text-sm leading-6 text-slate-400">
+                                    You'll leave Helmio briefly to select your
+                                    brokerage and authenticate through the secure
+                                    connection portal. You'll return automatically
+                                    when the connection is complete.
+                                </p>
+                            </div>
+                        </div>
+                    </section>
+                @endif
 
                 <section class="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-xl">
                     <div class="border-b border-slate-800 px-6 py-5 sm:px-8">
@@ -227,12 +299,17 @@
                         </p>
 
                         <h3 class="mt-2 text-lg font-semibold text-white">
-                            Name & Brokerage Selection
+                            Name Your Connection
                         </h3>
+
+                        <p class="mt-1 text-sm leading-6 text-slate-500">
+                            Give this brokerage connection an optional name
+                            so it's easy to identify inside Helmio.
+                        </p>
                     </div>
 
-                    <div class="grid gap-6 p-6 sm:p-8 md:grid-cols-2">
-                        <div>
+                    <div class="p-6 sm:p-8">
+                        <div class="max-w-xl">
                             <label
                                 for="brokerage_name"
                                 class="block text-sm font-medium text-slate-400"
@@ -249,7 +326,8 @@
                             >
 
                             <p class="mt-2 text-xs leading-5 text-slate-600">
-                                Optional label to help identify this connection inside Helmio.
+                                Optional. You can use a name such as
+                                "Retirement Accounts" or "Joint Brokerage."
                             </p>
 
                             @error('brokerage_name')
@@ -259,35 +337,13 @@
                             @enderror
                         </div>
 
-                        <div
-                            x-show="provider === 'snaptrade'"
-                            x-cloak
-                        >
-                            <label
-                                for="brokerage_slug"
-                                class="block text-sm font-medium text-slate-400"
-                            >
-                                Brokerage Slug
-                            </label>
-
+                        @if ($snapTradeAvailable)
                             <input
-                                id="brokerage_slug"
+                                type="hidden"
                                 name="brokerage_slug"
                                 value="{{ old('brokerage_slug') }}"
-                                placeholder="Optional"
-                                class="mt-2 block w-full rounded-xl border-slate-700 bg-slate-950 px-4 py-3 text-slate-200 placeholder-slate-600 focus:border-blue-500 focus:ring-blue-500"
                             >
-
-                            <p class="mt-2 text-xs leading-5 text-slate-600">
-                                Leave blank to let the user choose from all supported brokerages.
-                            </p>
-
-                            @error('brokerage_slug')
-                                <p class="mt-2 text-sm text-red-300">
-                                    {{ $message }}
-                                </p>
-                            @enderror
-                        </div>
+                        @endif
                     </div>
                 </section>
 
@@ -298,8 +354,13 @@
                         </p>
 
                         <h3 class="mt-2 text-lg font-semibold text-white">
-                            Helmio Will Synchronize
+                            What Helmio Synchronizes
                         </h3>
+
+                        <p class="mt-1 text-sm leading-6 text-slate-500">
+                            Helmio imports the information needed to monitor
+                            and analyze your investments.
+                        </p>
                     </div>
 
                     <div class="grid gap-4 p-6 sm:p-8 sm:grid-cols-3">
@@ -325,6 +386,7 @@
                                         viewBox="0 0 24 24"
                                         stroke="currentColor"
                                         stroke-width="2"
+                                        aria-hidden="true"
                                     >
                                         <path
                                             stroke-linecap="round"
@@ -365,13 +427,14 @@
 
                         <div>
                             <p class="font-semibold text-emerald-200">
-                                No Trading Authority
+                                Read-Only Access
                             </p>
 
                             <p class="mt-1 text-sm leading-6 text-slate-400">
-                                Helmio requests read-only access. The connection
-                                cannot buy, sell, transfer, withdraw, or modify
-                                your brokerage account.
+                                Helmio cannot buy, sell, transfer, withdraw,
+                                or make changes to your brokerage account.
+                                Your connection is used only to synchronize
+                                investment data for monitoring and analysis.
                             </p>
                         </div>
                     </div>
@@ -387,18 +450,21 @@
 
                     <button
                         type="submit"
-                        class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-500"
+                        @disabled(! $snapTradeAvailable && ! $fakeAvailable)
+                        class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-50"
                     >
                         <span x-show="provider === 'snaptrade'">
                             Continue to Secure Portal
                         </span>
 
-                        <span
-                            x-show="provider === 'fake'"
-                            x-cloak
-                        >
-                            Create Test Connection
-                        </span>
+                        @if ($fakeAvailable)
+                            <span
+                                x-show="provider === 'fake'"
+                                x-cloak
+                            >
+                                Create Test Connection
+                            </span>
+                        @endif
                     </button>
                 </div>
             </form>

@@ -60,7 +60,9 @@ class BrokerageConnectionController extends Controller
             'brokerage-connections.create',
             [
                 'providers' =>
-                    $manager->availableProviders(),
+                    $this->availableProviders(
+                        $manager,
+                    ),
 
                 'isOnboarding' =>
                     $this->isOnboarding(
@@ -74,7 +76,17 @@ class BrokerageConnectionController extends Controller
         Request $request,
         BrokerageProviderManager $manager,
     ): RedirectResponse {
-        $providers = $manager->availableProviders();
+        /*
+         * Only providers allowed in the current environment
+         * may be submitted.
+         *
+         * This prevents the fake provider from being used in
+         * production even if someone manually submits the
+         * provider value.
+         */
+        $providers = $this->availableProviders(
+            $manager,
+        );
 
         $validated = $request->validate([
             'provider' => [
@@ -184,7 +196,16 @@ class BrokerageConnectionController extends Controller
                 ],
             ]);
 
+        /*
+         * Fake brokerage connections are available only
+         * outside production.
+         */
         if ($providerName === 'fake') {
+            abort_if(
+                app()->environment('production'),
+                404,
+            );
+
             return redirect()->to(
                 $provider->createConnectionUrl(
                     user: $request->user(),
@@ -391,6 +412,15 @@ class BrokerageConnectionController extends Controller
         BrokerageConnection $brokerageConnection,
         BrokerageSyncService $syncService,
     ): RedirectResponse {
+        /*
+         * Fake brokerage completion must never run in
+         * production even if someone discovers the route.
+         */
+        abort_if(
+            app()->environment('production'),
+            404,
+        );
+
         $this->authorizeConnection(
             $request,
             $brokerageConnection,
@@ -558,6 +588,35 @@ class BrokerageConnectionController extends Controller
         }
     }
 
+    /**
+     * Return brokerage providers that are allowed in
+     * the current application environment.
+     *
+     * The fake provider remains available for local
+     * development and testing but is never exposed
+     * in production.
+     *
+     * @return array<int, string>
+     */
+    private function availableProviders(
+        BrokerageProviderManager $manager,
+    ): array {
+        $providers = collect(
+            $manager->availableProviders(),
+        );
+
+        if (app()->environment('production')) {
+            $providers = $providers->reject(
+                fn (string $provider): bool =>
+                    $provider === 'fake',
+            );
+        }
+
+        return $providers
+            ->values()
+            ->all();
+    }
+
     private function redirectAfterSuccess(
         Request $request,
         string $message,
@@ -614,19 +673,19 @@ class BrokerageConnectionController extends Controller
     }
 
     private function isOnboarding(
-    Request $request,
-): bool {
-    return $request->boolean(
-        'onboarding',
-    )
-        || filter_var(
-            $request->session()->get(
-                'brokerage_onboarding',
-                false,
-            ),
-            FILTER_VALIDATE_BOOL,
-        );
-}
+        Request $request,
+    ): bool {
+        return $request->boolean(
+            'onboarding',
+        )
+            || filter_var(
+                $request->session()->get(
+                    'brokerage_onboarding',
+                    false,
+                ),
+                FILTER_VALIDATE_BOOL,
+            );
+    }
 
     private function authorizeConnection(
         Request $request,
