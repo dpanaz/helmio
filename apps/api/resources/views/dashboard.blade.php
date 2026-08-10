@@ -14,6 +14,54 @@
             \App\Services\Billing\SubscriptionAccessService::class
         )->hasPremiumAccess(auth()->user());
 
+
+        /*
+        |--------------------------------------------------------------------------
+        | Portfolio Analysis State
+        |--------------------------------------------------------------------------
+        */
+
+        $analysis =
+            is_array($analysisState ?? null)
+                ? $analysisState
+                : [];
+
+        $analysisIsRunning =
+            (bool) (
+                $analysis['is_running']
+                ?? false
+            );
+
+        $analysisIsReady =
+            (bool) (
+                $analysis['is_ready']
+                ?? false
+            );
+
+        $analysisHasFailed =
+            (bool) (
+                $analysis['has_failed']
+                ?? false
+            );
+
+        $analysisProgress =
+            (int) (
+                $analysis['progress']
+                ?? 0
+            );
+
+        $analysisHeadline =
+            $analysis['headline']
+            ?? 'Building your Helm Score';
+
+        $analysisMessage =
+            $analysis['message']
+            ?? 'Helmio is analyzing your portfolio.';
+
+        $analysisSteps =
+            $analysis['steps']
+            ?? [];
+
         /*
         |--------------------------------------------------------------------------
         | Advisor Audit
@@ -369,11 +417,7 @@
 
         $hour = now()->hour;
 
-        $greeting = match (true) {
-            $hour < 12 => 'Good morning',
-            $hour < 17 => 'Good afternoon',
-            default => 'Good evening',
-        };
+        $greeting = 'Hello';
 
         $firstName =
             auth()->user()->name
@@ -600,143 +644,368 @@
                     class="grid gap-5 xl:grid-cols-[1.65fr_1fr]"
                 >
 
-                    {{-- Helm Score --}}
+                    {{-- Helm Score / Analysis Progress --}}
                     <section
+                        data-analysis-container
+                        data-analysis-running="{{ $analysisIsRunning ? '1' : '0' }}"
                         class="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-xl"
                     >
-                        <div
-                            class="grid gap-8 p-6 sm:p-8 md:grid-cols-[auto_1fr] md:items-center"
-                        >
-                            {{-- Dial --}}
-                            <div class="flex justify-center">
-                                <div
-                                    data-helm-score-dial
-                                    data-score="{{ $helmOverallScore }}"
-                                    class="relative flex h-56 w-56 items-center justify-center"
-                                >
-                                    <svg
-                                        class="absolute inset-0 h-full w-full -rotate-90"
-                                        viewBox="0 0 240 240"
-                                        aria-hidden="true"
-                                    >
-                                        <circle
-                                            cx="120"
-                                            cy="120"
-                                            r="98"
-                                            fill="none"
-                                            stroke="#1e293b"
-                                            stroke-width="16"
-                                        />
+                        @if ($analysisIsRunning)
 
-                                        <circle
-                                            data-helm-score-ring
-                                            cx="120"
-                                            cy="120"
-                                            r="98"
-                                            fill="none"
-                                            stroke="{{ $helmScoreColor }}"
-                                            stroke-width="16"
-                                            stroke-linecap="round"
-                                            pathLength="100"
-                                            stroke-dasharray="100"
-                                            stroke-dashoffset="100"
-                                        />
-                                    </svg>
-
+                            <div
+                                class="grid gap-8 p-6 sm:p-8 lg:grid-cols-[0.9fr_1.1fr] lg:items-center"
+                            >
+                                <div>
                                     <div
-                                        class="relative flex h-40 w-40 flex-col items-center justify-center rounded-full border border-slate-800 bg-slate-950"
+                                        class="inline-flex items-center gap-2 rounded-full border border-blue-500/30 bg-blue-500/10 px-3 py-1.5"
                                     >
-                                        <p
-                                            class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500"
-                                        >
-                                            Helm Score
-                                        </p>
-
-                                        <div class="mt-1 flex items-baseline">
+                                        <span class="relative flex h-2 w-2">
                                             <span
-                                                data-helm-score-number
-                                                class="text-6xl font-semibold tracking-tight text-white"
+                                                class="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75"
+                                            ></span>
+
+                                            <span
+                                                class="relative inline-flex h-2 w-2 rounded-full bg-blue-400"
+                                            ></span>
+                                        </span>
+
+                                        <span
+                                            class="text-xs font-semibold text-blue-300"
+                                        >
+                                            Portfolio analysis in progress
+                                        </span>
+                                    </div>
+
+                                    <h2
+                                        data-analysis-headline
+                                        class="mt-5 text-2xl font-semibold tracking-tight text-white sm:text-3xl"
+                                    >
+                                        {{ $analysisHeadline }}
+                                    </h2>
+
+                                    <p
+                                        data-analysis-message
+                                        class="mt-3 max-w-xl text-sm leading-7 text-slate-300"
+                                    >
+                                        {{ $analysisMessage }}
+                                    </p>
+
+                                    <div class="mt-7">
+                                        <div
+                                            class="flex items-center justify-between text-xs"
+                                        >
+                                            <span
+                                                class="font-medium text-slate-400"
                                             >
-                                                0
+                                                Analysis progress
                                             </span>
 
                                             <span
-                                                class="ml-1 text-sm font-medium text-slate-500"
+                                                data-analysis-progress-label
+                                                class="font-semibold text-blue-300"
                                             >
-                                                /100
+                                                {{ $analysisProgress }}%
                                             </span>
                                         </div>
 
-                                        <p
-                                            class="mt-2 text-sm font-semibold"
-                                            style="color: {{ $helmScoreColor }}"
+                                        <div
+                                            class="mt-2 h-2.5 overflow-hidden rounded-full bg-slate-800"
                                         >
-                                            {{ $helmOverallLabel }}
+                                            <div
+                                                data-analysis-progress
+                                                class="h-full rounded-full bg-blue-500 transition-all duration-700"
+                                                style="width: {{ $analysisProgress }}%"
+                                            ></div>
+                                        </div>
+                                    </div>
+
+                                    <p
+                                        class="mt-4 text-xs text-slate-500"
+                                    >
+                                        You can leave this page. Helmio will continue
+                                        working in the background.
+                                    </p>
+                                </div>
+
+                                <div
+                                    class="rounded-2xl border border-slate-800 bg-slate-950 p-5 sm:p-6"
+                                >
+                                    <p
+                                        class="text-xs font-semibold uppercase tracking-[0.16em] text-slate-500"
+                                    >
+                                        What Helmio is doing
+                                    </p>
+
+                                    <div
+                                        data-analysis-steps
+                                        class="mt-5 space-y-4"
+                                    >
+                                        @foreach ($analysisSteps as $step)
+                                            @php
+                                                $stepStatus =
+                                                    $step['status']
+                                                    ?? 'pending';
+                                            @endphp
+
+                                            <div
+                                                class="flex items-center gap-3"
+                                            >
+                                                @if ($stepStatus === 'complete')
+
+                                                    <div
+                                                        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-300"
+                                                    >
+                                                        <svg
+                                                            class="h-4 w-4"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="currentColor"
+                                                            stroke-width="2.5"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                d="m5 12 4 4L19 6"
+                                                            />
+                                                        </svg>
+                                                    </div>
+
+                                                @elseif ($stepStatus === 'active')
+
+                                                    <div
+                                                        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-500/10"
+                                                    >
+                                                        <div
+                                                            class="h-2.5 w-2.5 animate-pulse rounded-full bg-blue-400"
+                                                        ></div>
+                                                    </div>
+
+                                                @else
+
+                                                    <div
+                                                        class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-700"
+                                                    >
+                                                        <div
+                                                            class="h-2 w-2 rounded-full bg-slate-700"
+                                                        ></div>
+                                                    </div>
+
+                                                @endif
+
+                                                <span
+                                                    class="text-sm font-medium
+                                                        {{ $stepStatus === 'complete'
+                                                            ? 'text-slate-300'
+                                                            : (
+                                                                $stepStatus === 'active'
+                                                                    ? 'text-white'
+                                                                    : 'text-slate-600'
+                                                            )
+                                                        }}"
+                                                >
+                                                    {{ $step['label'] }}
+                                                </span>
+
+                                                @if ($stepStatus === 'active')
+                                                    <span
+                                                        class="ml-auto text-xs font-semibold text-blue-400"
+                                                    >
+                                                        Working…
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+
+                        @elseif ($analysisHasFailed)
+
+                            <div class="p-6 sm:p-8">
+                                <div
+                                    class="flex flex-col gap-5 sm:flex-row sm:items-start"
+                                >
+                                    <div
+                                        class="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl bg-amber-500/10 text-amber-300"
+                                    >
+                                        <svg
+                                            class="h-6 w-6"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="M12 9v4m0 4h.01M10.3 4.5 2.6 18a1 1 0 0 0 .87 1.5h17.06a1 1 0 0 0 .87-1.5L13.7 4.5a1 1 0 0 0-1.74 0Z"
+                                            />
+                                        </svg>
+                                    </div>
+
+                                    <div>
+                                        <p
+                                            class="text-xs font-semibold uppercase tracking-[0.16em] text-amber-400"
+                                        >
+                                            Analysis delayed
+                                        </p>
+
+                                        <h2
+                                            class="mt-2 text-2xl font-semibold text-white"
+                                        >
+                                            {{ $analysisHeadline }}
+                                        </h2>
+
+                                        <p
+                                            class="mt-3 max-w-2xl text-sm leading-7 text-slate-300"
+                                        >
+                                            {{ $analysisMessage }}
+                                        </p>
+
+                                        <p
+                                            class="mt-3 text-xs text-slate-500"
+                                        >
+                                            Your brokerage connection has not been removed.
                                         </p>
                                     </div>
                                 </div>
                             </div>
 
-                            {{-- Summary --}}
-                            <div>
-                                <p
-                                    class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400"
-                                >
-                                    Portfolio health
-                                </p>
+                        @else
 
-                                <h2
-                                    class="mt-2 text-2xl font-semibold tracking-tight text-white"
-                                >
-                                    {{ $helmOverallLabel }}
-                                </h2>
+                            <div
+                                class="grid gap-8 p-6 sm:p-8 md:grid-cols-[auto_1fr] md:items-center"
+                            >
+                                <div class="flex justify-center">
+                                    <div
+                                        data-helm-score-dial
+                                        data-score="{{ $helmOverallScore }}"
+                                        class="relative flex h-56 w-56 items-center justify-center"
+                                    >
+                                        <svg
+                                            class="absolute inset-0 h-full w-full -rotate-90"
+                                            viewBox="0 0 240 240"
+                                            aria-hidden="true"
+                                        >
+                                            <circle
+                                                cx="120"
+                                                cy="120"
+                                                r="98"
+                                                fill="none"
+                                                stroke="#1e293b"
+                                                stroke-width="16"
+                                            />
 
-                                @if ($needsAttention)
+                                            <circle
+                                                data-helm-score-ring
+                                                cx="120"
+                                                cy="120"
+                                                r="98"
+                                                fill="none"
+                                                stroke="{{ $helmScoreColor }}"
+                                                stroke-width="16"
+                                                stroke-linecap="round"
+                                                pathLength="100"
+                                                stroke-dasharray="100"
+                                                stroke-dashoffset="100"
+                                            />
+                                        </svg>
+
+                                        <div
+                                            class="relative flex h-40 w-40 flex-col items-center justify-center rounded-full border border-slate-800 bg-slate-950"
+                                        >
+                                            <p
+                                                class="text-[10px] font-bold uppercase tracking-[0.18em] text-slate-500"
+                                            >
+                                                Helm Score
+                                            </p>
+
+                                            <div class="mt-1 flex items-baseline">
+                                                <span
+                                                    data-helm-score-number
+                                                    class="text-6xl font-semibold tracking-tight text-white"
+                                                >
+                                                    0
+                                                </span>
+
+                                                <span
+                                                    class="ml-1 text-sm font-medium text-slate-500"
+                                                >
+                                                    /100
+                                                </span>
+                                            </div>
+
+                                            <p
+                                                class="mt-2 text-sm font-semibold"
+                                                style="color: {{ $helmScoreColor }}"
+                                            >
+                                                {{ $helmOverallLabel }}
+                                            </p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div>
                                     <p
-                                        class="mt-3 text-base leading-7 text-slate-300"
+                                        class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400"
                                     >
-                                        Your portfolio is being monitored and
-                                        Helmio found
-                                        <span class="font-semibold text-amber-300">
-                                            {{ $totalAdvisorFindings }}
-                                            {{ Str::plural(
-                                                'item',
-                                                $totalAdvisorFindings
-                                            ) }}
-                                        </span>
-                                        that may deserve your attention.
+                                        Portfolio health
                                     </p>
-                                @else
-                                    <p
-                                        class="mt-3 text-base leading-7 text-slate-300"
-                                    >
-                                        Your portfolio is being monitored and
-                                        Helmio has not identified any major
-                                        open concerns.
-                                    </p>
-                                @endif
 
-                                <div
-                                    class="mt-6 flex flex-wrap gap-3"
-                                >
-                                    <a
-                                        href="{{ route('analytics.helm-score') }}"
-                                        class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
+                                    <h2
+                                        class="mt-2 text-2xl font-semibold tracking-tight text-white"
                                     >
-                                        View Helm Score
-                                    </a>
+                                        {{ $helmOverallLabel }}
+                                    </h2>
 
                                     @if ($needsAttention)
-                                        <a
-                                            href="{{ route('advisor-action-center.index') }}"
-                                            class="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white"
+                                        <p
+                                            class="mt-3 text-base leading-7 text-slate-300"
                                         >
-                                            Review Findings
-                                        </a>
+                                            Your portfolio is being monitored and
+                                            Helmio found
+                                            <span class="font-semibold text-amber-300">
+                                                {{ $totalAdvisorFindings }}
+                                                {{ Str::plural(
+                                                    'item',
+                                                    $totalAdvisorFindings
+                                                ) }}
+                                            </span>
+                                            that may deserve your attention.
+                                        </p>
+                                    @else
+                                        <p
+                                            class="mt-3 text-base leading-7 text-slate-300"
+                                        >
+                                            Your portfolio is being monitored and
+                                            Helmio has not identified any major
+                                            open concerns.
+                                        </p>
                                     @endif
+
+                                    <div
+                                        class="mt-6 flex flex-wrap gap-3"
+                                    >
+                                        <a
+                                            href="{{ route('analytics.helm-score') }}"
+                                            class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
+                                        >
+                                            View Helm Score
+                                        </a>
+
+                                        @if ($needsAttention)
+                                            <a
+                                                href="{{ route('advisor-action-center.index') }}"
+                                                class="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white"
+                                            >
+                                                Review Findings
+                                            </a>
+                                        @endif
+                                    </div>
                                 </div>
                             </div>
-                        </div>
+
+                        @endif
                     </section>
 
 
@@ -1031,8 +1300,11 @@
                                         : null;
 
                                 $categoryStatus = match (true) {
+                                    $analysisIsRunning =>
+                                        'Analyzing...',
+
                                     $categoryScore === null =>
-                                        'Insufficient data',
+                                        'More data needed',
 
                                     $categoryScore >= 90 =>
                                         'Excellent',
@@ -1094,7 +1366,13 @@
                                     <span
                                         class="text-2xl font-semibold {{ $categoryScoreClass }}"
                                     >
-                                        {{ $categoryScore ?? '—' }}
+                                        @if ($analysisIsRunning)
+                                            <span class="animate-pulse text-blue-300">
+                                                ···
+                                            </span>
+                                        @else
+                                            {{ $categoryScore ?? '—' }}
+                                        @endif
                                     </span>
                                 </div>
 
@@ -1924,137 +2202,377 @@
 
 
     {{-- ============================================================= --}}
-    {{-- HELM SCORE ANIMATION --}}
+    {{-- HELM SCORE + LIVE ANALYSIS --}}
     {{-- ============================================================= --}}
 
     <script>
         document.addEventListener(
             'DOMContentLoaded',
             function () {
-                const dial =
-                    document.querySelector(
-                        '[data-helm-score-dial]'
-                    );
-
-                if (!dial) {
-                    return;
-                }
-
-                const scoreElement =
-                    dial.querySelector(
-                        '[data-helm-score-number]'
-                    );
-
-                const ring =
-                    dial.querySelector(
-                        '[data-helm-score-ring]'
-                    );
-
-                if (
-                    !scoreElement
-                    || !ring
-                ) {
-                    return;
-                }
-
-                const target =
-                    Math.max(
-                        0,
-                        Math.min(
-                            100,
-                            Number(
-                                dial.dataset.score
-                                || 0
-                            )
-                        )
-                    );
-
-                const reducedMotion =
-                    window.matchMedia(
-                        '(prefers-reduced-motion: reduce)'
-                    ).matches;
-
-                if (reducedMotion) {
-                    scoreElement.textContent =
-                        Math.round(target);
-
-                    ring.style.strokeDashoffset =
-                        String(
-                            100 - target
+                function animateHelmScore() {
+                    const dial =
+                        document.querySelector(
+                            '[data-helm-score-dial]'
                         );
 
-                    return;
-                }
+                    if (!dial) {
+                        return;
+                    }
 
-                const duration = 1650;
-
-                const startTime =
-                    performance.now();
-
-                function easeOutCubic(
-                    progress
-                ) {
-                    return 1 - Math.pow(
-                        1 - progress,
-                        3
-                    );
-                }
-
-                function animate(
-                    currentTime
-                ) {
-                    const elapsed =
-                        currentTime
-                        - startTime;
-
-                    const progress =
-                        Math.min(
-                            elapsed / duration,
-                            1
+                    const scoreElement =
+                        dial.querySelector(
+                            '[data-helm-score-number]'
                         );
 
-                    const eased =
-                        easeOutCubic(
-                            progress
-                        );
-
-                    const current =
-                        target
-                        * eased;
-
-                    scoreElement.textContent =
-                        Math.round(
-                            current
-                        );
-
-                    ring.style.strokeDashoffset =
-                        String(
-                            100 - current
+                    const ring =
+                        dial.querySelector(
+                            '[data-helm-score-ring]'
                         );
 
                     if (
-                        progress < 1
+                        !scoreElement
+                        || !ring
                     ) {
-                        requestAnimationFrame(
-                            animate
+                        return;
+                    }
+
+                    const target =
+                        Math.max(
+                            0,
+                            Math.min(
+                                100,
+                                Number(
+                                    dial.dataset.score
+                                    || 0
+                                )
+                            )
                         );
-                    } else {
+
+                    const reducedMotion =
+                        window.matchMedia(
+                            '(prefers-reduced-motion: reduce)'
+                        ).matches;
+
+                    if (reducedMotion) {
                         scoreElement.textContent =
-                            Math.round(
-                                target
-                            );
+                            Math.round(target);
 
                         ring.style.strokeDashoffset =
                             String(
                                 100 - target
                             );
+
+                        return;
+                    }
+
+                    const duration = 1650;
+
+                    const startTime =
+                        performance.now();
+
+                    function easeOutCubic(
+                        progress
+                    ) {
+                        return 1 - Math.pow(
+                            1 - progress,
+                            3
+                        );
+                    }
+
+                    function animate(
+                        currentTime
+                    ) {
+                        const elapsed =
+                            currentTime
+                            - startTime;
+
+                        const progress =
+                            Math.min(
+                                elapsed / duration,
+                                1
+                            );
+
+                        const eased =
+                            easeOutCubic(
+                                progress
+                            );
+
+                        const current =
+                            target * eased;
+
+                        scoreElement.textContent =
+                            Math.round(current);
+
+                        ring.style.strokeDashoffset =
+                            String(
+                                100 - current
+                            );
+
+                        if (progress < 1) {
+                            requestAnimationFrame(
+                                animate
+                            );
+                        } else {
+                            scoreElement.textContent =
+                                Math.round(target);
+
+                            ring.style.strokeDashoffset =
+                                String(
+                                    100 - target
+                                );
+                        }
+                    }
+
+                    requestAnimationFrame(
+                        animate
+                    );
+                }
+
+                animateHelmScore();
+
+                const analysisContainer =
+                    document.querySelector(
+                        '[data-analysis-container]'
+                    );
+
+                if (
+                    !analysisContainer
+                    || analysisContainer.dataset.analysisRunning !== '1'
+                ) {
+                    return;
+                }
+
+                const statusUrl =
+                    @json(
+                        route(
+                            'dashboard.analysis-status'
+                        )
+                    );
+
+                let requestInFlight = false;
+                let pollCount = 0;
+                const maximumPolls = 120;
+
+                function renderSteps(steps) {
+                    const container =
+                        document.querySelector(
+                            '[data-analysis-steps]'
+                        );
+
+                    if (
+                        !container
+                        || !Array.isArray(steps)
+                    ) {
+                        return;
+                    }
+
+                    container.innerHTML =
+                        steps.map(
+                            function (step) {
+                                const status =
+                                    step.status
+                                    || 'pending';
+
+                                let icon = '';
+                                let textClass =
+                                    'text-slate-600';
+                                let working = '';
+
+                                if (status === 'complete') {
+                                    icon = `
+                                        <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-emerald-500/10 text-emerald-300">
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6"></path>
+                                            </svg>
+                                        </div>
+                                    `;
+
+                                    textClass =
+                                        'text-slate-300';
+                                } else if (status === 'active') {
+                                    icon = `
+                                        <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-blue-500/10">
+                                            <div class="h-2.5 w-2.5 animate-pulse rounded-full bg-blue-400"></div>
+                                        </div>
+                                    `;
+
+                                    textClass =
+                                        'text-white';
+
+                                    working = `
+                                        <span class="ml-auto text-xs font-semibold text-blue-400">
+                                            Working…
+                                        </span>
+                                    `;
+                                } else {
+                                    icon = `
+                                        <div class="flex h-7 w-7 shrink-0 items-center justify-center rounded-full border border-slate-700">
+                                            <div class="h-2 w-2 rounded-full bg-slate-700"></div>
+                                        </div>
+                                    `;
+                                }
+
+                                return `
+                                    <div class="flex items-center gap-3">
+                                        ${icon}
+                                        <span class="text-sm font-medium ${textClass}">
+                                            ${step.label}
+                                        </span>
+                                        ${working}
+                                    </div>
+                                `;
+                            }
+                        ).join('');
+                }
+
+                async function pollAnalysis() {
+                    if (requestInFlight) {
+                        return;
+                    }
+
+                    requestInFlight = true;
+
+                    try {
+                        const response =
+                            await fetch(
+                                statusUrl,
+                                {
+                                    method: 'GET',
+
+                                    headers: {
+                                        'Accept':
+                                            'application/json',
+
+                                        'X-Requested-With':
+                                            'XMLHttpRequest',
+                                    },
+
+                                    credentials:
+                                        'same-origin',
+
+                                    cache:
+                                        'no-store',
+                                }
+                            );
+
+                        if (!response.ok) {
+                            throw new Error(
+                                'Analysis status request failed.'
+                            );
+                        }
+
+                        const state =
+                            await response.json();
+
+                        const headline =
+                            document.querySelector(
+                                '[data-analysis-headline]'
+                            );
+
+                        const message =
+                            document.querySelector(
+                                '[data-analysis-message]'
+                            );
+
+                        const progress =
+                            document.querySelector(
+                                '[data-analysis-progress]'
+                            );
+
+                        const progressLabel =
+                            document.querySelector(
+                                '[data-analysis-progress-label]'
+                            );
+
+                        if (headline) {
+                            headline.textContent =
+                                state.headline
+                                || 'Analyzing your portfolio';
+                        }
+
+                        if (message) {
+                            message.textContent =
+                                state.message
+                                || '';
+                        }
+
+                        const numericProgress =
+                            Math.max(
+                                0,
+                                Math.min(
+                                    100,
+                                    Number(
+                                        state.progress
+                                        || 0
+                                    )
+                                )
+                            );
+
+                        if (progress) {
+                            progress.style.width =
+                                numericProgress + '%';
+                        }
+
+                        if (progressLabel) {
+                            progressLabel.textContent =
+                                Math.round(
+                                    numericProgress
+                                ) + '%';
+                        }
+
+                        renderSteps(
+                            state.steps
+                            || []
+                        );
+
+                        if (
+                            state.is_ready
+                            || state.has_failed
+                        ) {
+                            window.setTimeout(
+                                function () {
+                                    window.location.reload();
+                                },
+                                650
+                            );
+
+                            return;
+                        }
+
+                        pollCount++;
+
+                        if (
+                            pollCount
+                            < maximumPolls
+                        ) {
+                            window.setTimeout(
+                                pollAnalysis,
+                                2500
+                            );
+                        }
+                    } catch (error) {
+                        pollCount++;
+
+                        if (
+                            pollCount
+                            < maximumPolls
+                        ) {
+                            window.setTimeout(
+                                pollAnalysis,
+                                5000
+                            );
+                        }
+                    } finally {
+                        requestInFlight = false;
                     }
                 }
 
-                requestAnimationFrame(
-                    animate
+                window.setTimeout(
+                    pollAnalysis,
+                    1500
                 );
             }
         );
     </script>
+
 </x-app-layout>

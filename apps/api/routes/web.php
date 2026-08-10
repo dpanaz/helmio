@@ -358,6 +358,20 @@ Route::get(
     ])
     ->name('dashboard');
 
+Route::get(
+    '/dashboard/analysis-status',
+    [
+        DashboardController::class,
+        'analysisStatus',
+    ],
+)
+    ->middleware([
+        'auth',
+        'verified',
+        'onboarding.complete',
+    ])
+    ->name('dashboard.analysis-status');
+
 /*
 |--------------------------------------------------------------------------
 | Premium-only application routes
