@@ -393,92 +393,144 @@ return $stats;
     /**
      * @param Collection<int, BrokeragePositionData> $positions
      */
-    private function syncPositions(
-        InvestmentAccount $account,
-        Collection $positions,
-    ): void {
-        $syncedPositionIds = [];
+    /**
+ * @param Collection<int, BrokeragePositionData> $positions
+ */
+private function syncPositions(
+    InvestmentAccount $account,
+    Collection $positions,
+): void {
+    $syncedPositionIds = [];
 
-        foreach ($positions as $position) {
-            $security = $this->syncSecurity(
-                $position
-            );
+    $asOfDate = now()->toDateString();
 
-            Holding::query()->updateOrCreate(
-                [
-                    'investment_account_id' =>
-                        $account->id,
+    foreach ($positions as $position) {
+        $security = $this->syncSecurity(
+            $position,
+        );
 
-                    'provider_position_id' =>
-                        $position
-                            ->providerPositionId,
-                ],
-                [
-                    'security_id' =>
-                        $security->id,
-
-                    'quantity' =>
-                        $position->quantity,
-
-                    'price' =>
-                        $position->price,
-
-                    'market_value' =>
-                        $position->marketValue,
-
-                    'cost_basis' =>
-                        $position->costBasis,
-
-                    'unrealized_gain_loss' =>
-                        $position->costBasis !== null
-                            ? $position->marketValue
-                                - $position->costBasis
-                            : null,
-
-                    'as_of_date' =>
-                        now()->toDateString(),
-
-                    'provider_synced_at' =>
-                        now(),
-
-                    'provider_metadata' =>
-                        $position->metadata,
-                ],
-            );
-
-            $syncedPositionIds[] =
-                $position->providerPositionId;
-        }
-
-        $staleHoldings = Holding::query()
+        /*
+         * Holdings are uniquely identified in Helmio by:
+         *
+         * investment_account_id
+         * security_id
+         * as_of_date
+         *
+         * Do not rely exclusively on provider_position_id because a
+         * provider may change the identifier or our normalization of
+         * that identifier may improve over time.
+         */
+        $holding = Holding::query()
             ->where(
                 'investment_account_id',
-                $account->id
+                $account->id,
             )
-            ->whereNotNull(
-                'provider_position_id'
-            );
+            ->where(
+                'security_id',
+                $security->id,
+            )
+            ->whereDate(
+                'as_of_date',
+                $asOfDate,
+            )
+            ->first();
 
-        if ($syncedPositionIds !== []) {
-            $staleHoldings->whereNotIn(
-                'provider_position_id',
-                $syncedPositionIds
-            );
+        if ($holding === null) {
+            $holding = new Holding();
+
+            $holding->investment_account_id =
+                $account->id;
+
+            $holding->security_id =
+                $security->id;
+
+            $holding->as_of_date =
+                $asOfDate;
         }
 
-        $staleHoldings->delete();
+        $holding->fill([
+            'provider_position_id' =>
+                $position->providerPositionId,
 
-        $account->update([
-            'current_value' =>
-                (float) $account
-                    ->holdings()
-                    ->sum('market_value')
-                + (float) $account->cash_value,
+            'security_id' =>
+                $security->id,
+
+            'quantity' =>
+                $position->quantity,
+
+            'price' =>
+                $position->price,
+
+            'market_value' =>
+                $position->marketValue,
+
+            'cost_basis' =>
+                $position->costBasis,
+
+            'unrealized_gain_loss' =>
+                $position->costBasis !== null
+                    ? $position->marketValue
+                        - $position->costBasis
+                    : null,
+
+            'as_of_date' =>
+                $asOfDate,
 
             'provider_synced_at' =>
                 now(),
+
+            'provider_metadata' =>
+                $position->metadata,
         ]);
+
+        $holding->save();
+
+        $syncedPositionIds[] =
+            $position->providerPositionId;
     }
+
+    /*
+     * Remove stale provider-synced holdings for today's snapshot.
+     * Limit this cleanup to the current as-of date so historical
+     * holding records are never accidentally removed.
+     */
+    $staleHoldings = Holding::query()
+        ->where(
+            'investment_account_id',
+            $account->id,
+        )
+        ->whereDate(
+            'as_of_date',
+            $asOfDate,
+        )
+        ->whereNotNull(
+            'provider_position_id',
+        );
+
+    if ($syncedPositionIds !== []) {
+        $staleHoldings->whereNotIn(
+            'provider_position_id',
+            $syncedPositionIds,
+        );
+    }
+
+    $staleHoldings->delete();
+
+    $account->update([
+        'current_value' =>
+            (float) $account
+                ->holdings()
+                ->whereDate(
+                    'as_of_date',
+                    $asOfDate,
+                )
+                ->sum('market_value')
+            + (float) $account->cash_value,
+
+        'provider_synced_at' =>
+            now(),
+    ]);
+}
 
     private function syncSecurity(
         BrokeragePositionData $position,
