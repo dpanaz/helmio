@@ -654,20 +654,24 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
                         );
 
                     $instrumentId =
-                        $this->stringValue(
-                            data_get(
-                                $position,
-                                'symbol.id',
-                            )
-                            ?? data_get(
-                                $security,
-                                'id',
-                            )
-                            ?? data_get(
-                                $position,
-                                'universal_symbol_id',
-                            ),
-                        );
+    $this->stringValue(
+        data_get(
+            $security,
+            'id',
+        )
+        ?? data_get(
+            $position,
+            'symbol.symbol.id',
+        )
+        ?? data_get(
+            $position,
+            'universal_symbol_id',
+        )
+        ?? data_get(
+            $position,
+            'symbol.id',
+        ),
+    );
 
                     $quantity =
                         $this->floatValue(
