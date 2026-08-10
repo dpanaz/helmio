@@ -21,6 +21,23 @@ return Application::configure(
                 at: '*',
             );
 
+            /*
+            |--------------------------------------------------------------------------
+            | External Webhooks
+            |--------------------------------------------------------------------------
+            |
+            | SnapTrade sends POST requests from outside the Helmio application
+            | and therefore cannot provide a Laravel CSRF token.
+            |
+            */
+
+            $middleware->preventRequestForgery(
+                except: [
+                    'webhooks/snaptrade',
+                    'stripe/*',
+                ],
+            );
+
             $middleware->alias([
                 'subscribed' =>
                     RequirePremiumSubscription::class,
