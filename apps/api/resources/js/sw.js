@@ -29,6 +29,7 @@ const precacheManifest =
             ) {
                 return {
                     ...entry,
+
                     url:
                         `/build/${entry.url}`,
                 };
@@ -78,8 +79,18 @@ self.addEventListener(
         const unreadCount =
             Number(
                 payload.unread_count
-                ?? 1,
+                ?? 0,
             );
+
+        /*
+         * Silent pushes are used only to synchronize
+         * things such as the Home Screen badge.
+         *
+         * They should not display another visible
+         * operating-system notification.
+         */
+        const isSilent =
+            payload.silent === true;
 
         const options = {
             body,
@@ -103,38 +114,49 @@ self.addEventListener(
                 false,
         };
 
-        event.waitUntil(
-            Promise.all([
-                /*
-                 * Show the operating-system notification.
-                 */
+        const tasks = [
+            /*
+             * Synchronize the Home Screen badge.
+             */
+            updateAppBadge(
+                unreadCount,
+            ),
+
+            /*
+             * Tell any open Helmio windows that
+             * notification data has changed.
+             */
+            notifyOpenClients(
+                payload,
+            ),
+        ];
+
+        /*
+         * Only show a visible OS notification for
+         * normal pushes.
+         *
+         * Badge-sync pushes remain silent.
+         */
+        if (! isSilent) {
+            tasks.push(
                 self.registration
                     .showNotification(
                         title,
                         options,
                     ),
+            );
+        }
 
-                /*
-                 * Synchronize the Home Screen badge.
-                 */
-                updateAppBadge(
-                    unreadCount,
-                ),
-
-                /*
-                 * Tell any open Helmio windows that
-                 * new notification data is available.
-                 */
-                notifyOpenClients(
-                    payload,
-                ),
-            ]),
+        event.waitUntil(
+            Promise.all(
+                tasks,
+            ),
         );
     },
 );
 
 /*
- * Open/focus Helmio when the push is tapped.
+ * Open/focus Helmio when a visible push is tapped.
  */
 self.addEventListener(
     'notificationclick',
@@ -199,6 +221,14 @@ self.addEventListener(
     },
 );
 
+/*
+ * Tell all currently open Helmio windows that
+ * notification state has changed.
+ *
+ * app.js can then refresh the visible page so
+ * the bell, unread count, and notification list
+ * immediately match the server.
+ */
 async function notifyOpenClients(
     payload,
 ) {
@@ -221,6 +251,9 @@ async function notifyOpenClients(
     }
 }
 
+/*
+ * Update the installed Helmio Home Screen badge.
+ */
 async function updateAppBadge(
     count,
 ) {
@@ -264,6 +297,10 @@ async function updateAppBadge(
     }
 }
 
+/*
+ * Focus an existing Helmio window when possible.
+ * Otherwise open a new one.
+ */
 async function focusOrOpenWindow(
     actionUrl,
 ) {
@@ -280,7 +317,8 @@ async function focusOrOpenWindow(
         });
 
     /*
-     * Prefer an already-open copy of the exact page.
+     * Prefer an already-open copy
+     * of the exact page.
      */
     for (
         const client

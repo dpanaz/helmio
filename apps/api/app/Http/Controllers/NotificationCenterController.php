@@ -2,29 +2,43 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Notifications\WebPushService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\View\View;
+use Throwable;
 
 class NotificationCenterController extends Controller
 {
-    public function index(Request $request): View
-    {
-        $notifications = $request
-            ->user()
-            ->notifications()
-            ->latest()
-            ->paginate(25);
+    public function __construct(
+        private readonly WebPushService $webPushService,
+    ) {
+    }
 
-        return view('notifications.index', [
-            'notifications' => $notifications,
-
-            'unreadCount' => $request
+    public function index(
+        Request $request,
+    ): View {
+        $notifications =
+            $request
                 ->user()
-                ->unreadNotifications()
-                ->count(),
-        ]);
+                ->notifications()
+                ->latest()
+                ->paginate(25);
+
+        return view(
+            'notifications.index',
+            [
+                'notifications' =>
+                    $notifications,
+
+                'unreadCount' =>
+                    $request
+                        ->user()
+                        ->unreadNotifications()
+                        ->count(),
+            ],
+        );
     }
 
     public function read(
@@ -38,11 +52,19 @@ class NotificationCenterController extends Controller
 
         $notification->markAsRead();
 
+        $this->syncBadge(
+            $request,
+        );
+
         $actionUrl =
             $notification->data['action_url']
-            ?? route('notifications.index');
+            ?? route(
+                'notifications.index',
+            );
 
-        return redirect()->to($actionUrl);
+        return redirect()->to(
+            $actionUrl,
+        );
     }
 
     public function markAllRead(
@@ -52,6 +74,10 @@ class NotificationCenterController extends Controller
             ->user()
             ->unreadNotifications
             ->markAsRead();
+
+        $this->syncBadge(
+            $request,
+        );
 
         return back()->with(
             'success',
@@ -70,10 +96,53 @@ class NotificationCenterController extends Controller
 
         $notification->delete();
 
+        $this->syncBadge(
+            $request,
+        );
+
         return back()->with(
             'success',
             'Notification removed.',
         );
+    }
+
+    private function syncBadge(
+        Request $request,
+    ): void {
+        $user =
+            $request->user();
+
+        $unreadCount =
+            $user
+                ->unreadNotifications()
+                ->count();
+
+        try {
+            $this->webPushService
+                ->sendToUser(
+                    $user,
+                    [
+                        'type' =>
+                            'badge_sync',
+
+                        'silent' =>
+                            true,
+
+                        'unread_count' =>
+                            $unreadCount,
+
+                        'event_key' =>
+                            'badge-sync:'
+                            . $user->id
+                            . ':'
+                            . now()->timestamp,
+                    ],
+                );
+        } catch (Throwable $exception) {
+            report(
+                $exception,
+            );
+        }
     }
 
     private function authorizeNotification(
@@ -82,9 +151,13 @@ class NotificationCenterController extends Controller
     ): void {
         abort_unless(
             $notification->notifiable_type
-                === $request->user()->getMorphClass()
+                === $request
+                    ->user()
+                    ->getMorphClass()
             && (string) $notification->notifiable_id
-                === (string) $request->user()->getKey(),
+                === (string) $request
+                    ->user()
+                    ->getKey(),
             403,
         );
     }
