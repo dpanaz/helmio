@@ -23,6 +23,12 @@ export default defineConfig({
 
             injectRegister: false,
 
+            /*
+             * Helmio's service worker needs to control the
+             * entire application, not only /build/.
+             */
+            scope: '/',
+
             includeAssets: [
                 'favicon.ico',
                 'robots.txt',
