@@ -29,8 +29,13 @@ class AuditNotificationService
         );
 
         if (! $comparison['has_previous']) {
-            return;
-        }
+            $this->createInitialAuditNotification(
+                $user,
+                $currentRun,
+            );
+
+    return;
+}
 
         $this->createScoreNotification(
             $user,
