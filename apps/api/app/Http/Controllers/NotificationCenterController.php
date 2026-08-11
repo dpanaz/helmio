@@ -2,20 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\Notifications\WebPushService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\View\View;
-use Throwable;
 
 class NotificationCenterController extends Controller
 {
-    public function __construct(
-        private readonly WebPushService $webPushService,
-    ) {
-    }
-
     public function index(
         Request $request,
     ): View {
@@ -41,6 +35,21 @@ class NotificationCenterController extends Controller
         );
     }
 
+    /**
+     * Return the current unread count for badge synchronization.
+     */
+    public function unreadCount(
+        Request $request,
+    ): JsonResponse {
+        return response()->json([
+            'unread_count' =>
+                $request
+                    ->user()
+                    ->unreadNotifications()
+                    ->count(),
+        ]);
+    }
+
     public function read(
         Request $request,
         DatabaseNotification $notification,
@@ -51,10 +60,6 @@ class NotificationCenterController extends Controller
         );
 
         $notification->markAsRead();
-
-        $this->syncBadge(
-            $request,
-        );
 
         $actionUrl =
             $notification->data['action_url']
@@ -75,10 +80,6 @@ class NotificationCenterController extends Controller
             ->unreadNotifications
             ->markAsRead();
 
-        $this->syncBadge(
-            $request,
-        );
-
         return back()->with(
             'success',
             'All notifications marked as read.',
@@ -96,53 +97,10 @@ class NotificationCenterController extends Controller
 
         $notification->delete();
 
-        $this->syncBadge(
-            $request,
-        );
-
         return back()->with(
             'success',
             'Notification removed.',
         );
-    }
-
-    private function syncBadge(
-        Request $request,
-    ): void {
-        $user =
-            $request->user();
-
-        $unreadCount =
-            $user
-                ->unreadNotifications()
-                ->count();
-
-        try {
-            $this->webPushService
-                ->sendToUser(
-                    $user,
-                    [
-                        'type' =>
-                            'badge_sync',
-
-                        'silent' =>
-                            true,
-
-                        'unread_count' =>
-                            $unreadCount,
-
-                        'event_key' =>
-                            'badge-sync:'
-                            . $user->id
-                            . ':'
-                            . now()->timestamp,
-                    ],
-                );
-        } catch (Throwable $exception) {
-            report(
-                $exception,
-            );
-        }
     }
 
     private function authorizeNotification(

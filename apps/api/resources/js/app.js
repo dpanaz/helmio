@@ -67,15 +67,16 @@ async function registerHelmioServiceWorker() {
                 return registration
                     .update();
             },
+
+            async syncBadge() {
+                return syncHelmioBadge();
+            },
         };
 
         /*
-         * Synchronize the app icon badge whenever
-         * the current page exposes an unread count.
+         * Synchronize the badge as soon as Helmio loads.
          */
-        await syncHelmioBadge(
-            registration,
-        );
+        await syncHelmioBadge();
 
         console.info(
             'Helmio service worker registered:',
@@ -90,13 +91,91 @@ async function registerHelmioServiceWorker() {
 }
 
 /*
- * New push received while Helmio is already open.
+ * Ask Laravel for the authoritative unread count,
+ * then update the installed Helmio app badge.
+ */
+async function syncHelmioBadge() {
+    if (
+        ! (
+            'setAppBadge'
+            in navigator
+        )
+    ) {
+        return;
+    }
+
+    try {
+        const response =
+            await fetch(
+                '/notifications/unread-count',
+                {
+                    method:
+                        'GET',
+
+                    credentials:
+                        'same-origin',
+
+                    headers: {
+                        Accept:
+                            'application/json',
+                    },
+
+                    cache:
+                        'no-store',
+                },
+            );
+
+        /*
+         * The user may be logged out or the endpoint
+         * may be unavailable during onboarding.
+         */
+        if (! response.ok) {
+            return;
+        }
+
+        const data =
+            await response.json();
+
+        const unreadCount =
+            Number(
+                data.unread_count
+                ?? 0,
+            );
+
+        if (unreadCount > 0) {
+            await navigator
+                .setAppBadge(
+                    unreadCount,
+                );
+
+            return;
+        }
+
+        if (
+            'clearAppBadge'
+            in navigator
+        ) {
+            await navigator
+                .clearAppBadge();
+
+            return;
+        }
+
+        await navigator
+            .setAppBadge(0);
+    } catch (error) {
+        console.error(
+            'Unable to synchronize Helmio badge:',
+            error,
+        );
+    }
+}
+
+/*
+ * A real new Helmio notification arrived.
  *
- * Reload the page so:
- *
- * - bell count updates
- * - dashboard alerts update
- * - notification center updates
+ * Refresh the open page so dashboard data, the
+ * notification bell, and unread count are current.
  */
 if (
     'serviceWorker'
@@ -114,59 +193,54 @@ if (
                     return;
                 }
 
+                /*
+                 * A silent/badge-sync push is no longer
+                 * used. Real notification pushes can
+                 * refresh the active Helmio page.
+                 */
                 window.location.reload();
             },
         );
 }
 
 /*
- * Synchronize Home Screen badge using the unread
- * count supplied by the current Blade page.
+ * When a user returns to Helmio on their phone,
+ * synchronize the badge with the database.
+ *
+ * This catches notifications that were removed,
+ * read, or cleared from another device/browser.
  */
-async function syncHelmioBadge(
-    registration,
-) {
-    const badgeElement =
-        document.querySelector(
-            '[data-helmio-unread-count]',
-        );
+document.addEventListener(
+    'visibilitychange',
+    () => {
+        if (
+            document.visibilityState
+            === 'visible'
+        ) {
+            syncHelmioBadge();
+        }
+    },
+);
 
-    if (! badgeElement) {
-        return;
-    }
+/*
+ * Desktop/browser window becomes active again.
+ */
+window.addEventListener(
+    'focus',
+    () => {
+        syncHelmioBadge();
+    },
+);
 
-    const unreadCount =
-        Number(
-            badgeElement.dataset
-                .helmioUnreadCount
-            ?? 0,
-        );
-
-    const worker =
-        registration.active
-        ?? registration.waiting
-        ?? registration.installing;
-
-    if (! worker) {
-        return;
-    }
-
-    if (unreadCount > 0) {
-        worker.postMessage({
-            type:
-                'HELMIO_SET_BADGE',
-
-            count:
-                unreadCount,
-        });
-
-        return;
-    }
-
-    worker.postMessage({
-        type:
-            'HELMIO_CLEAR_BADGE',
-    });
-}
+/*
+ * Handles returning from Safari's back-forward cache
+ * and reopening the installed PWA.
+ */
+window.addEventListener(
+    'pageshow',
+    () => {
+        syncHelmioBadge();
+    },
+);
 
 registerHelmioServiceWorker();
