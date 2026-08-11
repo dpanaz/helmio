@@ -2,14 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Services\Notifications\WebPushService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\View\View;
+use Throwable;
 
 class NotificationCenterController extends Controller
 {
+    public function __construct(
+        private readonly WebPushService $webPushService,
+    ) {
+    }
+
     public function index(
         Request $request,
     ): View {
@@ -35,10 +42,6 @@ class NotificationCenterController extends Controller
         );
     }
 
-    /**
-     * Current notification state used by the PWA
-     * to keep multiple devices/windows synchronized.
-     */
     public function state(
         Request $request,
     ): JsonResponse {
@@ -56,10 +59,6 @@ class NotificationCenterController extends Controller
                     ->unreadNotifications()
                     ->count(),
 
-            /*
-             * Helps detect changes even when total/unread counts
-             * happen to remain identical.
-             */
             'latest_id' =>
                 $user
                     ->notifications()
@@ -71,9 +70,6 @@ class NotificationCenterController extends Controller
         ]);
     }
 
-    /**
-     * Current unread count for badge synchronization.
-     */
     public function unreadCount(
         Request $request,
     ): JsonResponse {
@@ -97,6 +93,14 @@ class NotificationCenterController extends Controller
 
         $notification->markAsRead();
 
+        $this->sendNotificationStateUpdate(
+            request:
+                $request,
+
+            title:
+                'Alert reviewed',
+        );
+
         $actionUrl =
             $notification->data['action_url']
             ?? route(
@@ -116,6 +120,14 @@ class NotificationCenterController extends Controller
             ->unreadNotifications
             ->markAsRead();
 
+        $this->sendNotificationStateUpdate(
+            request:
+                $request,
+
+            title:
+                'Alerts marked as read',
+        );
+
         return back()->with(
             'success',
             'All notifications marked as read.',
@@ -133,9 +145,102 @@ class NotificationCenterController extends Controller
 
         $notification->delete();
 
+        $this->sendNotificationStateUpdate(
+            request:
+                $request,
+
+            title:
+                'Alert removed',
+        );
+
         return back()->with(
             'success',
             'Notification removed.',
+        );
+    }
+
+    private function sendNotificationStateUpdate(
+        Request $request,
+        string $title,
+    ): void {
+        $user =
+            $request->user();
+
+        $unreadCount =
+            $user
+                ->unreadNotifications()
+                ->count();
+
+        $message =
+            $this->remainingAlertMessage(
+                $unreadCount,
+            );
+
+        try {
+            $this->webPushService
+                ->sendToUser(
+                    $user,
+                    [
+                        /*
+                         * This is intentionally a visible
+                         * user notification.
+                         */
+                        'type' =>
+                            'notification_state_update',
+
+                        'title' =>
+                            $title,
+
+                        'body' =>
+                            $message,
+
+                        'message' =>
+                            $message,
+
+                        'action_url' =>
+                            route(
+                                'notifications.index',
+                            ),
+
+                        'unread_count' =>
+                            $unreadCount,
+
+                        'event_key' =>
+                            sprintf(
+                                'notification-state:%s:%s:%s',
+                                $user->id,
+                                now()->timestamp,
+                                bin2hex(
+                                    random_bytes(4),
+                                ),
+                            ),
+                    ],
+                );
+        } catch (Throwable $exception) {
+            /*
+             * Never allow a push-delivery problem to stop
+             * the actual notification action from succeeding.
+             */
+            report(
+                $exception,
+            );
+        }
+    }
+
+    private function remainingAlertMessage(
+        int $unreadCount,
+    ): string {
+        if ($unreadCount === 0) {
+            return 'You’re all caught up.';
+        }
+
+        if ($unreadCount === 1) {
+            return 'You have 1 unread alert remaining.';
+        }
+
+        return sprintf(
+            'You have %d unread alerts remaining.',
+            $unreadCount,
         );
     }
 
