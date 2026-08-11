@@ -14,12 +14,11 @@ clientsClaim();
 cleanupOutdatedCaches();
 
 /*
- * Vite builds Helmio assets under /build/, while this
- * service worker is served from /sw.js so it can control
- * the entire application.
+ * Vite builds Helmio assets beneath /build/,
+ * while this service worker is served from /sw.js.
  *
- * Rewrite injected precache URLs so Workbox fetches
- * /build/assets/... instead of /assets/....
+ * Rewrite injected Vite asset URLs so Workbox
+ * requests them from the correct location.
  */
 const precacheManifest =
     self.__WB_MANIFEST.map(
@@ -44,7 +43,7 @@ precacheAndRoute(
 );
 
 /*
- * Receive a Web Push payload from Helmio.
+ * Receive a Web Push notification.
  */
 self.addEventListener(
     'push',
@@ -106,14 +105,28 @@ self.addEventListener(
 
         event.waitUntil(
             Promise.all([
+                /*
+                 * Show the operating-system notification.
+                 */
                 self.registration
                     .showNotification(
                         title,
                         options,
                     ),
 
+                /*
+                 * Synchronize the Home Screen badge.
+                 */
                 updateAppBadge(
                     unreadCount,
+                ),
+
+                /*
+                 * Tell any open Helmio windows that
+                 * new notification data is available.
+                 */
+                notifyOpenClients(
+                    payload,
                 ),
             ]),
         );
@@ -121,7 +134,7 @@ self.addEventListener(
 );
 
 /*
- * Open or focus Helmio when a notification is tapped.
+ * Open/focus Helmio when the push is tapped.
  */
 self.addEventListener(
     'notificationclick',
@@ -143,8 +156,14 @@ self.addEventListener(
 );
 
 /*
- * Allow the open Helmio application to synchronize
- * the Home Screen badge with the unread count.
+ * Receive badge updates from an open Helmio page.
+ *
+ * This handles cases such as:
+ *
+ * - notification marked read
+ * - notification removed
+ * - all notifications marked read
+ * - notification center refreshed
  */
 self.addEventListener(
     'message',
@@ -180,9 +199,28 @@ self.addEventListener(
     },
 );
 
-/*
- * Update the installed Helmio app badge.
- */
+async function notifyOpenClients(
+    payload,
+) {
+    const clientList =
+        await self.clients.matchAll({
+            type: 'window',
+            includeUncontrolled: true,
+        });
+
+    for (
+        const client
+        of clientList
+    ) {
+        client.postMessage({
+            type:
+                'HELMIO_NOTIFICATION_RECEIVED',
+
+            payload,
+        });
+    }
+}
+
 async function updateAppBadge(
     count,
 ) {
@@ -212,7 +250,12 @@ async function updateAppBadge(
         ) {
             await self.navigator
                 .clearAppBadge();
+
+            return;
         }
+
+        await self.navigator
+            .setAppBadge(0);
     } catch (error) {
         console.error(
             'Unable to update Helmio badge:',
@@ -221,10 +264,6 @@ async function updateAppBadge(
     }
 }
 
-/*
- * Focus an existing Helmio window when possible.
- * Otherwise open a new one.
- */
 async function focusOrOpenWindow(
     actionUrl,
 ) {
@@ -240,6 +279,9 @@ async function focusOrOpenWindow(
             includeUncontrolled: true,
         });
 
+    /*
+     * Prefer an already-open copy of the exact page.
+     */
     for (
         const client
         of clientList
@@ -252,6 +294,9 @@ async function focusOrOpenWindow(
         }
     }
 
+    /*
+     * Otherwise reuse an existing Helmio window.
+     */
     for (
         const client
         of clientList
@@ -277,6 +322,9 @@ async function focusOrOpenWindow(
         }
     }
 
+    /*
+     * Finally, open a new Helmio window.
+     */
     if (
         self.clients.openWindow
     ) {

@@ -8,14 +8,12 @@ window.Alpine = Alpine;
 Alpine.start();
 
 /*
- * Register Helmio's service worker.
- *
- * The worker is copied to /public/sw.js during the
- * production build so that it can control the entire
- * Helmio application with scope "/".
+ * Register Helmio's root-scoped service worker.
  */
 async function registerHelmioServiceWorker() {
-    if (! ('serviceWorker' in navigator)) {
+    if (
+        ! ('serviceWorker' in navigator)
+    ) {
         console.warn(
             'Service workers are not supported by this browser.',
         );
@@ -25,18 +23,16 @@ async function registerHelmioServiceWorker() {
 
     try {
         const registration =
-            await navigator.serviceWorker.register(
-                '/sw.js',
-                {
-                    scope: '/',
-                    type: 'module',
-                },
-            );
+            await navigator
+                .serviceWorker
+                .register(
+                    '/sw.js',
+                    {
+                        scope: '/',
+                        type: 'module',
+                    },
+                );
 
-        /*
-         * Periodically check for a newer Helmio
-         * service worker.
-         */
         window.setInterval(
             () => {
                 registration
@@ -53,10 +49,6 @@ async function registerHelmioServiceWorker() {
             60 * 60 * 1000,
         );
 
-        /*
-         * Let the rest of Helmio know that the
-         * service worker has been registered.
-         */
         window.dispatchEvent(
             new CustomEvent(
                 'helmio:service-worker-ready',
@@ -68,17 +60,22 @@ async function registerHelmioServiceWorker() {
             ),
         );
 
-        /*
-         * Expose the registration for debugging
-         * and other frontend functionality.
-         */
         window.HelmioPwa = {
             registration,
 
             async update() {
-                return registration.update();
+                return registration
+                    .update();
             },
         };
+
+        /*
+         * Synchronize the app icon badge whenever
+         * the current page exposes an unread count.
+         */
+        await syncHelmioBadge(
+            registration,
+        );
 
         console.info(
             'Helmio service worker registered:',
@@ -90,6 +87,86 @@ async function registerHelmioServiceWorker() {
             error,
         );
     }
+}
+
+/*
+ * New push received while Helmio is already open.
+ *
+ * Reload the page so:
+ *
+ * - bell count updates
+ * - dashboard alerts update
+ * - notification center updates
+ */
+if (
+    'serviceWorker'
+    in navigator
+) {
+    navigator.serviceWorker
+        .addEventListener(
+            'message',
+            event => {
+                if (
+                    event.data?.type
+                    !==
+                    'HELMIO_NOTIFICATION_RECEIVED'
+                ) {
+                    return;
+                }
+
+                window.location.reload();
+            },
+        );
+}
+
+/*
+ * Synchronize Home Screen badge using the unread
+ * count supplied by the current Blade page.
+ */
+async function syncHelmioBadge(
+    registration,
+) {
+    const badgeElement =
+        document.querySelector(
+            '[data-helmio-unread-count]',
+        );
+
+    if (! badgeElement) {
+        return;
+    }
+
+    const unreadCount =
+        Number(
+            badgeElement.dataset
+                .helmioUnreadCount
+            ?? 0,
+        );
+
+    const worker =
+        registration.active
+        ?? registration.waiting
+        ?? registration.installing;
+
+    if (! worker) {
+        return;
+    }
+
+    if (unreadCount > 0) {
+        worker.postMessage({
+            type:
+                'HELMIO_SET_BADGE',
+
+            count:
+                unreadCount,
+        });
+
+        return;
+    }
+
+    worker.postMessage({
+        type:
+            'HELMIO_CLEAR_BADGE',
+    });
 }
 
 registerHelmioServiceWorker();

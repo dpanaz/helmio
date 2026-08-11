@@ -60,7 +60,10 @@
         );
     @endphp
 
-    <div class="min-h-screen bg-slate-950 py-8">
+    <div
+        class="min-h-screen bg-slate-950 py-8"
+        data-helmio-unread-count="{{ $unreadCount }}"
+    >
         <div class="mx-auto max-w-6xl space-y-6 px-4 sm:px-6 lg:px-8">
 
             {{-- Success message --}}
