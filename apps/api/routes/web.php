@@ -303,6 +303,16 @@ Route::middleware([
     |--------------------------------------------------------------------------
     */
 
+    Route::get(
+        '/push-subscriptions/vapid-public-key',
+        [
+            PushSubscriptionController::class,
+            'publicKey',
+        ],
+    )->name(
+        'push-subscriptions.vapid-public-key',
+    );
+
     Route::post(
         '/push-subscriptions',
         [

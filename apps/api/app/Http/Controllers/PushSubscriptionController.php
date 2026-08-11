@@ -68,6 +68,15 @@ class PushSubscriptionController extends Controller
                 $subscription->id,
         ]);
     }
+    public function publicKey(): JsonResponse
+    {
+        return response()->json([
+            'public_key' =>
+                config(
+                    'webpush.vapid.public_key',
+                ),
+        ]);
+    }
 
     public function destroy(
         Request $request,
