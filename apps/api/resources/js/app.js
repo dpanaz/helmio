@@ -1,5 +1,4 @@
 import Alpine from 'alpinejs';
-import { registerSW } from 'virtual:pwa-register';
 import './pwa-install';
 import './push-notifications';
 
@@ -7,16 +6,20 @@ window.Alpine = Alpine;
 
 Alpine.start();
 
-const updateServiceWorker = registerSW({
-    immediate: true,
+async function registerHelmioServiceWorker() {
+    if (! ('serviceWorker' in navigator)) {
+        return;
+    }
 
-    onRegisteredSW(
-        _serviceWorkerUrl,
-        registration,
-    ) {
-        if (! registration) {
-            return;
-        }
+    try {
+        const registration =
+            await navigator.serviceWorker.register(
+                '/sw.js',
+                {
+                    scope: '/',
+                    type: 'module',
+                },
+            );
 
         window.setInterval(
             () => {
@@ -35,37 +38,16 @@ const updateServiceWorker = registerSW({
                 },
             ),
         );
-    },
 
-    onOfflineReady() {
-        window.dispatchEvent(
-            new CustomEvent(
-                'helmio:pwa-offline-ready',
-            ),
-        );
-    },
-
-    onNeedRefresh() {
-        window.dispatchEvent(
-            new CustomEvent(
-                'helmio:pwa-update-available',
-                {
-                    detail: {
-                        updateServiceWorker,
-                    },
-                },
-            ),
-        );
-    },
-
-    onRegisterError(error) {
+        window.HelmioPwa = {
+            registration,
+        };
+    } catch (error) {
         console.error(
             'Helmio service worker registration failed:',
             error,
         );
-    },
-});
+    }
+}
 
-window.HelmioPwa = {
-    updateServiceWorker,
-};
+registerHelmioServiceWorker();
