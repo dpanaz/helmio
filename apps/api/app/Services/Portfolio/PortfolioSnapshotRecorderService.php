@@ -20,195 +20,265 @@ class PortfolioSnapshotRecorderService
                 $connection,
                 $syncRun,
             ): PortfolioStateSnapshot {
-                $accounts = InvestmentAccount::query()
-                    ->where(
-                        'user_id',
-                        $connection->user_id,
-                    )
-                    ->with([
-                        'holdings.security',
-                    ])
-                    ->orderBy('id')
-                    ->get();
+                $asOfDate =
+                    now()->toDateString();
 
-                $portfolioValue = (float) $accounts
-                    ->sum('current_value');
+                /*
+                 * A portfolio state snapshot should represent
+                 * the current synchronized holdings only.
+                 *
+                 * Historical holding rows remain stored in the
+                 * holdings table, but they should not be copied
+                 * into today's portfolio state snapshot.
+                 */
+                $accounts =
+                    InvestmentAccount::query()
+                        ->where(
+                            'user_id',
+                            $connection->user_id,
+                        )
+                        ->with([
+                            'institution',
 
-                $cashValue = (float) $accounts
-                    ->sum('cash_value');
+                            'holdings' =>
+                                function ($query) use (
+                                    $asOfDate
+                                ) {
+                                    $query->whereDate(
+                                        'as_of_date',
+                                        $asOfDate,
+                                    );
+                                },
 
-                $holdings = $accounts
-                    ->flatMap(
-                        fn (
-                            InvestmentAccount $account,
-                        ): Collection => $account
-                            ->holdings
-                            ->map(
-                                fn ($holding): array => [
-                                    'account' => $account,
-                                    'holding' => $holding,
-                                ],
-                            ),
-                    )
-                    ->values();
+                            'holdings.security',
+                        ])
+                        ->orderBy('id')
+                        ->get();
 
-                $snapshot = PortfolioStateSnapshot::query()
-                    ->updateOrCreate(
-                        [
-                            'brokerage_sync_run_id' =>
-                                $syncRun->id,
-                        ],
-                        [
-                            'user_id' =>
-                                $connection->user_id,
+                $portfolioValue =
+                    (float) $accounts
+                        ->sum(
+                            'current_value',
+                        );
 
-                            'brokerage_connection_id' =>
-                                $connection->id,
+                $cashValue =
+                    (float) $accounts
+                        ->sum(
+                            'cash_value',
+                        );
 
-                            'source' =>
-                                'brokerage_sync',
+                $holdings =
+                    $accounts
+                        ->flatMap(
+                            fn (
+                                InvestmentAccount $account,
+                            ): Collection =>
+                                $account
+                                    ->holdings
+                                    ->map(
+                                        fn ($holding): array => [
+                                            'account' =>
+                                                $account,
 
-                            'captured_at' =>
-                                $syncRun->finished_at
-                                ?? now(),
+                                            'holding' =>
+                                                $holding,
+                                        ],
+                                    ),
+                        )
+                        ->values();
 
-                            'portfolio_value' =>
-                                $portfolioValue,
-
-                            'cash_value' =>
-                                $cashValue,
-
-                            'invested_value' =>
-                                max(
-                                    0,
-                                    $portfolioValue
-                                        - $cashValue,
-                                ),
-
-                            'account_count' =>
-                                $accounts->count(),
-
-                            'holding_count' =>
-                                $holdings->count(),
-
-                            'metadata' => [
-                                'provider' =>
-                                    $connection->provider,
-
-                                'connection_status' =>
-                                    $connection->status,
+                $snapshot =
+                    PortfolioStateSnapshot::query()
+                        ->updateOrCreate(
+                            [
+                                'brokerage_sync_run_id' =>
+                                    $syncRun->id,
+                            ],
+                            [
+                                'user_id' =>
+                                    $connection->user_id,
 
                                 'brokerage_connection_id' =>
                                     $connection->id,
 
-                                'brokerage_sync_run_id' =>
-                                    $syncRun->id,
+                                'source' =>
+                                    'brokerage_sync',
+
+                                'captured_at' =>
+                                    $syncRun->finished_at
+                                    ?? now(),
+
+                                'portfolio_value' =>
+                                    $portfolioValue,
+
+                                'cash_value' =>
+                                    $cashValue,
+
+                                'invested_value' =>
+                                    max(
+                                        0,
+                                        $portfolioValue
+                                        - $cashValue,
+                                    ),
+
+                                'account_count' =>
+                                    $accounts->count(),
+
+                                'holding_count' =>
+                                    $holdings->count(),
+
+                                'metadata' => [
+                                    'provider' =>
+                                        $connection->provider,
+
+                                    'connection_status' =>
+                                        $connection->status,
+
+                                    'brokerage_connection_id' =>
+                                        $connection->id,
+
+                                    'brokerage_sync_run_id' =>
+                                        $syncRun->id,
+
+                                    'as_of_date' =>
+                                        $asOfDate,
+                                ],
                             ],
-                        ],
-                    );
+                        );
 
                 /*
-                 * Rebuild the holding-state rows whenever the same sync
-                 * run is processed again.
+                 * Rebuild the holding-state rows whenever
+                 * the same sync run is processed again.
                  */
-                $snapshot->holdings()->delete();
+                $snapshot
+                    ->holdings()
+                    ->delete();
 
                 foreach ($holdings as $item) {
                     /** @var InvestmentAccount $account */
-                    $account = $item['account'];
+                    $account =
+                        $item['account'];
 
-                    $holding = $item['holding'];
-                    $security = $holding->security;
+                    $holding =
+                        $item['holding'];
 
-                    $marketValue = (float) (
-                        $holding->market_value ?? 0
-                    );
+                    $security =
+                        $holding->security;
 
-                    $weight = $portfolioValue > 0
-                        ? $marketValue / $portfolioValue
-                        : null;
+                    $marketValue =
+                        (float) (
+                            $holding->market_value
+                            ?? 0
+                        );
+
+                    $weight =
+                        $portfolioValue > 0
+                            ? $marketValue
+                                / $portfolioValue
+                            : null;
 
                     /*
-                     * Provider position IDs are preferred because they
-                     * remain stable across syncs. Manual holdings fall
-                     * back to the holding row's primary key.
+                     * Provider position IDs are preferred
+                     * because they remain stable across
+                     * synchronization runs.
+                     *
+                     * Manual holdings fall back to the
+                     * holding row's primary key.
                      */
-                    $holdingKey = $this->holdingKey(
-                        accountId: $account->id,
-                        holdingId: $holding->id,
-                        providerPositionId:
-                            $holding->provider_position_id,
-                    );
+                    $holdingKey =
+                        $this->holdingKey(
+                            accountId:
+                                $account->id,
 
-                    $snapshot->holdings()->create([
-                        'investment_account_id' =>
-                            $account->id,
-
-                        'security_id' =>
-                            $security?->id,
-
-                        'holding_key' =>
-                            $holdingKey,
-
-                        'symbol' =>
-                            $security?->symbol,
-
-                        'name' =>
-                            $security?->name
-                            ?? 'Unknown security',
-
-                        'security_type' =>
-                            $security?->security_type,
-
-                        'asset_class' =>
-                            $security?->asset_class,
-
-                        'sector' =>
-                            $security?->sector,
-
-                        'quantity' =>
-                            (float) $holding->quantity,
-
-                        'price' =>
-                            $holding->price !== null
-                                ? (float) $holding->price
-                                : null,
-
-                        'market_value' =>
-                            $marketValue,
-
-                        'cost_basis' =>
-                            $holding->cost_basis !== null
-                                ? (float) $holding->cost_basis
-                                : null,
-
-                        'portfolio_weight' =>
-                            $weight,
-
-                        'metadata' => [
-                            'holding_id' =>
+                            holdingId:
                                 $holding->id,
 
-                            'provider_position_id' =>
+                            providerPositionId:
                                 $holding
                                     ->provider_position_id,
+                        );
 
-                            'as_of_date' =>
-                                $holding->as_of_date
-                                    ?->toDateString(),
+                    $snapshot
+                        ->holdings()
+                        ->create([
+                            'investment_account_id' =>
+                                $account->id,
 
-                            'account_name' =>
-                                $account->name,
+                            'security_id' =>
+                                $security?->id,
 
-                            'institution_name' =>
-                                $account
-                                    ->institution
-                                    ?->name,
-                        ],
-                    ]);
+                            'holding_key' =>
+                                $holdingKey,
+
+                            'symbol' =>
+                                $security?->symbol,
+
+                            'name' =>
+                                $security?->name
+                                ?? 'Unknown security',
+
+                            'security_type' =>
+                                $security
+                                    ?->security_type,
+
+                            'asset_class' =>
+                                $security
+                                    ?->asset_class,
+
+                            'sector' =>
+                                $security
+                                    ?->sector,
+
+                            'quantity' =>
+                                (float)
+                                    $holding->quantity,
+
+                            'price' =>
+                                $holding->price !== null
+                                    ? (float)
+                                        $holding->price
+                                    : null,
+
+                            'market_value' =>
+                                $marketValue,
+
+                            'cost_basis' =>
+                                $holding->cost_basis !== null
+                                    ? (float)
+                                        $holding->cost_basis
+                                    : null,
+
+                            'portfolio_weight' =>
+                                $weight,
+
+                            'metadata' => [
+                                'holding_id' =>
+                                    $holding->id,
+
+                                'provider_position_id' =>
+                                    $holding
+                                        ->provider_position_id,
+
+                                'as_of_date' =>
+                                    $holding
+                                        ->as_of_date
+                                        ?->toDateString(),
+
+                                'account_name' =>
+                                    $account->name,
+
+                                'institution_name' =>
+                                    $account
+                                        ->institution
+                                        ?->name,
+                            ],
+                        ]);
                 }
 
-                return $snapshot->load('holdings');
+                return $snapshot
+                    ->load(
+                        'holdings',
+                    );
             },
         );
     }
@@ -218,10 +288,17 @@ class PortfolioSnapshotRecorderService
         int $holdingId,
         ?string $providerPositionId,
     ): string {
-        $identity = filled($providerPositionId)
-            ? 'provider-'.$providerPositionId
-            : 'holding-'.$holdingId;
+        $identity =
+            filled(
+                $providerPositionId,
+            )
+                ? 'provider-'
+                    . $providerPositionId
+                : 'holding-'
+                    . $holdingId;
 
-        return $accountId.':'.$identity;
+        return $accountId
+            . ':'
+            . $identity;
     }
 }
