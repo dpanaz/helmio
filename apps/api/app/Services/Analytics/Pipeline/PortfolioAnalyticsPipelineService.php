@@ -2,12 +2,12 @@
 
 namespace App\Services\Analytics\Pipeline;
 
-use App\Models\Benchmark;
 use App\Models\HelmScoreSnapshot;
 use App\Models\InvestmentAccount;
 use App\Models\InvestmentTransaction;
 use App\Models\PortfolioAnalysisRun;
 use App\Models\User;
+use App\Services\Analytics\HelmScoreNotificationService;
 use App\Services\Analytics\HelmScoreService;
 use App\Services\Analytics\Performance\PortfolioValuationGenerator;
 use App\Services\MarketData\UserHistoricalPriceBackfillService;
@@ -20,6 +20,7 @@ class PortfolioAnalyticsPipelineService
         private readonly UserHistoricalPriceBackfillService $priceBackfill,
         private readonly PortfolioValuationGenerator $valuationGenerator,
         private readonly HelmScoreService $helmScoreService,
+        private readonly HelmScoreNotificationService $notificationService,
     ) {
     }
 
@@ -179,93 +180,140 @@ class PortfolioAnalyticsPipelineService
                 );
 
         /*
+         * Find the most recent earlier Helm Score before we write
+         * today's snapshot. This lets the notification service
+         * compare the new score with the previous analysis.
+         */
+        $previousSnapshot =
+            HelmScoreSnapshot::query()
+                ->where(
+                    'user_id',
+                    $user->id,
+                )
+                ->where(
+                    'calculated_for_date',
+                    '<',
+                    $score[
+                        'calculated_for_date'
+                    ],
+                )
+                ->orderByDesc(
+                    'calculated_for_date',
+                )
+                ->orderByDesc('id')
+                ->first();
+
+        /*
          * STEP 4
          * Persist today's Helm Score snapshot.
          */
-        HelmScoreSnapshot::query()
-            ->updateOrCreate(
-                [
-                    'user_id' =>
-                        $user->id,
+        $snapshot =
+            HelmScoreSnapshot::query()
+                ->updateOrCreate(
+                    [
+                        'user_id' =>
+                            $user->id,
 
-                    'calculated_for_date' =>
-                        $score[
-                            'calculated_for_date'
-                        ],
+                        'calculated_for_date' =>
+                            $score[
+                                'calculated_for_date'
+                            ],
 
-                    'formula_version' =>
-                        $score[
-                            'formula_version'
-                        ],
-                ],
-                [
-                    'overall_score' =>
-                        $score[
-                            'overall_score'
-                        ],
+                        'formula_version' =>
+                            $score[
+                                'formula_version'
+                            ],
+                    ],
+                    [
+                        'overall_score' =>
+                            $score[
+                                'overall_score'
+                            ],
 
-                    'cost_score' =>
-                        $score[
-                            'categories'
-                        ][
-                            'cost'
-                        ][
-                            'score'
-                        ],
+                        'cost_score' =>
+                            $score[
+                                'categories'
+                            ][
+                                'cost'
+                            ][
+                                'score'
+                            ],
 
-                    'diversification_score' =>
-                        $score[
-                            'categories'
-                        ][
-                            'diversification'
-                        ][
-                            'score'
-                        ],
+                        'diversification_score' =>
+                            $score[
+                                'categories'
+                            ][
+                                'diversification'
+                            ][
+                                'score'
+                            ],
 
-                    'performance_score' =>
-                        $score[
-                            'categories'
-                        ][
-                            'performance'
-                        ][
-                            'score'
-                        ],
+                        'performance_score' =>
+                            $score[
+                                'categories'
+                            ][
+                                'performance'
+                            ][
+                                'score'
+                            ],
 
-                    'risk_score' =>
-                        $score[
-                            'categories'
-                        ][
-                            'risk'
-                        ][
-                            'score'
-                        ],
+                        'risk_score' =>
+                            $score[
+                                'categories'
+                            ][
+                                'risk'
+                            ][
+                                'score'
+                            ],
 
-                    'trading_score' =>
-                        $score[
-                            'categories'
-                        ][
-                            'trading'
-                        ][
-                            'score'
-                        ],
+                        'trading_score' =>
+                            $score[
+                                'categories'
+                            ][
+                                'trading'
+                            ][
+                                'score'
+                            ],
 
-                    'tax_score' =>
-                        $score[
-                            'categories'
-                        ][
-                            'tax'
-                        ][
-                            'score'
-                        ],
+                        'tax_score' =>
+                            $score[
+                                'categories'
+                            ][
+                                'tax'
+                            ][
+                                'score'
+                            ],
 
-                    'data_completeness' =>
-                        $score[
-                            'data_completeness'
-                        ],
+                        'data_completeness' =>
+                            $score[
+                                'data_completeness'
+                            ],
 
-                    'score_details' =>
-                        $score,
-                ],
+                        'score_details' =>
+                            $score,
+                    ],
+                );
+
+        /*
+         * STEP 5
+         * Generate Helm Score notifications.
+         *
+         * The notification service handles:
+         * - initial "needs attention" summaries
+         * - meaningful score declines
+         * - newly detected high/critical findings
+         * - duplicate prevention
+         */
+        $this->notificationService
+            ->generate(
+                user:
+                    $user,
+
+                score:
+                    $score,
+
+                previousSnapshot:
+                    $previousSnapshot,
             );
 
         return [
@@ -297,6 +345,9 @@ class PortfolioAnalyticsPipelineService
                 $score[
                     'data_completeness'
                 ],
+
+            'helm_score_snapshot_id' =>
+                $snapshot->id,
         ];
     }
 }
