@@ -101,7 +101,7 @@ class PortfolioValuationGenerator
         InvestmentAccount $account,
         CarbonInterface $valuationDate
     ): PortfolioValuation {
-        $account->loadMissing('holdings');
+       $account->loadMissing('holdings.security');
 
         $marketValue = $account->holdings->sum(
             fn ($holding): float =>
@@ -119,7 +119,22 @@ class PortfolioValuationGenerator
                 date: $valuationDate,
             );
 
-        $historicalPriceCount = $account->holdings
+        $priceableHoldings = $account->holdings
+    ->filter(function ($holding): bool {
+        if ($holding->security === null) {
+            return false;
+        }
+
+        return ! in_array(
+            $holding->security->security_type,
+            [
+                'cash',
+            ],
+            true,
+        );
+    });
+
+        $historicalPriceCount = $priceableHoldings
             ->filter(function ($holding) use ($valuationDate): bool {
                 $securityId = $holding->getAttribute('security_id');
 
@@ -136,7 +151,7 @@ class PortfolioValuationGenerator
             ->count();
 
         $missingHistoricalPriceCount =
-            $account->holdings->count()
+            $priceableHoldings->count()
             - $historicalPriceCount;
 
         $valuation = PortfolioValuation::query()
