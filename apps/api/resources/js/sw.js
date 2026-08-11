@@ -13,8 +13,34 @@ clientsClaim();
 
 cleanupOutdatedCaches();
 
+/*
+ * Vite builds Helmio assets under /build/, while this
+ * service worker is served from /sw.js so it can control
+ * the entire application.
+ *
+ * Rewrite injected precache URLs so Workbox fetches
+ * /build/assets/... instead of /assets/....
+ */
+const precacheManifest =
+    self.__WB_MANIFEST.map(
+        entry => {
+            if (
+                typeof entry.url === 'string'
+                && entry.url.startsWith('assets/')
+            ) {
+                return {
+                    ...entry,
+                    url:
+                        `/build/${entry.url}`,
+                };
+            }
+
+            return entry;
+        },
+    );
+
 precacheAndRoute(
-    self.__WB_MANIFEST,
+    precacheManifest,
 );
 
 /*
@@ -95,8 +121,7 @@ self.addEventListener(
 );
 
 /*
- * Open the appropriate Helmio page when the
- * user taps a push notification.
+ * Open or focus Helmio when a notification is tapped.
  */
 self.addEventListener(
     'notificationclick',
@@ -118,9 +143,8 @@ self.addEventListener(
 );
 
 /*
- * Allow the open Helmio application to update
- * the Home Screen badge whenever unread counts
- * change.
+ * Allow the open Helmio application to synchronize
+ * the Home Screen badge with the unread count.
  */
 self.addEventListener(
     'message',
@@ -141,6 +165,8 @@ self.addEventListener(
                     ),
                 ),
             );
+
+            return;
         }
 
         if (
@@ -154,6 +180,9 @@ self.addEventListener(
     },
 );
 
+/*
+ * Update the installed Helmio app badge.
+ */
 async function updateAppBadge(
     count,
 ) {
@@ -192,6 +221,10 @@ async function updateAppBadge(
     }
 }
 
+/*
+ * Focus an existing Helmio window when possible.
+ * Otherwise open a new one.
+ */
 async function focusOrOpenWindow(
     actionUrl,
 ) {
@@ -219,11 +252,38 @@ async function focusOrOpenWindow(
         }
     }
 
+    for (
+        const client
+        of clientList
+    ) {
+        if (
+            'focus' in client
+            && client.url.startsWith(
+                self.location.origin,
+            )
+        ) {
+            await client.focus();
+
+            if (
+                'navigate'
+                in client
+            ) {
+                return client.navigate(
+                    url,
+                );
+            }
+
+            return client;
+        }
+    }
+
     if (
         self.clients.openWindow
     ) {
         return self.clients
-            .openWindow(url);
+            .openWindow(
+                url,
+            );
     }
 
     return null;
