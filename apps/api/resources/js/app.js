@@ -7,6 +7,9 @@ window.Alpine = Alpine;
 
 Alpine.start();
 
+let lastNotificationState = null;
+let notificationPollTimer = null;
+
 /*
  * Register Helmio's root-scoped service worker.
  */
@@ -49,34 +52,24 @@ async function registerHelmioServiceWorker() {
             60 * 60 * 1000,
         );
 
-        window.dispatchEvent(
-            new CustomEvent(
-                'helmio:service-worker-ready',
-                {
-                    detail: {
-                        registration,
-                    },
-                },
-            ),
-        );
-
         window.HelmioPwa = {
             registration,
 
             async update() {
-                return registration
-                    .update();
+                return registration.update();
             },
 
-            async syncBadge() {
-                return syncHelmioBadge();
+            async syncNotifications() {
+                return syncNotificationState();
             },
         };
 
-        /*
-         * Synchronize the badge as soon as Helmio loads.
-         */
-        await syncHelmioBadge();
+        await syncNotificationState({
+            initialize:
+                true,
+        });
+
+        startNotificationPolling();
 
         console.info(
             'Helmio service worker registered:',
@@ -91,10 +84,135 @@ async function registerHelmioServiceWorker() {
 }
 
 /*
- * Ask Laravel for the authoritative unread count,
- * then update the installed Helmio app badge.
+ * Retrieve the authoritative notification state
+ * from Laravel.
  */
-async function syncHelmioBadge() {
+async function fetchNotificationState() {
+    const response =
+        await fetch(
+            '/notifications/state',
+            {
+                method:
+                    'GET',
+
+                credentials:
+                    'same-origin',
+
+                headers: {
+                    Accept:
+                        'application/json',
+                },
+
+                cache:
+                    'no-store',
+            },
+        );
+
+    if (! response.ok) {
+        return null;
+    }
+
+    return response.json();
+}
+
+/*
+ * Keep badge and notification pages synchronized.
+ */
+async function syncNotificationState(
+    {
+        initialize = false,
+    } = {},
+) {
+    try {
+        const state =
+            await fetchNotificationState();
+
+        if (! state) {
+            return;
+        }
+
+        await updateAppBadge(
+            Number(
+                state.unread
+                ?? 0,
+            ),
+        );
+
+        if (
+            initialize
+            || lastNotificationState === null
+        ) {
+            lastNotificationState =
+                state;
+
+            return;
+        }
+
+        const changed =
+            Number(state.total)
+                !== Number(
+                    lastNotificationState.total
+                )
+            || Number(state.unread)
+                !== Number(
+                    lastNotificationState.unread
+                )
+            || String(
+                state.latest_id
+                ?? ''
+            )
+                !== String(
+                    lastNotificationState.latest_id
+                    ?? ''
+                );
+
+        lastNotificationState =
+            state;
+
+        if (! changed) {
+            return;
+        }
+
+        /*
+         * If the user is currently looking at the
+         * notification center, reload it immediately.
+         */
+        if (
+            window.location.pathname
+            === '/notifications'
+        ) {
+            window.location.reload();
+
+            return;
+        }
+
+        /*
+         * Other Helmio pages can refresh lightweight UI
+         * elements later without forcing a full reload.
+         */
+        window.dispatchEvent(
+            new CustomEvent(
+                'helmio:notifications-changed',
+                {
+                    detail:
+                        state,
+                },
+            ),
+        );
+    } catch (error) {
+        console.error(
+            'Unable to synchronize Helmio notifications:',
+            error,
+        );
+    }
+}
+
+/*
+ * Synchronize the installed app icon badge.
+ */
+async function updateAppBadge(
+    unreadCount,
+) {
     if (
         ! (
             'setAppBadge'
@@ -105,43 +223,6 @@ async function syncHelmioBadge() {
     }
 
     try {
-        const response =
-            await fetch(
-                '/notifications/unread-count',
-                {
-                    method:
-                        'GET',
-
-                    credentials:
-                        'same-origin',
-
-                    headers: {
-                        Accept:
-                            'application/json',
-                    },
-
-                    cache:
-                        'no-store',
-                },
-            );
-
-        /*
-         * The user may be logged out or the endpoint
-         * may be unavailable during onboarding.
-         */
-        if (! response.ok) {
-            return;
-        }
-
-        const data =
-            await response.json();
-
-        const unreadCount =
-            Number(
-                data.unread_count
-                ?? 0,
-            );
-
         if (unreadCount > 0) {
             await navigator
                 .setAppBadge(
@@ -172,10 +253,33 @@ async function syncHelmioBadge() {
 }
 
 /*
- * A real new Helmio notification arrived.
- *
- * Refresh the open page so dashboard data, the
- * notification bell, and unread count are current.
+ * Check every 10 seconds while Helmio is visible.
+ */
+function startNotificationPolling() {
+    if (notificationPollTimer) {
+        window.clearInterval(
+            notificationPollTimer,
+        );
+    }
+
+    notificationPollTimer =
+        window.setInterval(
+            () => {
+                if (
+                    document.visibilityState
+                    !== 'visible'
+                ) {
+                    return;
+                }
+
+                syncNotificationState();
+            },
+            10 * 1000,
+        );
+}
+
+/*
+ * A real Web Push arrived.
  */
 if (
     'serviceWorker'
@@ -193,22 +297,14 @@ if (
                     return;
                 }
 
-                /*
-                 * A silent/badge-sync push is no longer
-                 * used. Real notification pushes can
-                 * refresh the active Helmio page.
-                 */
-                window.location.reload();
+                syncNotificationState();
             },
         );
 }
 
 /*
- * When a user returns to Helmio on their phone,
- * synchronize the badge with the database.
- *
- * This catches notifications that were removed,
- * read, or cleared from another device/browser.
+ * Immediately resync when the iPhone/PWA
+ * returns to the foreground.
  */
 document.addEventListener(
     'visibilitychange',
@@ -217,29 +313,22 @@ document.addEventListener(
             document.visibilityState
             === 'visible'
         ) {
-            syncHelmioBadge();
+            syncNotificationState();
         }
     },
 );
 
-/*
- * Desktop/browser window becomes active again.
- */
 window.addEventListener(
     'focus',
     () => {
-        syncHelmioBadge();
+        syncNotificationState();
     },
 );
 
-/*
- * Handles returning from Safari's back-forward cache
- * and reopening the installed PWA.
- */
 window.addEventListener(
     'pageshow',
     () => {
-        syncHelmioBadge();
+        syncNotificationState();
     },
 );
 

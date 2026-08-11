@@ -336,6 +336,14 @@ Route::middleware([
     */
 
     Route::get(
+        '/notifications/state',
+        [
+            NotificationCenterController::class,
+            'state',
+        ],
+    )->name('notifications.state');
+
+    Route::get(
         '/notifications/unread-count',
         [
             NotificationCenterController::class,

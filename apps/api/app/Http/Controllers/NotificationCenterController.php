@@ -36,7 +36,43 @@ class NotificationCenterController extends Controller
     }
 
     /**
-     * Return the current unread count for badge synchronization.
+     * Current notification state used by the PWA
+     * to keep multiple devices/windows synchronized.
+     */
+    public function state(
+        Request $request,
+    ): JsonResponse {
+        $user =
+            $request->user();
+
+        return response()->json([
+            'total' =>
+                $user
+                    ->notifications()
+                    ->count(),
+
+            'unread' =>
+                $user
+                    ->unreadNotifications()
+                    ->count(),
+
+            /*
+             * Helps detect changes even when total/unread counts
+             * happen to remain identical.
+             */
+            'latest_id' =>
+                $user
+                    ->notifications()
+                    ->latest()
+                    ->value('id'),
+
+            'checked_at' =>
+                now()->timestamp,
+        ]);
+    }
+
+    /**
+     * Current unread count for badge synchronization.
      */
     public function unreadCount(
         Request $request,
