@@ -13,9 +13,15 @@ export default defineConfig({
         }),
 
         VitePWA({
+            strategies: 'injectManifest',
+
+            srcDir: 'resources/js',
+
+            filename: 'sw.js',
+
             registerType: 'autoUpdate',
 
-            injectRegister: 'auto',
+            injectRegister: false,
 
             includeAssets: [
                 'favicon.ico',
@@ -67,32 +73,16 @@ export default defineConfig({
                 ],
             },
 
-            workbox: {
-                cleanupOutdatedCaches: true,
-
-                clientsClaim: true,
-
-                skipWaiting: true,
-
+            injectManifest: {
                 globPatterns: [
                     '**/*.{js,css,html,ico,png,svg,woff2}',
-                ],
-
-                runtimeCaching: [
-                    {
-                        urlPattern: /^https:\/\/fonts\.gstatic\.com\/.*/i,
-
-                        handler: 'CacheFirst',
-
-                        options: {
-                            cacheName: 'google-fonts',
-                        },
-                    },
                 ],
             },
 
             devOptions: {
                 enabled: true,
+
+                type: 'module',
             },
         }),
     ],

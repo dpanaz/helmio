@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Cashier\Billable;
+use App\Models\PushSubscription;
 
 #[Fillable([
     'name',
@@ -107,6 +108,12 @@ class User extends Authenticatable
     {
         return $this->hasMany(
             BrokerageProviderUser::class,
+        );
+    }
+    public function pushSubscriptions(): HasMany
+    {
+        return $this->hasMany(
+            PushSubscription::class,
         );
     }
 }

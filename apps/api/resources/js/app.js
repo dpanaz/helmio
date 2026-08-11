@@ -1,6 +1,7 @@
 import Alpine from 'alpinejs';
 import { registerSW } from 'virtual:pwa-register';
 import './pwa-install';
+import './push-notifications';
 
 window.Alpine = Alpine;
 
@@ -22,6 +23,17 @@ const updateServiceWorker = registerSW({
                 registration.update();
             },
             60 * 60 * 1000,
+        );
+
+        window.dispatchEvent(
+            new CustomEvent(
+                'helmio:service-worker-ready',
+                {
+                    detail: {
+                        registration,
+                    },
+                },
+            ),
         );
     },
 

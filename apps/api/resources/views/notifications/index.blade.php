@@ -92,6 +92,110 @@
                 </div>
             @endif
 
+            {{-- Push notification controls --}}
+            <section
+                id="helmio-push-alerts"
+                class="rounded-3xl border border-slate-800 bg-slate-900 p-6 shadow-xl sm:p-8"
+            >
+                <div
+                    class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between"
+                >
+                    <div class="max-w-3xl">
+                        <div class="flex items-center gap-3">
+                            <div
+                                class="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-300"
+                            >
+                                <svg
+                                    class="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="1.8"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022 23.848 23.848 0 0 0 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0"
+                                    />
+                                </svg>
+                            </div>
+
+                            <div>
+                                <p
+                                    class="text-xs font-semibold uppercase tracking-[0.14em] text-blue-400"
+                                >
+                                    Device alerts
+                                </p>
+
+                                <h3
+                                    class="mt-1 text-lg font-semibold text-white"
+                                >
+                                    Helmio push notifications
+                                </h3>
+                            </div>
+                        </div>
+
+                        <p
+                            class="mt-4 text-sm leading-7 text-slate-400"
+                        >
+                            Enable alerts on this device so Helmio can notify you
+                            about important portfolio changes, score movements,
+                            high-priority findings, and monitoring events.
+                        </p>
+
+                        <p
+                            id="helmio-alert-status"
+                            class="mt-3 text-sm text-slate-500"
+                            aria-live="polite"
+                        >
+                            Checking notification status...
+                        </p>
+                    </div>
+
+                    <div
+                        class="flex shrink-0 flex-col gap-2 sm:flex-row lg:flex-col xl:flex-row"
+                    >
+                        <button
+                            type="button"
+                            id="enable-helmio-alerts"
+                            class="inline-flex items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            <svg
+                                class="h-4 w-4"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="2"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M12 18.75a6 6 0 0 0 6-6V9A6 6 0 0 0 6 9v3.75a6 6 0 0 0 6 6Zm0 0v2.25m-3 0h6"
+                                />
+                            </svg>
+
+                            Enable Helmio Alerts
+                        </button>
+
+                        <button
+                            type="button"
+                            id="disable-helmio-alerts"
+                            class="hidden inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 text-sm font-semibold text-slate-400 transition hover:border-red-500/40 hover:bg-red-500/[0.05] hover:text-red-300 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                            Disable alerts
+                        </button>
+                    </div>
+                </div>
+
+                <div
+                    id="helmio-ios-install-note"
+                    class="mt-5 hidden rounded-2xl border border-amber-500/20 bg-amber-500/[0.06] px-4 py-3 text-sm leading-6 text-amber-200"
+                >
+                    On iPhone or iPad, add Helmio to your Home Screen first,
+                    then open the Home Screen app and enable alerts from there.
+                </div>
+            </section>
+
             {{-- Summary --}}
             <section class="grid gap-4 sm:grid-cols-3">
 
@@ -644,4 +748,211 @@
 
         </div>
     </div>
+
+    <script>
+        document.addEventListener(
+            'DOMContentLoaded',
+            async () => {
+                const enableButton =
+                    document.getElementById(
+                        'enable-helmio-alerts'
+                    );
+
+                const disableButton =
+                    document.getElementById(
+                        'disable-helmio-alerts'
+                    );
+
+                const status =
+                    document.getElementById(
+                        'helmio-alert-status'
+                    );
+
+                const iosInstallNote =
+                    document.getElementById(
+                        'helmio-ios-install-note'
+                    );
+
+                if (
+                    ! enableButton
+                    || ! disableButton
+                    || ! status
+                ) {
+                    return;
+                }
+
+                const isIos =
+                    /iphone|ipad|ipod/i.test(
+                        window.navigator.userAgent
+                    );
+
+                const isStandalone =
+                    window.matchMedia(
+                        '(display-mode: standalone)'
+                    ).matches
+                    || window.navigator.standalone === true;
+
+                if (
+                    isIos
+                    && ! isStandalone
+                    && iosInstallNote
+                ) {
+                    iosInstallNote.classList.remove(
+                        'hidden'
+                    );
+                }
+
+                if (! window.HelmioPush) {
+                    status.textContent =
+                        'Push notifications are not available yet on this device.';
+
+                    enableButton.disabled = true;
+
+                    return;
+                }
+
+                const refreshState =
+                    async () => {
+                        try {
+                            const subscribed =
+                                await window
+                                    .HelmioPush
+                                    .isSubscribed();
+
+                            if (subscribed) {
+                                enableButton.textContent =
+                                    'Helmio Alerts Enabled';
+
+                                enableButton.disabled =
+                                    true;
+
+                                disableButton.classList.remove(
+                                    'hidden'
+                                );
+
+                                status.textContent =
+                                    'This device is subscribed to Helmio alerts.';
+
+                                return;
+                            }
+
+                            enableButton.textContent =
+                                'Enable Helmio Alerts';
+
+                            enableButton.disabled =
+                                false;
+
+                            disableButton.classList.add(
+                                'hidden'
+                            );
+
+                            if (
+                                'Notification' in window
+                                && Notification.permission
+                                    === 'denied'
+                            ) {
+                                status.textContent =
+                                    'Notifications are blocked for Helmio. Enable them in your browser or device settings.';
+
+                                return;
+                            }
+
+                            status.textContent =
+                                'Alerts are not enabled on this device.';
+                        } catch (error) {
+                            console.error(
+                                'Unable to read Helmio push status:',
+                                error
+                            );
+
+                            status.textContent =
+                                'Unable to check alert status right now.';
+                        }
+                    };
+
+                await refreshState();
+
+                enableButton.addEventListener(
+                    'click',
+                    async () => {
+                        enableButton.disabled =
+                            true;
+
+                        disableButton.disabled =
+                            true;
+
+                        status.textContent =
+                            'Enabling Helmio alerts...';
+
+                        try {
+                            await window
+                                .HelmioPush
+                                .subscribe();
+
+                            status.textContent =
+                                'This device will now receive Helmio alerts.';
+
+                            await refreshState();
+                        } catch (error) {
+                            console.error(
+                                'Unable to enable Helmio alerts:',
+                                error
+                            );
+
+                            enableButton.disabled =
+                                false;
+
+                            disableButton.disabled =
+                                false;
+
+                            status.textContent =
+                                error?.message
+                                ?? 'Unable to enable alerts.';
+                        }
+                    },
+                );
+
+                disableButton.addEventListener(
+                    'click',
+                    async () => {
+                        enableButton.disabled =
+                            true;
+
+                        disableButton.disabled =
+                            true;
+
+                        status.textContent =
+                            'Disabling Helmio alerts...';
+
+                        try {
+                            await window
+                                .HelmioPush
+                                .unsubscribe();
+
+                            status.textContent =
+                                'Alerts are disabled on this device.';
+
+                            await refreshState();
+                        } catch (error) {
+                            console.error(
+                                'Unable to disable Helmio alerts:',
+                                error
+                            );
+
+                            enableButton.disabled =
+                                false;
+
+                            disableButton.disabled =
+                                false;
+
+                            status.textContent =
+                                error?.message
+                                ?? 'Unable to disable alerts.';
+                        }
+                    },
+                );
+            },
+        );
+    </script>
+
 </x-app-layout>

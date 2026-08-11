@@ -27,6 +27,7 @@ use App\Http\Controllers\PerformanceAnalyticsController;
 use App\Http\Controllers\PerformanceDataController;
 use App\Http\Controllers\PortfolioTimelineController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PushSubscriptionController;
 use App\Http\Controllers\RiskAnalyticsController;
 use App\Http\Controllers\TaxEfficiencyAnalyticsController;
 use App\Http\Controllers\TradingDisciplineAnalyticsController;
@@ -294,6 +295,29 @@ Route::middleware([
             'destroy',
         ],
     )->name('profile.destroy');
+
+
+    /*
+    |--------------------------------------------------------------------------
+    | Push notifications
+    |--------------------------------------------------------------------------
+    */
+
+    Route::post(
+        '/push-subscriptions',
+        [
+            PushSubscriptionController::class,
+            'store',
+        ],
+    )->name('push-subscriptions.store');
+
+    Route::delete(
+        '/push-subscriptions',
+        [
+            PushSubscriptionController::class,
+            'destroy',
+        ],
+    )->name('push-subscriptions.destroy');
 
     /*
     |--------------------------------------------------------------------------
