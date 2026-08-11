@@ -34,16 +34,25 @@ class PushSubscriptionController extends Controller
             ],
         ]);
 
+        $endpointHash =
+            hash(
+                'sha256',
+                $validated['endpoint'],
+            );
+
         $subscription =
             PushSubscription::updateOrCreate(
                 [
                     'user_id' =>
                         $request->user()->id,
 
-                    'endpoint' =>
-                        $validated['endpoint'],
+                    'endpoint_hash' =>
+                        $endpointHash,
                 ],
                 [
+                    'endpoint' =>
+                        $validated['endpoint'],
+
                     'public_key' =>
                         $validated['keys']['p256dh'],
 
@@ -68,6 +77,7 @@ class PushSubscriptionController extends Controller
                 $subscription->id,
         ]);
     }
+
     public function publicKey(): JsonResponse
     {
         return response()->json([
@@ -88,14 +98,20 @@ class PushSubscriptionController extends Controller
             ],
         ]);
 
+        $endpointHash =
+            hash(
+                'sha256',
+                $validated['endpoint'],
+            );
+
         PushSubscription::query()
             ->where(
                 'user_id',
                 $request->user()->id,
             )
             ->where(
-                'endpoint',
-                $validated['endpoint'],
+                'endpoint_hash',
+                $endpointHash,
             )
             ->delete();
 

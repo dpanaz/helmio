@@ -17,6 +17,11 @@ return new class extends Migration
 
             $table->text('endpoint');
 
+            $table->char(
+                'endpoint_hash',
+                64,
+            );
+
             $table->text('public_key');
 
             $table->text('auth_token');
@@ -26,21 +31,22 @@ return new class extends Migration
                 50,
             )->default('aes128gcm');
 
-            $table->text('user_agent')->nullable();
+            $table->text('user_agent')
+                ->nullable();
 
             $table->timestamps();
 
             $table->unique([
                 'user_id',
-                'endpoint',
+                'endpoint_hash',
             ]);
-
-            $table->index('user_id');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('push_subscriptions');
+        Schema::dropIfExists(
+            'push_subscriptions',
+        );
     }
 };
