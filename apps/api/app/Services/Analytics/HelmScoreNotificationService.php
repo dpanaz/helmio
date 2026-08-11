@@ -5,11 +5,18 @@ namespace App\Services\Analytics;
 use App\Models\HelmScoreSnapshot;
 use App\Models\User;
 use App\Notifications\HelmScoreNotification;
+use App\Services\Notifications\WebPushService;
 use Illuminate\Notifications\DatabaseNotification;
 use Illuminate\Support\Collection;
+use Throwable;
 
 class HelmScoreNotificationService
 {
+    public function __construct(
+        private readonly WebPushService $webPushService,
+    ) {
+    }
+
     public function generate(
         User $user,
         array $score,
@@ -32,7 +39,9 @@ class HelmScoreNotificationService
             );
 
         $importantFlags =
-            $this->importantFlags($score);
+            $this->importantFlags(
+                $score,
+            );
 
         /*
          * First completed Helm Score.
@@ -342,8 +351,8 @@ class HelmScoreNotificationService
                                 return [
                                     'key' =>
                                         $categoryName
-                                        .':'
-                                        .$code,
+                                        . ':'
+                                        . $code,
 
                                     'category' =>
                                         $categoryName,
@@ -385,6 +394,10 @@ class HelmScoreNotificationService
         User $user,
         array $data,
     ): void {
+        /*
+         * Prevent duplicate Helmio events from creating
+         * duplicate database notifications or push alerts.
+         */
         $alreadyExists =
             DatabaseNotification::query()
                 ->where(
@@ -405,10 +418,72 @@ class HelmScoreNotificationService
             return;
         }
 
+        /*
+         * Always create the in-app/database notification first.
+         */
         $user->notify(
             new HelmScoreNotification(
                 $data,
             ),
         );
+
+        /*
+         * Calculate the badge after the database notification
+         * has been created so the push contains the current
+         * unread notification count.
+         */
+        $unreadCount =
+            $user
+                ->unreadNotifications()
+                ->count();
+
+        /*
+         * Send the same event as a Web Push notification.
+         *
+         * Push delivery is intentionally non-fatal. A temporary
+         * Web Push failure must never break Helm Score analysis
+         * or prevent the database notification from existing.
+         */
+        try {
+            $this->webPushService
+                ->sendToUser(
+                    $user,
+                    [
+                        'title' =>
+                            $data['title']
+                            ?? 'Helmio',
+
+                        'body' =>
+                            $data['message']
+                            ?? 'You have a new Helmio notification.',
+
+                        'action_url' =>
+                            $data['action_url']
+                            ?? '/notifications',
+
+                        'unread_count' =>
+                            $unreadCount,
+
+                        'event_key' =>
+                            $data['event_key'],
+
+                        'severity' =>
+                            $data['severity']
+                            ?? 'information',
+
+                        'type' =>
+                            $data['type']
+                            ?? 'helmio_notification',
+
+                        'helm_score' =>
+                            $data['helm_score']
+                            ?? null,
+                    ],
+                );
+        } catch (Throwable $exception) {
+            report(
+                $exception,
+            );
+        }
     }
 }
