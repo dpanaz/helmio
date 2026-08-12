@@ -1,4 +1,4 @@
-<nav
+<div
     x-data="{
         moreOpen: false,
         analyticsOpen: false
@@ -7,6 +7,9 @@
         moreOpen = false;
         analyticsOpen = false;
     "
+    class="w-full max-w-full"
+>
+<nav
     class="relative z-40 w-full max-w-full overflow-x-clip border-b border-slate-800 bg-slate-950"
 >
     @php
@@ -28,11 +31,34 @@
             ['route' => 'analytics.tax-efficiency', 'label' => 'Tax Efficiency'],
         ];
 
+        $desktopOversightItems = [
+            ['route' => 'analytics.helm-score', 'label' => 'Helm Score'],
+            ['route' => 'advisor-action-center.index', 'label' => 'Action Center'],
+            ['route' => 'ask-helmio.index', 'label' => 'Ask Helmio'],
+            ['route' => 'portfolio-timeline.index', 'label' => 'Portfolio Timeline'],
+            ['route' => 'monthly-reviews.index', 'label' => 'Monthly Reviews'],
+        ];
+
+        $desktopAnalysisItems = [
+            ['route' => 'analytics.costs', 'label' => 'Cost Analysis'],
+            ['route' => 'analytics.fund-expenses', 'label' => 'Fund Costs'],
+            ['route' => 'analytics.performance', 'label' => 'Performance'],
+            ['route' => 'analytics.diversification', 'label' => 'Diversification'],
+            ['route' => 'analytics.risk', 'label' => 'Risk'],
+            ['route' => 'analytics.trading-discipline', 'label' => 'Trading'],
+            ['route' => 'analytics.cash-drag', 'label' => 'Cash Drag'],
+            ['route' => 'analytics.tax-efficiency', 'label' => 'Tax Efficiency'],
+        ];
+
+        $auditActive =
+            request()->routeIs('advisor-audit.*');
+
+        $aiActive =
+            request()->routeIs('ai-insights.*');
+
         $analyticsActive =
             request()->routeIs('analytics.*')
-            || request()->routeIs('advisor-audit.*')
             || request()->routeIs('advisor-action-center.*')
-            || request()->routeIs('ai-insights.*')
             || request()->routeIs('ask-helmio.*')
             || request()->routeIs('portfolio-timeline.*')
             || request()->routeIs('monthly-reviews.*');
@@ -95,7 +121,7 @@
                     <div
                         class="flex h-20 items-center"
                     >
-                        {{-- Dashboard --}}
+                        {{-- Home --}}
                         <a
                             href="{{ route('dashboard') }}"
                             @class([
@@ -120,9 +146,7 @@
                                 />
                             </svg>
 
-                            <span>
-                                Dashboard
-                            </span>
+                            <span>Home</span>
                         </a>
 
                         {{-- Accounts / Upgrade --}}
@@ -159,9 +183,7 @@
                                     />
                                 </svg>
 
-                                <span>
-                                    Accounts
-                                </span>
+                                <span>Accounts</span>
                             @else
                                 <svg
                                     class="h-5 w-5"
@@ -177,10 +199,64 @@
                                     />
                                 </svg>
 
-                                <span>
-                                    Upgrade
-                                </span>
+                                <span>Upgrade</span>
                             @endif
+                        </a>
+
+                        {{-- Advisor Audit --}}
+                        <a
+                            href="{{ $hasPremiumAccess
+                                ? route('advisor-audit.index')
+                                : route('billing.pricing') }}"
+                            @class([
+                                $desktopBase,
+                                $desktopActive => $auditActive,
+                                $desktopInactive => ! $auditActive,
+                            ])
+                        >
+                            <svg
+                                class="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="1.9"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M12 3 5.25 5.25v5.625c0 4.065 2.73 7.83 6.75 9.375 4.02-1.545 6.75-5.31 6.75-9.375V5.25L12 3Zm-2.25 9 1.5 1.5 3-3"
+                                />
+                            </svg>
+
+                            <span>Audit</span>
+                        </a>
+
+                        {{-- AI --}}
+                        <a
+                            href="{{ $hasPremiumAccess
+                                ? route('ai-insights.index')
+                                : route('billing.pricing') }}"
+                            @class([
+                                $desktopBase,
+                                $desktopActive => $aiActive,
+                                $desktopInactive => ! $aiActive,
+                            ])
+                        >
+                            <svg
+                                class="h-5 w-5"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                                stroke-width="1.9"
+                            >
+                                <path
+                                    stroke-linecap="round"
+                                    stroke-linejoin="round"
+                                    d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.847-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 0 0-3.09 3.09L9 18.75Z"
+                                />
+                            </svg>
+
+                            <span>AI</span>
                         </a>
 
                         {{-- Analytics --}}
@@ -197,39 +273,21 @@
                                     $desktopInactive => ! $analyticsActive,
                                 ])
                             >
-                                @if ($hasPremiumAccess)
-                                    <svg
-                                        class="h-5 w-5"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        stroke-width="1.9"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M4.5 19.5v-6m5.25 6V9m5.25 10.5V5.25m5.25 14.25H3.75"
-                                        />
-                                    </svg>
-                                @else
-                                    <svg
-                                        class="h-5 w-5"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        stroke-width="1.9"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M16.5 10.5V7.5a4.5 4.5 0 0 0-9 0v3m-.75 0h10.5A1.5 1.5 0 0 1 18.75 12v7.5A1.5 1.5 0 0 1 17.25 21H6.75a1.5 1.5 0 0 1-1.5-1.5V12a1.5 1.5 0 0 1 1.5-1.5Z"
-                                        />
-                                    </svg>
-                                @endif
+                                <svg
+                                    class="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="1.9"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M4.5 19.5v-6m5.25 6V9m5.25 10.5V5.25m5.25 14.25H3.75"
+                                    />
+                                </svg>
 
-                                <span>
-                                    Analytics
-                                </span>
+                                <span>Analytics</span>
 
                                 <svg
                                     class="h-4 w-4 transition"
@@ -247,7 +305,7 @@
                                 </svg>
                             </button>
 
-                            {{-- Analytics dropdown --}}
+                            {{-- Organized desktop dropdown --}}
                             <div
                                 x-cloak
                                 x-show="analyticsOpen"
@@ -255,107 +313,154 @@
                                 x-on:click.outside="
                                     analyticsOpen = false
                                 "
-                                class="absolute right-0 top-full z-50 mt-2 w-80 overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"
+                                class="fixed right-6 top-24 z-[90] mt-0 w-[40rem] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"
                             >
                                 <div
-                                    class="border-b border-slate-800 px-4 py-3"
+                                    class="flex items-center justify-between border-b border-slate-800 px-5 py-4"
                                 >
-                                    <p
-                                        class="text-xs font-semibold uppercase tracking-widest text-slate-500"
-                                    >
-                                        Analytics & Oversight
-                                    </p>
+                                    <div>
+                                        <p
+                                            class="text-xs font-semibold uppercase tracking-widest text-slate-500"
+                                        >
+                                            Analytics & Oversight
+                                        </p>
+
+                                        <p
+                                            class="mt-1 text-xs text-slate-600"
+                                        >
+                                            Review the portfolio, then drill into the details.
+                                        </p>
+                                    </div>
+
+                                    @unless ($hasPremiumAccess)
+                                        <span
+                                            class="rounded-full bg-blue-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-blue-300 ring-1 ring-blue-500/20"
+                                        >
+                                            Premium
+                                        </span>
+                                    @endunless
                                 </div>
 
                                 <div
-                                    class="max-h-[70vh] space-y-1 overflow-y-auto p-3"
+                                    class="grid max-h-[72vh] grid-cols-2 gap-6 overflow-y-auto p-5"
                                 >
-                                    @foreach (
-                                        $analyticsItems
-                                        as $item
-                                    )
-                                        <a
-                                            href="{{ $hasPremiumAccess
-                                                ? route($item['route'])
-                                                : route('billing.pricing') }}"
-                                            x-on:click="
-                                                analyticsOpen = false
-                                            "
-                                            @class([
-                                                'flex items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold transition',
-
-                                                'bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20' =>
-                                                    request()->routeIs(
-                                                        $item['route']
-                                                    ),
-
-                                                'text-slate-300 hover:bg-slate-800 hover:text-white' =>
-                                                    ! request()->routeIs(
-                                                        $item['route']
-                                                    ),
-                                            ])
+                                    <section class="min-w-0">
+                                        <p
+                                            class="px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600"
                                         >
-                                            @if ($hasPremiumAccess)
-                                                <div
-                                                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-400"
-                                                >
-                                                    <svg
-                                                        class="h-4 w-4"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.9"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M4.5 19.5v-6m5.25 6V9m5.25 10.5V5.25m5.25 14.25H3.75"
-                                                        />
-                                                    </svg>
-                                                </div>
-                                            @else
-                                                <div
-                                                    class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-500"
-                                                >
-                                                    <svg
-                                                        class="h-4 w-4"
-                                                        fill="none"
-                                                        viewBox="0 0 24 24"
-                                                        stroke="currentColor"
-                                                        stroke-width="1.9"
-                                                    >
-                                                        <path
-                                                            stroke-linecap="round"
-                                                            stroke-linejoin="round"
-                                                            d="M16.5 10.5V7.5a4.5 4.5 0 0 0-9 0v3m-.75 0h10.5A1.5 1.5 0 0 1 18.75 12v7.5A1.5 1.5 0 0 1 17.25 21H6.75a1.5 1.5 0 0 1-1.5-1.5V12a1.5 1.5 0 0 1 1.5-1.5Z"
-                                                        />
-                                                    </svg>
-                                                </div>
-                                            @endif
+                                            Oversight
+                                        </p>
 
-                                            <span
-                                                class="min-w-0 flex-1 truncate"
-                                            >
-                                                {{ $item['label'] }}
-                                            </span>
+                                        <div class="mt-2 space-y-1">
+                                            @foreach (
+                                                $desktopOversightItems
+                                                as $item
+                                            )
+                                                <a
+                                                    href="{{ $hasPremiumAccess
+                                                        ? route($item['route'])
+                                                        : route('billing.pricing') }}"
+                                                    x-on:click="
+                                                        analyticsOpen = false
+                                                    "
+                                                    @class([
+                                                        'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition',
 
-                                            @unless ($hasPremiumAccess)
-                                                <svg
-                                                    class="h-3.5 w-3.5 shrink-0 text-slate-600"
-                                                    fill="none"
-                                                    viewBox="0 0 24 24"
-                                                    stroke="currentColor"
-                                                    stroke-width="2"
+                                                        'bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20' =>
+                                                            request()->routeIs(
+                                                                $item['route']
+                                                            ),
+
+                                                        'text-slate-300 hover:bg-slate-800 hover:text-white' =>
+                                                            ! request()->routeIs(
+                                                                $item['route']
+                                                            ),
+                                                    ])
                                                 >
-                                                    <path
-                                                        stroke-linecap="round"
-                                                        stroke-linejoin="round"
-                                                        d="M16.5 10.5V7.5a4.5 4.5 0 0 0-9 0v3"
-                                                    />
-                                                </svg>
-                                            @endunless
-                                        </a>
-                                    @endforeach
+                                                    <div
+                                                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-400"
+                                                    >
+                                                        <svg
+                                                            class="h-4 w-4"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="currentColor"
+                                                            stroke-width="1.9"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                d="M12 3 5.25 5.25v5.625c0 4.065 2.73 7.83 6.75 9.375 4.02-1.545 6.75-5.31 6.75-9.375V5.25L12 3Z"
+                                                            />
+                                                        </svg>
+                                                    </div>
+
+                                                    <span class="min-w-0 flex-1 truncate">
+                                                        {{ $item['label'] }}
+                                                    </span>
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    </section>
+
+                                    <section class="min-w-0">
+                                        <p
+                                            class="px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600"
+                                        >
+                                            Analysis
+                                        </p>
+
+                                        <div class="mt-2 space-y-1">
+                                            @foreach (
+                                                $desktopAnalysisItems
+                                                as $item
+                                            )
+                                                <a
+                                                    href="{{ $hasPremiumAccess
+                                                        ? route($item['route'])
+                                                        : route('billing.pricing') }}"
+                                                    x-on:click="
+                                                        analyticsOpen = false
+                                                    "
+                                                    @class([
+                                                        'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition',
+
+                                                        'bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20' =>
+                                                            request()->routeIs(
+                                                                $item['route']
+                                                            ),
+
+                                                        'text-slate-300 hover:bg-slate-800 hover:text-white' =>
+                                                            ! request()->routeIs(
+                                                                $item['route']
+                                                            ),
+                                                    ])
+                                                >
+                                                    <div
+                                                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-400"
+                                                    >
+                                                        <svg
+                                                            class="h-4 w-4"
+                                                            fill="none"
+                                                            viewBox="0 0 24 24"
+                                                            stroke="currentColor"
+                                                            stroke-width="1.9"
+                                                        >
+                                                            <path
+                                                                stroke-linecap="round"
+                                                                stroke-linejoin="round"
+                                                                d="M4.5 19.5v-6m5.25 6V9m5.25 10.5V5.25m5.25 14.25H3.75"
+                                                            />
+                                                        </svg>
+                                                    </div>
+
+                                                    <span class="min-w-0 flex-1 truncate">
+                                                        {{ $item['label'] }}
+                                                    </span>
+                                                </a>
+                                            @endforeach
+                                        </div>
+                                    </section>
                                 </div>
                             </div>
                         </div>
@@ -560,8 +665,11 @@
         </div>
     </div>
 
+</nav>
+
     {{-- ============================================================= --}}
     {{-- MOBILE MORE SHEET --}}
+    {{-- Kept outside the main nav so iOS fixes overlays to viewport. --}}
     {{-- ============================================================= --}}
 
     <div
@@ -624,16 +732,32 @@
                         Portfolio
                     </p>
 
-                    <div
-                        class="mt-3 grid gap-2"
-                    >
+                    <div class="mt-3 grid gap-2">
                         <a
                             href="{{ $hasPremiumAccess
                                 ? route('brokerage-connections.index')
                                 : route('billing.pricing') }}"
-                            class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-blue-500/40 hover:text-white"
+                            class="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-blue-500/40 hover:text-white"
                         >
-                            <span>
+                            <div
+                                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-300"
+                            >
+                                <svg
+                                    class="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="1.9"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M13.5 6H18a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3h-4.5M10.5 18H6a3 3 0 0 1-3-3V9a3 3 0 0 1 3-3h4.5m-3 6h9"
+                                    />
+                                </svg>
+                            </div>
+
+                            <span class="min-w-0 flex-1">
                                 {{ $hasPremiumAccess
                                     ? 'Brokerage Connections'
                                     : 'Subscribe to Connect' }}
@@ -641,7 +765,7 @@
 
                             @unless ($hasPremiumAccess)
                                 <svg
-                                    class="h-4 w-4 text-slate-500"
+                                    class="h-4 w-4 shrink-0 text-slate-500"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -658,24 +782,60 @@
 
                         <a
                             href="{{ route('investor-profile.edit') }}"
-                            class="rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-blue-500/40 hover:text-white"
+                            class="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-blue-500/40 hover:text-white"
                         >
-                            Investor Profile
+                            <div
+                                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-400"
+                            >
+                                <svg
+                                    class="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="1.9"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M15.75 6.75a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0"
+                                    />
+                                </svg>
+                            </div>
+
+                            <span>Investor Profile</span>
                         </a>
 
                         <a
                             href="{{ $hasPremiumAccess
                                 ? route('portfolio-timeline.index')
                                 : route('billing.pricing') }}"
-                            class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-blue-500/40 hover:text-white"
+                            class="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-blue-500/40 hover:text-white"
                         >
-                            <span>
+                            <div
+                                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-400"
+                            >
+                                <svg
+                                    class="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="1.9"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M12 6v6l4 2m5-2a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"
+                                    />
+                                </svg>
+                            </div>
+
+                            <span class="min-w-0 flex-1">
                                 Portfolio Timeline
                             </span>
 
                             @unless ($hasPremiumAccess)
                                 <svg
-                                    class="h-4 w-4 text-slate-500"
+                                    class="h-4 w-4 shrink-0 text-slate-500"
                                     fill="none"
                                     viewBox="0 0 24 24"
                                     stroke="currentColor"
@@ -700,9 +860,7 @@
                         Analytics
                     </p>
 
-                    <div
-                        class="mt-3 grid gap-2"
-                    >
+                    <div class="mt-3 grid gap-2">
                         @foreach (
                             $analyticsItems
                             as $item
@@ -712,7 +870,7 @@
                                     ? route($item['route'])
                                     : route('billing.pricing') }}"
                                 @class([
-                                    'flex items-center justify-between rounded-xl border px-4 py-3 text-sm font-semibold transition',
+                                    'flex items-center gap-3 rounded-xl border px-4 py-3 text-sm font-semibold transition',
 
                                     'border-blue-500/30 bg-blue-500/10 text-blue-300' =>
                                         request()->routeIs(
@@ -725,13 +883,43 @@
                                         ),
                                 ])
                             >
-                                <span>
+                                <div
+                                    @class([
+                                        'flex h-9 w-9 shrink-0 items-center justify-center rounded-lg',
+
+                                        'bg-blue-500/10 text-blue-300' =>
+                                            request()->routeIs(
+                                                $item['route']
+                                            ),
+
+                                        'bg-slate-800 text-slate-400' =>
+                                            ! request()->routeIs(
+                                                $item['route']
+                                            ),
+                                    ])
+                                >
+                                    <svg
+                                        class="h-5 w-5"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        stroke-width="1.9"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M4.5 19.5v-6m5.25 6V9m5.25 10.5V5.25m5.25 14.25H3.75"
+                                        />
+                                    </svg>
+                                </div>
+
+                                <span class="min-w-0 flex-1">
                                     {{ $item['label'] }}
                                 </span>
 
                                 @unless ($hasPremiumAccess)
                                     <svg
-                                        class="h-4 w-4 text-slate-500"
+                                        class="h-4 w-4 shrink-0 text-slate-500"
                                         fill="none"
                                         viewBox="0 0 24 24"
                                         stroke="currentColor"
@@ -757,23 +945,59 @@
                         Account
                     </p>
 
-                    <div
-                        class="mt-3 grid gap-2"
-                    >
+                    <div class="mt-3 grid gap-2">
                         <a
                             href="{{ route('billing.index') }}"
-                            class="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm font-semibold text-blue-300"
+                            class="flex items-center gap-3 rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm font-semibold text-blue-300"
                         >
-                            {{ $hasPremiumAccess
-                                ? 'Billing & Subscription'
-                                : 'Upgrade to Premium' }}
+                            <div
+                                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-300"
+                            >
+                                <svg
+                                    class="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="1.9"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M3.75 7.5h16.5v9h-16.5v-9Zm0 3h16.5"
+                                    />
+                                </svg>
+                            </div>
+
+                            <span>
+                                {{ $hasPremiumAccess
+                                    ? 'Billing & Subscription'
+                                    : 'Upgrade to Premium' }}
+                            </span>
                         </a>
 
                         <a
                             href="{{ route('profile.edit') }}"
-                            class="rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-300"
+                            class="flex items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-4 py-3 text-sm font-semibold text-slate-300 transition hover:border-blue-500/40 hover:text-white"
                         >
-                            Profile
+                            <div
+                                class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-400"
+                            >
+                                <svg
+                                    class="h-5 w-5"
+                                    fill="none"
+                                    viewBox="0 0 24 24"
+                                    stroke="currentColor"
+                                    stroke-width="1.9"
+                                >
+                                    <path
+                                        stroke-linecap="round"
+                                        stroke-linejoin="round"
+                                        d="M15.75 6.75a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0"
+                                    />
+                                </svg>
+                            </div>
+
+                            <span>Profile</span>
                         </a>
 
                         <form
@@ -784,9 +1008,27 @@
 
                             <button
                                 type="submit"
-                                class="w-full rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-left text-sm font-semibold text-red-300"
+                                class="flex w-full items-center gap-3 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-left text-sm font-semibold text-red-300 transition hover:bg-red-500/15"
                             >
-                                Log Out
+                                <div
+                                    class="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-red-500/10 text-red-300"
+                                >
+                                    <svg
+                                        class="h-5 w-5"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        stroke-width="1.9"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M10.5 6H6.75A2.25 2.25 0 0 0 4.5 8.25v7.5A2.25 2.25 0 0 0 6.75 18h3.75m3-3 3-3m0 0-3-3m3 3H9"
+                                        />
+                                    </svg>
+                                </div>
+
+                                <span>Log Out</span>
                             </button>
                         </form>
                     </div>
@@ -800,7 +1042,8 @@
     {{-- ============================================================= --}}
 
     <div
-        class="fixed inset-x-0 bottom-0 z-50 w-full max-w-full overflow-x-hidden border-t border-slate-800 bg-slate-950/95 pb-[env(safe-area-inset-bottom)] shadow-2xl backdrop-blur sm:hidden"
+        class="fixed inset-x-0 bottom-0 z-[100] w-full max-w-full border-t border-slate-800 bg-slate-950/95 pb-[env(safe-area-inset-bottom)] shadow-2xl backdrop-blur sm:hidden"
+        style="transform: translateZ(0);"
     >
         <div
             class="grid w-full min-w-0 grid-cols-5"
@@ -1031,4 +1274,4 @@
             </button>
         </div>
     </div>
-</nav>
+</div>
