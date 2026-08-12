@@ -657,4 +657,4 @@ class PortfolioValuationGenerator
 
         return 0.0;
     }
-}
+} 

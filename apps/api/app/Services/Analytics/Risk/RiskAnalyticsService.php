@@ -67,6 +67,8 @@ class RiskAnalyticsService
             );
         }
 
+        $returnPeriodCount = count($portfolioSeries);
+
         $portfolioDates = collect($portfolioSeries)
             ->pluck('date')
             ->values()
@@ -152,6 +154,16 @@ class RiskAnalyticsService
                 'score' => null,
                 'label' => 'Insufficient data',
 
+                'history_confidence' =>
+                    $this->historyConfidence(
+                        $returnPeriodCount
+                    ),
+
+                'history_score_cap' =>
+                    $this->historyScoreCap(
+                        $returnPeriodCount
+                    ),
+
                 'period' => [
                     'start_date' => $startDate->toDateString(),
                     'end_date' => $endDate->toDateString(),
@@ -165,7 +177,7 @@ class RiskAnalyticsService
 
                 'series' => $alignedSeries,
 
-                'formula_version' => 'risk-0.2.1',
+                'formula_version' => 'risk-0.2.2',
             ];
         }
 
@@ -201,10 +213,21 @@ class RiskAnalyticsService
             )
         );
 
+        $historyConfidence =
+            $this->historyConfidence(
+                $returnPeriodCount
+            );
+
+        $historyScoreCap =
+            $this->historyScoreCap(
+                $returnPeriodCount
+            );
+
         $score = $this->riskScore(
             metrics: $metrics,
             riskLevel: $riskLevel,
             warnings: $warnings,
+            returnPeriodCount: $returnPeriodCount,
         );
 
         return [
@@ -212,10 +235,25 @@ class RiskAnalyticsService
 
             'score' => $score,
 
+            /*
+             * When history is still very limited, say so explicitly.
+             * A numeric score can still be useful, but it should not be
+             * presented with false precision or excessive confidence.
+             */
             'label' =>
-                $score !== null
-                    ? $this->scoreLabel($score)
-                    : 'Insufficient data',
+                $returnPeriodCount < 10
+                    ? 'Limited history'
+                    : (
+                        $score !== null
+                            ? $this->scoreLabel($score)
+                            : 'Insufficient data'
+                    ),
+
+            'history_confidence' =>
+                $historyConfidence,
+
+            'history_score_cap' =>
+                $historyScoreCap,
 
             'period' => [
                 'start_date' => $valuations
@@ -231,7 +269,7 @@ class RiskAnalyticsService
                 'valuation_count' => $valuations->count(),
 
                 'return_period_count' =>
-                    count($portfolioSeries),
+                    $returnPeriodCount,
 
                 'aligned_return_count' =>
                     count($benchmarkReturns),
@@ -262,14 +300,15 @@ class RiskAnalyticsService
 
             'warnings' => $warnings,
 
-            'formula_version' => 'risk-0.2.1',
+            'formula_version' => 'risk-0.2.2',
         ];
     }
 
     private function riskScore(
         array $metrics,
         ?string $riskLevel,
-        array $warnings
+        array $warnings,
+        int $returnPeriodCount
     ): ?int {
         $volatility =
             $metrics['annualized_volatility']
@@ -286,6 +325,9 @@ class RiskAnalyticsService
             return null;
         }
 
+        /*
+         * Start with the observed historical risk level.
+         */
         $score = match ($riskLevel) {
             'very_low' => 95,
             'low' => 88,
@@ -353,13 +395,54 @@ class RiskAnalyticsService
             $score -= 3;
         }
 
-        return max(
+        $score = max(
             0,
             min(
                 100,
                 $score
             )
         );
+
+        /*
+         * Historical risk statistics become more trustworthy as the
+         * number of return observations grows.
+         *
+         * A very short history must never receive a near-perfect score,
+         * even if the observed volatility/drawdown happened to be low.
+         *
+         * < 10 periods:  max 70
+         * 10-29 periods: max 80
+         * 30-59 periods: max 90
+         * 60+ periods:   max 100
+         */
+        return min(
+            $score,
+            $this->historyScoreCap(
+                $returnPeriodCount
+            )
+        );
+    }
+
+    private function historyScoreCap(
+        int $returnPeriodCount
+    ): int {
+        return match (true) {
+            $returnPeriodCount < 10 => 70,
+            $returnPeriodCount < 30 => 80,
+            $returnPeriodCount < 60 => 90,
+            default => 100,
+        };
+    }
+
+    private function historyConfidence(
+        int $returnPeriodCount
+    ): string {
+        return match (true) {
+            $returnPeriodCount < 10 => 'very_low',
+            $returnPeriodCount < 30 => 'low',
+            $returnPeriodCount < 60 => 'moderate',
+            default => 'high',
+        };
     }
 
     private function alignReturns(
@@ -531,13 +614,32 @@ class RiskAnalyticsService
     ): array {
         $warnings = [];
 
-        if (count($portfolioSeries) < 30) {
+        $returnPeriodCount =
+            count($portfolioSeries);
+
+        if ($returnPeriodCount < 10) {
+            $warnings[] = [
+                'code' =>
+                    'very_limited_portfolio_return_history',
+
+                'message' =>
+                    'Risk results are based on fewer than 10 portfolio return periods. The Risk score is capped at 70 until more history is available.',
+            ];
+        } elseif ($returnPeriodCount < 30) {
             $warnings[] = [
                 'code' =>
                     'limited_portfolio_return_history',
 
                 'message' =>
-                    'Risk results are based on fewer than 30 portfolio return periods.',
+                    'Risk results are based on fewer than 30 portfolio return periods. The Risk score is capped at 80 until more history is available.',
+            ];
+        } elseif ($returnPeriodCount < 60) {
+            $warnings[] = [
+                'code' =>
+                    'developing_portfolio_return_history',
+
+                'message' =>
+                    'Risk history is still developing. The Risk score is capped at 90 until at least 60 return periods are available.',
             ];
         }
 
@@ -606,6 +708,12 @@ class RiskAnalyticsService
             'label' =>
                 'Insufficient data',
 
+            'history_confidence' =>
+                'very_low',
+
+            'history_score_cap' =>
+                70,
+
             'period' =>
                 null,
 
@@ -641,7 +749,7 @@ class RiskAnalyticsService
             ],
 
             'formula_version' =>
-                'risk-0.2.1',
+                'risk-0.2.2',
         ];
     }
 
