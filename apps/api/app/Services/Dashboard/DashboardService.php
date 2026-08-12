@@ -60,23 +60,39 @@ class DashboardService
         );
 
         /*
-         * Load only the two most recently persisted audit runs.
+         * Load the two most recently persisted audit runs without ORDER BY.
          *
-         * Use the primary key rather than sorting by calculated_for_date.
-         * This keeps the dashboard query lightweight in production.
+         * Laravel Cloud's MySQL instance was exhausting its sort buffer
+         * even for an indexed ORDER BY ... LIMIT 2 query. Using MAX(id)
+         * avoids a filesort entirely while still identifying the newest
+         * persisted audit runs.
          */
-        $auditRuns = AuditRun::query()
+        $currentAuditRunId = AuditRun::query()
             ->where('user_id', $userId)
-            ->with('findings')
-            ->latest('id')
-            ->limit(2)
-            ->get();
+            ->max('id');
 
-        $currentAuditRun = $auditRuns->first();
+        $currentAuditRun = $currentAuditRunId !== null
+            ? AuditRun::query()
+                ->with('findings')
+                ->find($currentAuditRunId)
+            : null;
 
-        $previousAuditRun = $auditRuns
-            ->skip(1)
-            ->first();
+        $previousAuditRunId = $currentAuditRunId !== null
+            ? AuditRun::query()
+                ->where('user_id', $userId)
+                ->where(
+                    'id',
+                    '<',
+                    $currentAuditRunId,
+                )
+                ->max('id')
+            : null;
+
+        $previousAuditRun = $previousAuditRunId !== null
+            ? AuditRun::query()
+                ->with('findings')
+                ->find($previousAuditRunId)
+            : null;
 
         $auditComparison =
             $currentAuditRun !== null
