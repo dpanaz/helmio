@@ -7,7 +7,6 @@ use App\Models\AuditRun;
 use App\Models\AuditRunFinding;
 use App\Models\Benchmark;
 use App\Models\User;
-use App\Services\Dashboard\DashboardService;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 
@@ -15,7 +14,6 @@ class AdvisorAuditPersistenceService
 {
     public function __construct(
         private readonly AdvisorAuditService $advisorAuditService,
-        private readonly DashboardService $dashboardService,
     ) {
     }
 
@@ -37,6 +35,12 @@ class AdvisorAuditPersistenceService
             benchmark: $benchmark,
         );
 
+        /*
+         * Persist both the immutable audit run and the current
+         * AuditFinding state in one transaction. The Action Center
+         * and dashboard read AuditFinding rows, so this is the
+         * source-of-truth write path for a completed Advisor Audit.
+         */
         DB::transaction(function () use (
             $user,
             $audit,
@@ -75,11 +79,6 @@ class AdvisorAuditPersistenceService
                     $activeFingerprints,
             );
         });
-
-        $this->dashboardService
-            ->clearAdvisorAuditCache(
-                $user->id
-            );
 
         return $audit;
     }
@@ -288,9 +287,17 @@ class AdvisorAuditPersistenceService
                 AuditFinding::STATUS_OPEN;
         }
 
+        $findingType =
+            $finding['type']
+            ?? null;
+
         $recommendation =
-            $finding['type'] === 'recommendation'
-                ? $finding['message']
+            $findingType === 'recommendation'
+                ? (
+                    $finding['message']
+                    ?? $finding['recommendation']
+                    ?? null
+                )
                 : (
                     $finding['recommendation']
                     ?? null
@@ -560,13 +567,37 @@ class AdvisorAuditPersistenceService
         }
 
         return match (
-            $finding['severity'] ?? null
+            strtolower(
+                (string) (
+                    $finding['severity']
+                    ?? ''
+                )
+            )
         ) {
-            'critical' => 'critical',
-            'high' => 'high',
-            'moderate' => 'medium',
-            'informational' => 'information',
-            default => 'medium',
+            'critical' =>
+                'critical',
+
+            'high',
+            'important' =>
+                'high',
+
+            'moderate',
+            'medium' =>
+                'medium',
+
+            'low' =>
+                'low',
+
+            'informational',
+            'information' =>
+                'information',
+
+            'positive',
+            'opportunity' =>
+                'positive',
+
+            default =>
+                'medium',
         };
     }
 
