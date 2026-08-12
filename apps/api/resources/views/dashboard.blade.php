@@ -201,24 +201,14 @@
         );
 
         /*
-         * Smoothly transition the Helm Score color as the score rises:
-         * red -> orange -> yellow -> green.
+         * Helm Score uses a visible blue gradient around the dial.
+         * The filled portion begins light blue and gradually becomes
+         * deeper blue as it travels around the score arc.
          *
-         * 0   = red
-         * 50  = yellow / amber
-         * 100 = green
+         * Keep a single blue value for the score label beneath the
+         * number so the text remains crisp and readable.
          */
-        $helmScoreHue =
-            (int) round(
-                ($helmOverallScore / 100)
-                * 142
-            );
-
-        $helmScoreColor =
-            sprintf(
-                'hsl(%d 78%% 52%%)',
-                $helmScoreHue
-            );
+        $helmScoreColor = '#60a5fa';
 
         /*
         |--------------------------------------------------------------------------
@@ -862,6 +852,32 @@
                                         viewBox="0 0 240 240"
                                         aria-hidden="true"
                                     >
+                                        <defs>
+                                            <linearGradient
+                                                id="helmScoreGradient"
+                                                gradientUnits="userSpaceOnUse"
+                                                x1="120"
+                                                y1="22"
+                                                x2="120"
+                                                y2="218"
+                                                gradientTransform="rotate(90 120 120)"
+                                            >
+                                                {{--
+                                                    The score arc starts with a soft,
+                                                    light Helmio blue and continuously
+                                                    deepens as the score travels around
+                                                    the dial. This is one visible gradient,
+                                                    not a solid score-dependent color.
+                                                --}}
+                                                <stop offset="0%" stop-color="#dbeafe" />
+                                                <stop offset="22%" stop-color="#93c5fd" />
+                                                <stop offset="45%" stop-color="#60a5fa" />
+                                                <stop offset="68%" stop-color="#3b82f6" />
+                                                <stop offset="84%" stop-color="#2563eb" />
+                                                <stop offset="100%" stop-color="#1e40af" />
+                                            </linearGradient>
+                                        </defs>
+
                                         <circle
                                             cx="120"
                                             cy="120"
@@ -877,7 +893,7 @@
                                             cy="120"
                                             r="98"
                                             fill="none"
-                                            stroke="{{ $helmScoreColor }}"
+                                            stroke="url(#helmScoreGradient)"
                                             stroke-width="16"
                                             stroke-linecap="round"
                                             pathLength="100"
@@ -2401,3 +2417,4 @@
     </script>
 
 </x-app-layout>
+
