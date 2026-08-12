@@ -100,14 +100,14 @@
             $auditFindings['opportunities']
             ?? [];
 
-        $topConcern = collect(
-            array_merge(
-                $criticalFindings,
-                $importantFindings,
-            )
-        )
-            ->sortByDesc('priority')
-            ->first();
+        /*
+         * The dashboard's attention state should match the Action Center.
+         * $openFindings is already returned in priority order by
+         * DashboardService, so use it as the source of truth.
+         */
+        $topConcern =
+            collect($openFindings)
+                ->first();
 
         $topOpportunity = collect(
             $opportunityFindings
@@ -200,25 +200,25 @@
             'Building your score'
         );
 
-        $helmScoreColor = match (true) {
-            $helmOverallScore >= 90 =>
-                '#22c55e',
+        /*
+         * Smoothly transition the Helm Score color as the score rises:
+         * red -> orange -> yellow -> green.
+         *
+         * 0   = red
+         * 50  = yellow / amber
+         * 100 = green
+         */
+        $helmScoreHue =
+            (int) round(
+                ($helmOverallScore / 100)
+                * 142
+            );
 
-            $helmOverallScore >= 80 =>
-                '#10b981',
-
-            $helmOverallScore >= 70 =>
-                '#3b82f6',
-
-            $helmOverallScore >= 60 =>
-                '#f59e0b',
-
-            $helmOverallScore >= 40 =>
-                '#f97316',
-
-            default =>
-                '#ef4444',
-        };
+        $helmScoreColor =
+            sprintf(
+                'hsl(%d 78%% 52%%)',
+                $helmScoreHue
+            );
 
         /*
         |--------------------------------------------------------------------------
@@ -287,31 +287,41 @@
         $findingsCollection =
             collect($openFindings);
 
+        /*
+         * Counts come from open AuditFinding rows in DashboardService.
+         * The fallbacks keep older payloads safe during deployment.
+         */
         $criticalCount =
-            $findingCounts['critical']
-            ?? $findingCounts['critical_count']
-            ?? collect(
-                $criticalFindings
-            )->count();
+            (int) (
+                $findingCounts['critical']
+                ?? $findingCounts['critical_count']
+                ?? collect(
+                    $criticalFindings
+                )->count()
+            );
 
         $importantCount =
-            $findingCounts['important']
-            ?? $findingCounts['important_count']
-            ?? collect(
-                $importantFindings
-            )->count();
+            (int) (
+                $findingCounts['important']
+                ?? $findingCounts['important_count']
+                ?? collect(
+                    $importantFindings
+                )->count()
+            );
 
         $opportunityCount =
-            $findingCounts['opportunity']
-            ?? $findingCounts['opportunity_count']
-            ?? collect(
-                $opportunityFindings
-            )->count();
+            (int) (
+                $findingCounts['opportunity']
+                ?? $findingCounts['opportunity_count']
+                ?? collect(
+                    $opportunityFindings
+                )->count()
+            );
 
         $totalAdvisorFindings =
-            (int) $criticalCount
-            + (int) $importantCount
-            + (int) $opportunityCount;
+            $criticalCount
+            + $importantCount
+            + $opportunityCount;
 
         /*
         |--------------------------------------------------------------------------
@@ -1264,11 +1274,11 @@
 
                         @if ($topConcern)
                             <h3 class="mt-4 line-clamp-2 text-base font-semibold leading-6 text-white">
-                                {{ $topConcern['title'] ?? 'Portfolio finding' }}
+                                {{ data_get($topConcern, 'title', 'Portfolio finding') }}
                             </h3>
 
                             <p class="mt-2 line-clamp-2 text-xs leading-5 text-slate-500">
-                                {{ $topConcern['message'] ?? 'Review this portfolio finding.' }}
+                                {{ data_get($topConcern, 'message', 'Review this portfolio finding.') }}
                             </p>
 
                             <a

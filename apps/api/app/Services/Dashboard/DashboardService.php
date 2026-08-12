@@ -110,6 +110,30 @@ class DashboardService
             );
 
         /*
+         * Open finding severity counts are the dashboard's source of truth
+         * for Critical / Important / Opportunity counts.
+         *
+         * This keeps the dashboard consistent with the Action Center while
+         * remaining a lightweight aggregate query.
+         */
+        $openFindingSeverityCounts = AuditFinding::query()
+            ->where('user_id', $userId)
+            ->where(
+                'status',
+                AuditFinding::STATUS_OPEN,
+            )
+            ->selectRaw(
+                'LOWER(severity) as severity, COUNT(*) as aggregate',
+            )
+            ->groupByRaw(
+                'LOWER(severity)',
+            )
+            ->pluck(
+                'aggregate',
+                'severity',
+            );
+
+        /*
          * Only the five most important open findings are needed
          * for the dashboard.
          */
@@ -258,25 +282,32 @@ class DashboardService
                         ?? 0
                     ),
 
+                /*
+                 * Severity counts come directly from currently OPEN
+                 * AuditFinding rows so the dashboard and Action Center
+                 * always agree.
+                 */
                 'critical' =>
-                    (int) data_get(
-                        $advisorAudit,
-                        'findings.summary.critical_count',
-                        0,
+                    (int) (
+                        $openFindingSeverityCounts['critical']
+                        ?? 0
                     ),
 
                 'important' =>
-                    (int) data_get(
-                        $advisorAudit,
-                        'findings.summary.important_count',
-                        0,
+                    (int) (
+                        ($openFindingSeverityCounts['high'] ?? 0)
+                        + ($openFindingSeverityCounts['important'] ?? 0)
+                        + ($openFindingSeverityCounts['medium'] ?? 0)
+                        + ($openFindingSeverityCounts['moderate'] ?? 0)
                     ),
 
                 'opportunity' =>
-                    (int) data_get(
-                        $advisorAudit,
-                        'findings.summary.opportunity_count',
-                        0,
+                    (int) (
+                        ($openFindingSeverityCounts['low'] ?? 0)
+                        + ($openFindingSeverityCounts['informational'] ?? 0)
+                        + ($openFindingSeverityCounts['information'] ?? 0)
+                        + ($openFindingSeverityCounts['positive'] ?? 0)
+                        + ($openFindingSeverityCounts['opportunity'] ?? 0)
                     ),
             ],
         ];
