@@ -60,13 +60,15 @@ class DashboardService
         );
 
         /*
-         * Load only the two latest persisted audit runs.
+         * Load only the two most recently persisted audit runs.
+         *
+         * Use the primary key rather than sorting by calculated_for_date.
+         * This keeps the dashboard query lightweight in production.
          */
         $auditRuns = AuditRun::query()
             ->where('user_id', $userId)
             ->with('findings')
-            ->orderByDesc('calculated_for_date')
-            ->orderByDesc('id')
+            ->latest('id')
             ->limit(2)
             ->get();
 
@@ -168,8 +170,7 @@ class DashboardService
          */
         $latestAiInsight = AiInsightRun::query()
             ->where('user_id', $userId)
-            ->orderByDesc('generated_at')
-            ->orderByDesc('id')
+            ->latest('id')
             ->first();
 
         $portfolioValue = (float) $accounts->sum(
@@ -321,10 +322,13 @@ class DashboardService
     private function latestHelmScore(
         int $userId,
     ): ?array {
+        /*
+         * Snapshot IDs are created sequentially, so use the primary
+         * key instead of forcing MySQL to sort by calculated_for_date.
+         */
         $snapshot = HelmScoreSnapshot::query()
             ->where('user_id', $userId)
-            ->orderByDesc('calculated_for_date')
-            ->orderByDesc('id')
+            ->latest('id')
             ->first();
 
         if ($snapshot === null) {
