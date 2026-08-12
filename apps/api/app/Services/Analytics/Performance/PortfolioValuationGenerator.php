@@ -101,17 +101,58 @@ class PortfolioValuationGenerator
         InvestmentAccount $account,
         CarbonInterface $valuationDate
     ): PortfolioValuation {
-       $account->loadMissing('holdings.security');
+        $account->loadMissing('holdings.security');
 
-        $marketValue = $account->holdings->sum(
-            fn ($holding): float =>
+        /*
+         * Brokerage syncs keep dated holding snapshots. The same provider
+         * position can therefore exist in more than one holdings row.
+         *
+         * Valuation generation must use only the latest row for each
+         * provider position or the portfolio will be double-counted.
+         *
+         * Manual holdings do not have a provider position ID, so they keep
+         * their own holding ID as the identity key and are never collapsed
+         * merely because they share a security.
+         */
+        $holdings = $this->canonicalHoldings(
+            $account->holdings,
+        );
+
+        $investedHoldings = $holdings
+            ->filter(
+                fn (Holding $holding): bool =>
+                    $holding->security === null
+                    || $holding->security->security_type !== 'cash',
+            )
+            ->values();
+
+        $cashEquivalentHoldings = $holdings
+            ->filter(
+                fn (Holding $holding): bool =>
+                    $holding->security !== null
+                    && $holding->security->security_type === 'cash',
+            )
+            ->values();
+
+        $marketValue = $investedHoldings->sum(
+            fn (Holding $holding): float =>
                 $this->holdingMarketValue(
                     holding: $holding,
                     valuationDate: $valuationDate,
                 )
         );
 
-        $cashValue = $this->accountCashValue($account);
+        $cashEquivalentValue = $cashEquivalentHoldings->sum(
+            fn (Holding $holding): float =>
+                $this->holdingMarketValue(
+                    holding: $holding,
+                    valuationDate: $valuationDate,
+                )
+        );
+
+        $cashValue =
+            $this->accountCashValue($account)
+            + $cashEquivalentValue;
 
         $cashFlow = $this->cashFlowService
             ->forAccountOnDate(
@@ -119,7 +160,7 @@ class PortfolioValuationGenerator
                 date: $valuationDate,
             );
 
-        $priceableHoldings = $account->holdings
+        $priceableHoldings = $investedHoldings
     ->filter(function ($holding): bool {
         if ($holding->security === null) {
             return false;
@@ -166,7 +207,7 @@ class PortfolioValuationGenerator
             )
             ->first();
 
-            $historicalQuantities = $account->holdings
+        $historicalQuantities = $holdings
     ->mapWithKeys(
         fn (Holding $holding): array => [
             $holding->id =>
@@ -186,7 +227,7 @@ class PortfolioValuationGenerator
          * Cash-equivalent holdings such as money-market sweep positions
          * do not start investment-performance history by themselves.
          */
-        $hasInvestedPositions = $account->holdings
+        $hasInvestedPositions = $holdings
             ->contains(
                 function (Holding $holding) use (
                     $historicalQuantities,
@@ -248,7 +289,16 @@ class PortfolioValuationGenerator
 
             'metadata' => [
                 'holding_count' =>
+                    $holdings->count(),
+
+                'raw_holding_row_count' =>
                     $account->holdings->count(),
+
+                'cash_equivalent_holding_count' =>
+                    $cashEquivalentHoldings->count(),
+
+                'cash_equivalent_value' =>
+                    round($cashEquivalentValue, 2),
 
                 'historical_price_count' =>
                     $historicalPriceCount,
@@ -475,6 +525,43 @@ class PortfolioValuationGenerator
         $valuation->save();
 
         return $valuation->refresh();
+    }
+
+    /**
+     * Return one current/canonical row for each brokerage position.
+     *
+     * Provider-backed holdings are de-duplicated by provider_position_id,
+     * keeping the newest snapshot row. Manual holdings remain unique by ID.
+     *
+     * @param Collection<int, Holding> $holdings
+     * @return Collection<int, Holding>
+     */
+    private function canonicalHoldings(
+        Collection $holdings
+    ): Collection {
+        return $holdings
+            ->sortByDesc(
+                function (Holding $holding): string {
+                    $date = $holding->as_of_date
+                        ?->format('YmdHis')
+                        ?? '00000000000000';
+
+                    return sprintf(
+                        '%s-%020d',
+                        $date,
+                        $holding->id,
+                    );
+                }
+            )
+            ->unique(
+                fn (Holding $holding): string =>
+                    filled($holding->provider_position_id)
+                        ? 'provider:'
+                            .$holding->provider_position_id
+                        : 'holding:'
+                            .$holding->id
+            )
+            ->values();
     }
 
     /**
