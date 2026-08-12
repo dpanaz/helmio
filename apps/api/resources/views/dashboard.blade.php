@@ -1068,23 +1068,10 @@
                                             default =>
                                                 'text-red-300',
                                         };
-
-                                        $categoryBarClass = match (true) {
-                                            $categoryScore === null =>
-                                                'bg-slate-700',
-
-                                            $categoryScore >= 80 =>
-                                                'bg-emerald-400',
-
-                                            $categoryScore >= 70 =>
-                                                'bg-blue-500',
-
-                                            $categoryScore >= 60 =>
-                                                'bg-amber-400',
-
-                                            default =>
-                                                'bg-red-500',
-                                        };
+            $categoryScoreCapped =
+                $categoryScore !== null
+                    ? max(0, min(100, $categoryScore))
+                    : null;
                                     @endphp
 
                                     <a
@@ -1215,9 +1202,25 @@
                                                 >
                                                     @if ($categoryScore !== null)
                                                         <div
-                                                            class="h-full rounded-full {{ $categoryBarClass }} transition-all duration-500"
-                                                            style="width: {{ $categoryScore }}%"
-                                                        ></div>
+                                                    class="h-full rounded-full transition-all duration-500"
+                                                    style="
+                                                        width: {{ $categoryScoreCapped }}%;
+                                                        background:
+                                                            linear-gradient(
+                                                                90deg,
+                                                                #bfdbfe 0%,
+                                                                #60a5fa 35%,
+                                                                #2563eb 70%,
+                                                                #1e3a8a 100%
+                                                            );
+                                                        background-size:
+                                                            {{ $categoryScoreCapped > 0
+                                                                ? 10000 / $categoryScoreCapped
+                                                                : 100 }}% 100%;
+                                                        background-position: left center;
+                                                        background-repeat: no-repeat;
+                                                    "
+                                                ></div>
                                                     @endif
                                                 </div>
                                             </div>
@@ -2417,4 +2420,3 @@
     </script>
 
 </x-app-layout>
-

@@ -33,9 +33,25 @@ class PerformanceAnalyticsService
             ->orderBy('valuation_date')
             ->get();
 
+        /*
+         * Do not treat cash-only / pre-investment history as investment
+         * performance. This prevents a transition such as $0.10 -> $681
+         * from being interpreted as a six-thousand-percent return.
+         */
+        $valuations = $valuations
+            ->filter(
+                fn (PortfolioValuation $valuation): bool =>
+                    (bool) data_get(
+                        $valuation->metadata,
+                        'has_invested_positions',
+                        false,
+                    ),
+            )
+            ->values();
+
         if ($valuations->count() < 2) {
             return $this->insufficientDataResult(
-                'At least two portfolio valuations are required.'
+                'At least two invested portfolio valuations are required.'
             );
         }
 
@@ -106,8 +122,25 @@ class PerformanceAnalyticsService
                 $benchmarkReturn
             );
 
+        /*
+         * Performance is scored primarily relative to the selected
+         * benchmark. With no benchmark, keep the category unscored
+         * rather than implying that absolute return alone is "good."
+         */
+        $score = $this->performanceScore(
+            portfolioReturn: $portfolioReturn,
+            benchmarkReturn: $benchmarkReturn,
+        );
+
         return [
             'status' => 'complete',
+
+            'score' => $score,
+
+            'label' =>
+                $score !== null
+                    ? $this->scoreLabel($score)
+                    : 'Insufficient data',
 
             'period' => [
                 'start_date' =>
@@ -253,7 +286,7 @@ class PerformanceAnalyticsService
             ],
 
             'formula_version' =>
-                'performance-0.2.0',
+                'performance-0.2.1',
         ];
     }
 
@@ -504,8 +537,46 @@ class PerformanceAnalyticsService
             ],
 
             'formula_version' =>
-                'performance-0.2.0',
+                'performance-0.2.1',
         ];
+    }
+
+    private function performanceScore(
+        ?float $portfolioReturn,
+        ?float $benchmarkReturn
+    ): ?int {
+        if (
+            $portfolioReturn === null
+            || $benchmarkReturn === null
+        ) {
+            return null;
+        }
+
+        $alpha = $portfolioReturn
+            - $benchmarkReturn;
+
+        return match (true) {
+            $alpha >= 0.05 => 95,
+            $alpha >= 0.02 => 90,
+            $alpha >= 0.00 => 82,
+            $alpha >= -0.02 => 72,
+            $alpha >= -0.05 => 60,
+            $alpha >= -0.10 => 45,
+            default => 30,
+        };
+    }
+
+    private function scoreLabel(
+        int $score
+    ): string {
+        return match (true) {
+            $score >= 90 => 'Excellent',
+            $score >= 80 => 'Very good',
+            $score >= 70 => 'Good',
+            $score >= 60 => 'Fair',
+            $score >= 40 => 'Needs attention',
+            default => 'Action recommended',
+        };
     }
 
     private function roundRate(

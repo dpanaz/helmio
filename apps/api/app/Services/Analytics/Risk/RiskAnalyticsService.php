@@ -34,9 +34,27 @@ class RiskAnalyticsService
             ->orderBy('valuation_date')
             ->get();
 
+        /*
+         * Risk history begins only after the portfolio contains at
+         * least one genuine non-cash invested position.
+         *
+         * Cash-only/pre-investment valuations remain stored for audit
+         * history, but they must not create artificial daily returns.
+         */
+        $valuations = $valuations
+            ->filter(
+                fn (PortfolioValuation $valuation): bool =>
+                    (bool) data_get(
+                        $valuation->metadata,
+                        'has_invested_positions',
+                        false,
+                    ),
+            )
+            ->values();
+
         if ($valuations->count() < 2) {
             return $this->insufficientDataResult(
-                'At least two portfolio valuations are required.'
+                'At least two invested portfolio valuations are required.'
             );
         }
 
@@ -81,12 +99,15 @@ class RiskAnalyticsService
             ->values()
             ->all();
 
-        $benchmarkReturns = collect($alignedSeries)
+        $pairedSeries = collect($alignedSeries)
             ->filter(
                 fn (array $row): bool =>
                     $row['portfolio_return'] !== null
                     && $row['benchmark_return'] !== null
             )
+            ->values();
+
+        $benchmarkReturns = $pairedSeries
             ->pluck('benchmark_return')
             ->map(
                 fn ($value): float =>
@@ -95,12 +116,7 @@ class RiskAnalyticsService
             ->values()
             ->all();
 
-        $pairedPortfolioReturns = collect($alignedSeries)
-            ->filter(
-                fn (array $row): bool =>
-                    $row['portfolio_return'] !== null
-                    && $row['benchmark_return'] !== null
-            )
+        $pairedPortfolioReturns = $pairedSeries
             ->pluck('portfolio_return')
             ->map(
                 fn ($value): float =>
@@ -129,9 +145,12 @@ class RiskAnalyticsService
                 $minimumAcceptableAnnualReturn,
         );
 
-        if ($metricsResult['status'] !== 'complete') {
+        if (($metricsResult['status'] ?? null) !== 'complete') {
             return [
                 ...$metricsResult,
+
+                'score' => null,
+                'label' => 'Insufficient data',
 
                 'period' => [
                     'start_date' => $startDate->toDateString(),
@@ -145,16 +164,58 @@ class RiskAnalyticsService
                 ],
 
                 'series' => $alignedSeries,
+
+                'formula_version' => 'risk-0.2.1',
             ];
         }
 
+        $metrics =
+            $metricsResult['metrics']
+            ?? [];
+
+        $riskLevel =
+            $metricsResult['risk_level']
+            ?? null;
+
         $flags = $this->buildRiskFlags(
-            metrics: $metricsResult['metrics'],
-            riskLevel: $metricsResult['risk_level'],
+            metrics: $metrics,
+            riskLevel: $riskLevel,
+        );
+
+        $warnings = array_values(
+            array_merge(
+                $metricsResult['warnings'] ?? [],
+                $this->buildDataWarnings(
+                    portfolioSeries:
+                        $portfolioSeries,
+
+                    benchmarkSeries:
+                        $benchmarkSeries,
+
+                    alignedSeries:
+                        $alignedSeries,
+
+                    benchmark:
+                        $benchmark,
+                )
+            )
+        );
+
+        $score = $this->riskScore(
+            metrics: $metrics,
+            riskLevel: $riskLevel,
+            warnings: $warnings,
         );
 
         return [
             'status' => 'complete',
+
+            'score' => $score,
+
+            'label' =>
+                $score !== null
+                    ? $this->scoreLabel($score)
+                    : 'Insufficient data',
 
             'period' => [
                 'start_date' => $valuations
@@ -182,40 +243,123 @@ class RiskAnalyticsService
                 'symbol' => $benchmark?->symbol,
             ],
 
-            'metrics' => $metricsResult['metrics'],
+            'metrics' => $metrics,
 
             'observations' =>
-                $metricsResult['observations'],
+                $metricsResult['observations']
+                ?? [],
 
             'assumptions' =>
-                $metricsResult['assumptions'],
+                $metricsResult['assumptions']
+                ?? [],
 
             'risk_level' =>
-                $metricsResult['risk_level'],
+                $riskLevel,
 
             'flags' => $flags,
 
             'series' => $alignedSeries,
 
-            'warnings' => array_merge(
-                $metricsResult['warnings'],
-                $this->buildDataWarnings(
-                    portfolioSeries:
-                        $portfolioSeries,
+            'warnings' => $warnings,
 
-                    benchmarkSeries:
-                        $benchmarkSeries,
-
-                    alignedSeries:
-                        $alignedSeries,
-
-                    benchmark:
-                        $benchmark,
-                )
-            ),
-
-            'formula_version' => 'risk-0.2.0',
+            'formula_version' => 'risk-0.2.1',
         ];
+    }
+
+    private function riskScore(
+        array $metrics,
+        ?string $riskLevel,
+        array $warnings
+    ): ?int {
+        $volatility =
+            $metrics['annualized_volatility']
+            ?? null;
+
+        $drawdown =
+            $metrics['maximum_drawdown']
+            ?? null;
+
+        if (
+            $volatility === null
+            || $drawdown === null
+        ) {
+            return null;
+        }
+
+        $score = match ($riskLevel) {
+            'very_low' => 95,
+            'low' => 88,
+            'moderate' => 72,
+            'high' => 50,
+            'very_high' => 25,
+            default => 70,
+        };
+
+        $sharpe =
+            $metrics['sharpe_ratio']
+            ?? null;
+
+        $sortino =
+            $metrics['sortino_ratio']
+            ?? null;
+
+        $beta =
+            $metrics['beta']
+            ?? null;
+
+        if ($sharpe !== null) {
+            if ($sharpe >= 1.5) {
+                $score += 10;
+            } elseif ($sharpe >= 1.0) {
+                $score += 6;
+            } elseif ($sharpe < 0) {
+                $score -= 15;
+            } elseif ($sharpe < 0.5) {
+                $score -= 8;
+            }
+        }
+
+        if ($sortino !== null) {
+            if ($sortino >= 1.5) {
+                $score += 6;
+            } elseif ($sortino < 0) {
+                $score -= 10;
+            } elseif ($sortino < 0.5) {
+                $score -= 5;
+            }
+        }
+
+        if ($beta !== null) {
+            if ($beta >= 1.5) {
+                $score -= 12;
+            } elseif ($beta >= 1.2) {
+                $score -= 6;
+            } elseif ($beta < 0) {
+                $score -= 5;
+            }
+        }
+
+        if ($drawdown <= -0.35) {
+            $score -= 15;
+        } elseif ($drawdown <= -0.25) {
+            $score -= 10;
+        } elseif ($drawdown <= -0.15) {
+            $score -= 5;
+        }
+
+        if (count($warnings) >= 3) {
+            $score -= 8;
+        } elseif (count($warnings) >= 1) {
+            $score -= 3;
+        }
+
+        return max(
+            0,
+            min(
+                100,
+                $score
+            )
+        );
     }
 
     private function alignReturns(
@@ -275,23 +419,25 @@ class RiskAnalyticsService
     ): array {
         $flags = [];
 
-        $volatility = $metrics[
-            'annualized_volatility'
-        ];
+        $volatility =
+            $metrics['annualized_volatility']
+            ?? null;
 
-        $drawdown = $metrics[
-            'maximum_drawdown'
-        ];
+        $drawdown =
+            $metrics['maximum_drawdown']
+            ?? null;
 
-        $sharpe = $metrics[
-            'sharpe_ratio'
-        ];
+        $sharpe =
+            $metrics['sharpe_ratio']
+            ?? null;
 
-        $sortino = $metrics[
-            'sortino_ratio'
-        ];
+        $sortino =
+            $metrics['sortino_ratio']
+            ?? null;
 
-        $beta = $metrics['beta'];
+        $beta =
+            $metrics['beta']
+            ?? null;
 
         if (
             $volatility !== null
@@ -300,12 +446,8 @@ class RiskAnalyticsService
             $flags[] = [
                 'code' => 'high_volatility',
                 'severity' => 'high',
-
-                'title' =>
-                    'High portfolio volatility',
-
-                'message' =>
-                    'The portfolio has experienced substantial variation in daily returns.',
+                'title' => 'High portfolio volatility',
+                'message' => 'The portfolio has experienced substantial variation in daily returns.',
             ];
         }
 
@@ -316,12 +458,8 @@ class RiskAnalyticsService
             $flags[] = [
                 'code' => 'severe_drawdown',
                 'severity' => 'high',
-
-                'title' =>
-                    'Severe historical drawdown',
-
-                'message' =>
-                    'The portfolio experienced a peak-to-trough decline of at least 25%.',
+                'title' => 'Severe historical drawdown',
+                'message' => 'The portfolio experienced a peak-to-trough decline of at least 25%.',
             ];
         }
 
@@ -330,16 +468,10 @@ class RiskAnalyticsService
             && $sharpe < 0.5
         ) {
             $flags[] = [
-                'code' =>
-                    'weak_risk_adjusted_return',
-
+                'code' => 'weak_risk_adjusted_return',
                 'severity' => 'moderate',
-
-                'title' =>
-                    'Weak risk-adjusted performance',
-
-                'message' =>
-                    'Portfolio returns have been low relative to the volatility taken.',
+                'title' => 'Weak risk-adjusted performance',
+                'message' => 'Portfolio returns have been low relative to the volatility taken.',
             ];
         }
 
@@ -348,16 +480,10 @@ class RiskAnalyticsService
             && $sortino < 0.5
         ) {
             $flags[] = [
-                'code' =>
-                    'weak_downside_adjusted_return',
-
+                'code' => 'weak_downside_adjusted_return',
                 'severity' => 'moderate',
-
-                'title' =>
-                    'Weak downside-adjusted performance',
-
-                'message' =>
-                    'Portfolio returns have been low relative to harmful downside volatility.',
+                'title' => 'Weak downside-adjusted performance',
+                'message' => 'Portfolio returns have been low relative to harmful downside volatility.',
             ];
         }
 
@@ -368,12 +494,8 @@ class RiskAnalyticsService
             $flags[] = [
                 'code' => 'high_market_beta',
                 'severity' => 'high',
-
-                'title' =>
-                    'High sensitivity to market moves',
-
-                'message' =>
-                    'The portfolio has historically moved substantially more than its benchmark.',
+                'title' => 'High sensitivity to market moves',
+                'message' => 'The portfolio has historically moved substantially more than its benchmark.',
             ];
         }
 
@@ -382,16 +504,10 @@ class RiskAnalyticsService
             && $beta <= 0
         ) {
             $flags[] = [
-                'code' =>
-                    'non_positive_beta',
-
+                'code' => 'non_positive_beta',
                 'severity' => 'informational',
-
-                'title' =>
-                    'Unusual benchmark relationship',
-
-                'message' =>
-                    'The portfolio has shown little or negative movement relative to its benchmark.',
+                'title' => 'Unusual benchmark relationship',
+                'message' => 'The portfolio has shown little or negative movement relative to its benchmark.',
             ];
         }
 
@@ -399,12 +515,8 @@ class RiskAnalyticsService
             $flags[] = [
                 'code' => 'no_major_risk_flags',
                 'severity' => 'informational',
-
-                'title' =>
-                    'No major risk flags detected',
-
-                'message' =>
-                    "The portfolio's available risk metrics do not currently exceed Helmio's warning thresholds.",
+                'title' => 'No major risk flags detected',
+                'message' => "The portfolio's available risk metrics do not currently exceed Helmio's warning thresholds.",
             ];
         }
 
@@ -482,29 +594,67 @@ class RiskAnalyticsService
         string $message
     ): array {
         return [
-            'status' => 'insufficient_data',
+            'status' =>
+                'insufficient_data',
 
-            'message' => $message,
+            'message' =>
+                $message,
 
-            'period' => null,
-            'benchmark' => null,
-            'metrics' => null,
-            'observations' => null,
-            'assumptions' => null,
-            'risk_level' => null,
-            'flags' => [],
-            'series' => [],
+            'score' =>
+                null,
+
+            'label' =>
+                'Insufficient data',
+
+            'period' =>
+                null,
+
+            'benchmark' =>
+                null,
+
+            'metrics' =>
+                [],
+
+            'observations' =>
+                [],
+
+            'assumptions' =>
+                [],
+
+            'risk_level' =>
+                null,
+
+            'flags' =>
+                [],
+
+            'series' =>
+                [],
 
             'warnings' => [
                 [
                     'code' =>
                         'insufficient_risk_history',
 
-                    'message' => $message,
+                    'message' =>
+                        $message,
                 ],
             ],
 
-            'formula_version' => 'risk-0.2.0',
+            'formula_version' =>
+                'risk-0.2.1',
         ];
+    }
+
+    private function scoreLabel(
+        int $score
+    ): string {
+        return match (true) {
+            $score >= 90 => 'Excellent',
+            $score >= 80 => 'Very good',
+            $score >= 70 => 'Good',
+            $score >= 60 => 'Fair',
+            $score >= 40 => 'Needs attention',
+            default => 'Action recommended',
+        };
     }
 }

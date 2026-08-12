@@ -179,6 +179,45 @@ class PortfolioValuationGenerator
     )
     ->all();
 
+        /*
+         * Performance/risk history should begin only once the account
+         * actually contains a non-cash invested position on this date.
+         *
+         * Cash-equivalent holdings such as money-market sweep positions
+         * do not start investment-performance history by themselves.
+         */
+        $hasInvestedPositions = $account->holdings
+            ->contains(
+                function (Holding $holding) use (
+                    $historicalQuantities,
+                ): bool {
+                    if ($holding->security === null) {
+                        return false;
+                    }
+
+                    if (
+                        in_array(
+                            $holding->security->security_type,
+                            [
+                                'cash',
+                            ],
+                            true,
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    return (
+                        (float) (
+                            $historicalQuantities[
+                                $holding->id
+                            ]
+                            ?? 0
+                        )
+                    ) > 0;
+                },
+            );
+
         if ($valuation === null) {
             $valuation = new PortfolioValuation();
 
@@ -236,7 +275,11 @@ class PortfolioValuationGenerator
                 'generated_at' =>
                     now()->toIso8601String(),
 
-                    'historical_quantities' => $historicalQuantities,
+                'has_invested_positions' =>
+                    $hasInvestedPositions,
+
+                'historical_quantities' =>
+                    $historicalQuantities,
             ],
         ]);
 
@@ -351,6 +394,22 @@ class PortfolioValuationGenerator
                 }
             );
 
+        /*
+         * Consolidated performance history is active once at least
+         * one account contains a genuine non-cash position.
+         */
+        $hasInvestedPositions =
+            $accountValuations->contains(
+                fn (
+                    PortfolioValuation $valuation
+                ): bool =>
+                    (bool) data_get(
+                        $valuation->metadata,
+                        'has_invested_positions',
+                        false,
+                    ),
+            );
+
         $valuation = PortfolioValuation::query()
             ->where('user_id', $user->id)
             ->whereNull('investment_account_id')
@@ -407,6 +466,9 @@ class PortfolioValuationGenerator
 
                 'generated_at' =>
                     now()->toIso8601String(),
+
+                'has_invested_positions' =>
+                    $hasInvestedPositions,
             ],
         ]);
 
