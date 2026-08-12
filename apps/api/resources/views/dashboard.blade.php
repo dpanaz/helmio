@@ -202,13 +202,28 @@
 
         /*
          * Helm Score uses a visible blue gradient around the dial.
-         * The filled portion begins light blue and gradually becomes
-         * deeper blue as it travels around the score arc.
+         * The dial itself always remains blue.
          *
-         * Keep a single blue value for the score label beneath the
-         * number so the text remains crisp and readable.
+         * Only the text label beneath the score changes color when
+         * the portfolio needs attention.
          */
         $helmScoreColor = '#60a5fa';
+
+        $helmScoreLabelColor = match (
+            strtolower(
+                trim(
+                    (string) $helmOverallLabel
+                )
+            )
+        ) {
+            'needs attention',
+            'attention needed',
+            'action recommended'
+                => '#f87171',
+
+            default
+                => $helmScoreColor,
+        };
 
         /*
         |--------------------------------------------------------------------------
@@ -414,13 +429,7 @@
         |--------------------------------------------------------------------------
         */
 
-        $hour = now()->hour;
-
-        $greeting = match (true) {
-            $hour < 12 => 'Good morning',
-            $hour < 17 => 'Good afternoon',
-            default => 'Good evening',
-        };
+        $greeting = 'Hello';
 
         $firstName =
             auth()->user()->name
@@ -922,7 +931,7 @@
 
                                         <p
                                             class="mt-1 text-base font-semibold"
-                                            style="color: {{ $helmScoreColor }}"
+                                            style="color: {{ $helmScoreLabelColor }}"
                                         >
                                             {{ $helmOverallLabel }}
                                         </p>
@@ -1068,10 +1077,23 @@
                                             default =>
                                                 'text-red-300',
                                         };
-            $categoryScoreCapped =
-                $categoryScore !== null
-                    ? max(0, min(100, $categoryScore))
-                    : null;
+
+                                        $categoryBarClass = match (true) {
+                                            $categoryScore === null =>
+                                                'bg-slate-700',
+
+                                            $categoryScore >= 80 =>
+                                                'bg-emerald-400',
+
+                                            $categoryScore >= 70 =>
+                                                'bg-blue-500',
+
+                                            $categoryScore >= 60 =>
+                                                'bg-amber-400',
+
+                                            default =>
+                                                'bg-red-500',
+                                        };
                                     @endphp
 
                                     <a
@@ -1202,25 +1224,9 @@
                                                 >
                                                     @if ($categoryScore !== null)
                                                         <div
-                                                    class="h-full rounded-full transition-all duration-500"
-                                                    style="
-                                                        width: {{ $categoryScoreCapped }}%;
-                                                        background:
-                                                            linear-gradient(
-                                                                90deg,
-                                                                #bfdbfe 0%,
-                                                                #60a5fa 35%,
-                                                                #2563eb 70%,
-                                                                #1e3a8a 100%
-                                                            );
-                                                        background-size:
-                                                            {{ $categoryScoreCapped > 0
-                                                                ? 10000 / $categoryScoreCapped
-                                                                : 100 }}% 100%;
-                                                        background-position: left center;
-                                                        background-repeat: no-repeat;
-                                                    "
-                                                ></div>
+                                                            class="h-full rounded-full {{ $categoryBarClass }} transition-all duration-500"
+                                                            style="width: {{ $categoryScore }}%"
+                                                        ></div>
                                                     @endif
                                                 </div>
                                             </div>
