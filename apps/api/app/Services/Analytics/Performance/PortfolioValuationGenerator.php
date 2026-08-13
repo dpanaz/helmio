@@ -2,26 +2,31 @@
 
 namespace App\Services\Analytics\Performance;
 
+use App\Models\Holding;
 use App\Models\InvestmentAccount;
 use App\Models\PortfolioValuation;
 use App\Models\User;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use RuntimeException;
-use App\Models\Holding;
 
 class PortfolioValuationGenerator
 {
     public function __construct(
-    private readonly PortfolioCashFlowService $cashFlowService,
-    private readonly HistoricalPriceService $historicalPriceService,
-    private readonly HistoricalQuantityService $historicalQuantityService
-) {
-}
+        private readonly PortfolioCashFlowService $cashFlowService,
+        private readonly HistoricalPriceService $historicalPriceService,
+        private readonly HistoricalQuantityService $historicalQuantityService,
+    ) {
+    }
 
     /**
      * Generate account-level valuations and one consolidated
      * portfolio valuation for the supplied user and date.
+     *
+     * Dates before the user has a genuine non-cash invested position are
+     * intentionally excluded from performance/risk valuation history.
+     *
+     * @return array<string, mixed>
      */
     public function generateForUser(
         User $user,
@@ -29,18 +34,20 @@ class PortfolioValuationGenerator
     ): array {
         $accounts = InvestmentAccount::query()
             ->where('user_id', $user->id)
-            ->with('holdings')
+            ->with('holdings.security')
             ->get();
 
         $accountValuations = collect();
 
         foreach ($accounts as $account) {
-            $accountValuations->push(
-                $this->generateForAccount(
-                    account: $account,
-                    valuationDate: $valuationDate,
-                )
+            $valuation = $this->generateForAccount(
+                account: $account,
+                valuationDate: $valuationDate,
             );
+
+            if ($valuation !== null) {
+                $accountValuations->push($valuation);
+            }
         }
 
         $portfolioValuation = $this->generateConsolidated(
@@ -52,13 +59,17 @@ class PortfolioValuationGenerator
         return [
             'user_id' => $user->id,
             'valuation_date' => $valuationDate->toDateString(),
-            'account_count' => $accountValuations->count(),
+
+            // Preserve the original meaning of account_count: how many
+            // investment accounts belong to the user.
+            'account_count' => $accounts->count(),
+
+            // Helpful when some accounts have not yet begun invested history.
+            'active_account_count' => $accountValuations->count(),
 
             'account_valuations' => $accountValuations
                 ->map(
-                    fn (
-                        PortfolioValuation $valuation
-                    ): array => [
+                    fn (PortfolioValuation $valuation): array => [
                         'investment_account_id' =>
                             $valuation->investment_account_id,
 
@@ -78,29 +89,36 @@ class PortfolioValuationGenerator
                 ->values()
                 ->all(),
 
-            'portfolio_valuation' => [
-                'market_value' =>
-                    (float) $portfolioValuation->market_value,
+            'portfolio_valuation' =>
+                $portfolioValuation === null
+                    ? null
+                    : [
+                        'market_value' =>
+                            (float) $portfolioValuation->market_value,
 
-                'cash_value' =>
-                    (float) $portfolioValuation->cash_value,
+                        'cash_value' =>
+                            (float) $portfolioValuation->cash_value,
 
-                'net_cash_flow' =>
-                    (float) $portfolioValuation->net_cash_flow,
+                        'net_cash_flow' =>
+                            (float) $portfolioValuation->net_cash_flow,
 
-                'total_value' =>
-                    $portfolioValuation->total_value,
-            ],
+                        'total_value' =>
+                            $portfolioValuation->total_value,
+                    ],
         ];
     }
 
     /**
      * Generate a valuation for one investment account.
+     *
+     * A generated valuation is persisted only when the account has a
+     * genuine non-cash position with a positive historical market value
+     * on the requested date.
      */
     public function generateForAccount(
         InvestmentAccount $account,
         CarbonInterface $valuationDate
-    ): PortfolioValuation {
+    ): ?PortfolioValuation {
         $account->loadMissing('holdings.security');
 
         /*
@@ -118,6 +136,19 @@ class PortfolioValuationGenerator
             $account->holdings,
         );
 
+        $historicalQuantities = $holdings
+            ->mapWithKeys(
+                fn (Holding $holding): array => [
+                    $holding->id =>
+                        $this->historicalQuantityService
+                            ->quantityOnDate(
+                                holding: $holding,
+                                date: $valuationDate,
+                            ),
+                ]
+            )
+            ->all();
+
         $investedHoldings = $holdings
             ->filter(
                 fn (Holding $holding): bool =>
@@ -133,6 +164,97 @@ class PortfolioValuationGenerator
                     && $holding->security->security_type === 'cash',
             )
             ->values();
+
+        /*
+         * Performance/risk history should begin only once the account
+         * actually contains a non-cash invested position on this date.
+         *
+         * Cash-equivalent holdings such as money-market sweep positions
+         * do not start investment-performance history by themselves.
+         */
+        $hasInvestedPositions = $holdings
+            ->contains(
+                function (Holding $holding) use (
+                    $historicalQuantities,
+                ): bool {
+                    if ($holding->security === null) {
+                        return false;
+                    }
+
+                    if (
+                        in_array(
+                            $holding->security->security_type,
+                            ['cash'],
+                            true,
+                        )
+                    ) {
+                        return false;
+                    }
+
+                    return (
+                        (float) (
+                            $historicalQuantities[
+                                $holding->id
+                            ] ?? 0
+                        )
+                    ) > 0;
+                },
+            );
+
+        /*
+         * Only holdings that actually existed on this historical date
+         * participate in historical-price coverage calculations.
+         */
+        $priceableHoldings = $investedHoldings
+            ->filter(
+                function (Holding $holding) use (
+                    $historicalQuantities,
+                ): bool {
+                    if ($holding->security === null) {
+                        return false;
+                    }
+
+                    if (
+                        $holding->security->security_type === 'cash'
+                    ) {
+                        return false;
+                    }
+
+                    return (
+                        (float) (
+                            $historicalQuantities[
+                                $holding->id
+                            ] ?? 0
+                        )
+                    ) > 0;
+                }
+            )
+            ->values();
+
+        $historicalPriceCount = $priceableHoldings
+            ->filter(
+                function (
+                    Holding $holding
+                ) use ($valuationDate): bool {
+                    $securityId =
+                        $holding->getAttribute('security_id');
+
+                    if ($securityId === null) {
+                        return false;
+                    }
+
+                    return $this->historicalPriceService
+                        ->valueOnOrBefore(
+                            security: (int) $securityId,
+                            date: $valuationDate,
+                        ) !== null;
+                }
+            )
+            ->count();
+
+        $missingHistoricalPriceCount =
+            $priceableHoldings->count()
+            - $historicalPriceCount;
 
         $marketValue = $investedHoldings->sum(
             fn (Holding $holding): float =>
@@ -160,41 +282,6 @@ class PortfolioValuationGenerator
                 date: $valuationDate,
             );
 
-        $priceableHoldings = $investedHoldings
-    ->filter(function ($holding): bool {
-        if ($holding->security === null) {
-            return false;
-        }
-
-        return ! in_array(
-            $holding->security->security_type,
-            [
-                'cash',
-            ],
-            true,
-        );
-    });
-
-        $historicalPriceCount = $priceableHoldings
-            ->filter(function ($holding) use ($valuationDate): bool {
-                $securityId = $holding->getAttribute('security_id');
-
-                if ($securityId === null) {
-                    return false;
-                }
-
-                return $this->historicalPriceService
-                    ->valueOnOrBefore(
-                        security: (int) $securityId,
-                        date: $valuationDate,
-                    ) !== null;
-            })
-            ->count();
-
-        $missingHistoricalPriceCount =
-            $priceableHoldings->count()
-            - $historicalPriceCount;
-
         $valuation = PortfolioValuation::query()
             ->where('user_id', $account->user_id)
             ->where(
@@ -207,57 +294,40 @@ class PortfolioValuationGenerator
             )
             ->first();
 
-        $historicalQuantities = $holdings
-    ->mapWithKeys(
-        fn (Holding $holding): array => [
-            $holding->id =>
-                $this->historicalQuantityService
-                    ->quantityOnDate(
-                        holding: $holding,
-                        date: $valuationDate,
-                    ),
-        ]
-    )
-    ->all();
-
         /*
-         * Performance/risk history should begin only once the account
-         * actually contains a non-cash invested position on this date.
+         * Critical guard:
          *
-         * Cash-equivalent holdings such as money-market sweep positions
-         * do not start investment-performance history by themselves.
+         * Do not create performance/risk history from a tiny cash-only
+         * balance before the account actually owns an investment.
+         *
+         * Historical market value must also be positive. This prevents
+         * missing historical prices from creating misleading zero-market
+         * valuation rows.
          */
-        $hasInvestedPositions = $holdings
-            ->contains(
-                function (Holding $holding) use (
-                    $historicalQuantities,
-                ): bool {
-                    if ($holding->security === null) {
-                        return false;
-                    }
+        if (
+            ! $hasInvestedPositions
+            || $marketValue <= 0
+        ) {
+            if (
+                $valuation !== null
+                && $valuation->source === 'generated'
+            ) {
+                $valuation->delete();
+            }
 
-                    if (
-                        in_array(
-                            $holding->security->security_type,
-                            [
-                                'cash',
-                            ],
-                            true,
-                        )
-                    ) {
-                        return false;
-                    }
+            /*
+             * Preserve an explicit/manual valuation if one already exists.
+             * Generated history is the only history this service owns.
+             */
+            if (
+                $valuation !== null
+                && $valuation->source !== 'generated'
+            ) {
+                return $valuation;
+            }
 
-                    return (
-                        (float) (
-                            $historicalQuantities[
-                                $holding->id
-                            ]
-                            ?? 0
-                        )
-                    ) > 0;
-                },
-            );
+            return null;
+        }
 
         if ($valuation === null) {
             $valuation = new PortfolioValuation();
@@ -267,6 +337,18 @@ class PortfolioValuationGenerator
                 $account->id;
             $valuation->valuation_date =
                 $valuationDate->toDateString();
+        }
+
+        /*
+         * Do not silently replace an explicit/manual valuation with a
+         * generated one.
+         */
+        if (
+            $valuation->exists
+            && $valuation->source !== null
+            && $valuation->source !== 'generated'
+        ) {
+            return $valuation;
         }
 
         $valuation->fill([
@@ -326,7 +408,7 @@ class PortfolioValuationGenerator
                     now()->toIso8601String(),
 
                 'has_invested_positions' =>
-                    $hasInvestedPositions,
+                    true,
 
                 'historical_quantities' =>
                     $historicalQuantities,
@@ -339,14 +421,48 @@ class PortfolioValuationGenerator
     }
 
     /**
-     * Generate a consolidated valuation by adding together
-     * the account-level valuation records.
+     * Generate a consolidated valuation by adding together the valid
+     * account-level valuation records.
+     *
+     * No consolidated generated valuation is persisted until at least one
+     * account has genuine invested history.
      */
     private function generateConsolidated(
         User $user,
         Collection $accountValuations,
         CarbonInterface $valuationDate
-    ): PortfolioValuation {
+    ): ?PortfolioValuation {
+        $existingValuation = PortfolioValuation::query()
+            ->where('user_id', $user->id)
+            ->whereNull('investment_account_id')
+            ->whereDate(
+                'valuation_date',
+                $valuationDate->toDateString()
+            )
+            ->first();
+
+        /*
+         * If no account qualifies for performance/risk history on this
+         * date, remove only a previously generated consolidated row.
+         */
+        if ($accountValuations->isEmpty()) {
+            if (
+                $existingValuation !== null
+                && $existingValuation->source === 'generated'
+            ) {
+                $existingValuation->delete();
+            }
+
+            if (
+                $existingValuation !== null
+                && $existingValuation->source !== 'generated'
+            ) {
+                return $existingValuation;
+            }
+
+            return null;
+        }
+
         $marketValue = $accountValuations->sum(
             fn (
                 PortfolioValuation $valuation
@@ -444,10 +560,6 @@ class PortfolioValuationGenerator
                 }
             );
 
-        /*
-         * Consolidated performance history is active once at least
-         * one account contains a genuine non-cash position.
-         */
         $hasInvestedPositions =
             $accountValuations->contains(
                 fn (
@@ -457,25 +569,55 @@ class PortfolioValuationGenerator
                         $valuation->metadata,
                         'has_invested_positions',
                         false,
-                    ),
+                    )
+                    || (float) $valuation->market_value > 0,
             );
 
-        $valuation = PortfolioValuation::query()
-            ->where('user_id', $user->id)
-            ->whereNull('investment_account_id')
-            ->whereDate(
-                'valuation_date',
-                $valuationDate->toDateString()
-            )
-            ->first();
+        /*
+         * A consolidated performance/risk valuation must have a positive
+         * invested market value. Cash-only consolidated rows are excluded.
+         */
+        if (
+            ! $hasInvestedPositions
+            || $marketValue <= 0
+        ) {
+            if (
+                $existingValuation !== null
+                && $existingValuation->source === 'generated'
+            ) {
+                $existingValuation->delete();
+            }
 
-        if ($valuation === null) {
-            $valuation = new PortfolioValuation();
+            if (
+                $existingValuation !== null
+                && $existingValuation->source !== 'generated'
+            ) {
+                return $existingValuation;
+            }
 
+            return null;
+        }
+
+        $valuation =
+            $existingValuation
+            ?? new PortfolioValuation();
+
+        if (! $valuation->exists) {
             $valuation->user_id = $user->id;
             $valuation->investment_account_id = null;
             $valuation->valuation_date =
                 $valuationDate->toDateString();
+        }
+
+        /*
+         * Preserve explicit/manual consolidated valuations.
+         */
+        if (
+            $valuation->exists
+            && $valuation->source !== null
+            && $valuation->source !== 'generated'
+        ) {
+            return $valuation;
         }
 
         $valuation->fill([
@@ -518,7 +660,7 @@ class PortfolioValuationGenerator
                     now()->toIso8601String(),
 
                 'has_invested_positions' =>
-                    $hasInvestedPositions,
+                    true,
             ],
         ]);
 
@@ -567,20 +709,32 @@ class PortfolioValuationGenerator
     /**
      * Determine a holding's value for the requested valuation date.
      *
-     * Historical prices are preferred. Current holding values are used
-     * only when no historical price can be found.
+     * Historical dates must use historical quantities and historical prices.
+     * Current stored values/prices are allowed only for today's valuation so
+     * a present-day value is never silently backfilled into the past.
      */
     private function holdingMarketValue(
-    Holding $holding,
-    CarbonInterface $valuationDate
-): float {
-       $quantity = $this->historicalQuantityService
-    ->quantityOnDate(
-        holding: $holding,
-        date: $valuationDate,
-    );
+        Holding $holding,
+        CarbonInterface $valuationDate
+    ): float {
+        $quantity = $this->historicalQuantityService
+            ->quantityOnDate(
+                holding: $holding,
+                date: $valuationDate,
+            );
 
-        $securityId = $holding->getAttribute('security_id');
+        /*
+         * The position did not exist on this historical date.
+         */
+        if (
+            $quantity !== null
+            && (float) $quantity <= 0
+        ) {
+            return 0.0;
+        }
+
+        $securityId =
+            $holding->getAttribute('security_id');
 
         if (
             $quantity !== null
@@ -597,6 +751,18 @@ class PortfolioValuationGenerator
                 return (float) $quantity
                     * $historicalPrice;
             }
+        }
+
+        /*
+         * Never use today's stored market value or current price to invent
+         * a historical value. Missing historical prices are intentionally
+         * represented as zero and surfaced through data-quality warnings.
+         */
+        if (
+            $valuationDate->toDateString()
+            < now()->toDateString()
+        ) {
+            return 0.0;
         }
 
         foreach (
@@ -657,4 +823,4 @@ class PortfolioValuationGenerator
 
         return 0.0;
     }
-} 
+}
