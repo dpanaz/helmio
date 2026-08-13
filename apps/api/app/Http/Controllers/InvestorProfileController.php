@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\RecalculateAdvisorAuditForUser;
 use App\Models\InvestorProfile;
 use App\Services\Dashboard\DashboardService;
 use Illuminate\Http\RedirectResponse;
@@ -170,24 +171,41 @@ class InvestorProfileController extends Controller
             $validated['return_to'],
         );
 
+        $userId =
+            $request->user()->id;
+
         InvestorProfile::updateOrCreate(
             [
                 'user_id' =>
-                    $request->user()->id,
+                    $userId,
             ],
             $validated,
         );
 
+        /*
+         * Clear any stale dashboard/advisor-audit cache references first.
+         */
         $dashboardService->clearAdvisorAuditCache(
-            $request->user()->id,
+            $userId,
         );
+
+        /*
+         * Recalculate and persist Advisor Audit asynchronously.
+         *
+         * Do not use RunAdvisorAuditForUser here because that job is tied
+         * to MonthlyAuditSetting, sends monthly notifications, and updates
+         * monthly scheduling state.
+         */
+        RecalculateAdvisorAuditForUser::dispatch(
+            $userId,
+        )->onQueue('analytics');
 
         if ($returnTo !== null) {
             return redirect()
                 ->to($returnTo)
                 ->with(
                     'success',
-                    'Investor profile updated successfully.',
+                    'Investor profile updated successfully. Advisor analytics are being refreshed.',
                 );
         }
 
@@ -197,7 +215,7 @@ class InvestorProfileController extends Controller
             )
             ->with(
                 'success',
-                'Investor profile updated successfully.',
+                'Investor profile updated successfully. Advisor analytics are being refreshed.',
             );
     }
 
