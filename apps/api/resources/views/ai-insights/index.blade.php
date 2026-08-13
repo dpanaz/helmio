@@ -27,29 +27,54 @@
             <form
                 method="POST"
                 action="{{ route('ai-insights.generate') }}"
+                data-ai-insight-form
             >
                 @csrf
 
                 <button
                     type="submit"
-                    class="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500"
+                    data-ai-insight-button
+                    class="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:hover:bg-violet-600"
                 >
-                    <svg
-                        class="h-5 w-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                        stroke-width="2"
+                    <span
+                        data-ai-insight-idle
+                        class="inline-flex items-center gap-2"
                     >
-                        <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.847-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 0 0-3.09 3.09L9 18.75Z"
-                        />
-                    </svg>
+                        <svg
+                            class="h-5 w-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.847-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 0 0-3.09 3.09L9 18.75Z"
+                            />
+                        </svg>
 
-                    Generate new insight
+                        Generate new insight
+                    </span>
+
+                    <span
+                        data-ai-insight-loading
+                        class="hidden items-center gap-2"
+                    >
+                        <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
+                        </svg>
+                        Generating insight…
+                    </span>
                 </button>
+
+                <p
+                    data-ai-insight-status
+                    class="mt-2 hidden text-right text-xs text-violet-300"
+                >
+                    Analyzing your portfolio. This may take a few moments.
+                </p>
             </form>
         </div>
     </x-slot>
@@ -224,15 +249,37 @@
                                             $latestInsight
                                         ) }}"
                                         class="mt-4"
+                                        data-ai-insight-form
                                     >
                                         @csrf
 
                                         <button
                                             type="submit"
-                                            class="rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-300"
+                                            data-ai-insight-button
+                                            class="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-300 disabled:hover:bg-amber-400"
                                         >
-                                            Regenerate Insight
+                                            <span data-ai-insight-idle>
+                                                Regenerate Insight
+                                            </span>
+
+                                            <span
+                                                data-ai-insight-loading
+                                                class="hidden items-center gap-2"
+                                            >
+                                                <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
+                                                </svg>
+                                                Regenerating…
+                                            </span>
                                         </button>
+
+                                        <p
+                                            data-ai-insight-status
+                                            class="mt-2 hidden text-xs text-amber-300"
+                                        >
+                                            Refreshing this insight with current portfolio data.
+                                        </p>
                                     </form>
                                 </div>
                             @endif
@@ -317,15 +364,37 @@
                         method="POST"
                         action="{{ route('ai-insights.generate') }}"
                         class="mt-7"
+                        data-ai-insight-form
                     >
                         @csrf
 
                         <button
                             type="submit"
-                            class="rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500"
+                            data-ai-insight-button
+                            class="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:hover:bg-violet-600"
                         >
-                            Generate first insight
+                            <span data-ai-insight-idle>
+                                Generate first insight
+                            </span>
+
+                            <span
+                                data-ai-insight-loading
+                                class="hidden items-center gap-2"
+                            >
+                                <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
+                                </svg>
+                                Generating insight…
+                            </span>
                         </button>
+
+                        <p
+                            data-ai-insight-status
+                            class="mt-3 hidden text-xs text-violet-300"
+                        >
+                            Analyzing your portfolio. This may take a few moments.
+                        </p>
                     </form>
                 </section>
             @else
@@ -448,14 +517,29 @@
                                                     'ai-insights.regenerate',
                                                     $insight
                                                 ) }}"
+                                                data-ai-insight-form
                                             >
                                                 @csrf
 
                                                 <button
                                                     type="submit"
-                                                    class="inline-flex items-center rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-300"
+                                                    data-ai-insight-button
+                                                    class="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-300 disabled:hover:bg-amber-400"
                                                 >
-                                                    Regenerate
+                                                    <span data-ai-insight-idle>
+                                                        Regenerate
+                                                    </span>
+
+                                                    <span
+                                                        data-ai-insight-loading
+                                                        class="hidden items-center gap-2"
+                                                    >
+                                                        <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
+                                                        </svg>
+                                                        Regenerating…
+                                                    </span>
                                                 </button>
                                             </form>
                                         @endif
@@ -539,4 +623,31 @@
             </section>
         </div>
     </div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        document.querySelectorAll('[data-ai-insight-form]').forEach((form) => {
+            form.addEventListener('submit', () => {
+                const button = form.querySelector('[data-ai-insight-button]');
+                const idle = form.querySelector('[data-ai-insight-idle]');
+                const loading = form.querySelector('[data-ai-insight-loading]');
+                const status = form.querySelector('[data-ai-insight-status]');
+
+                if (!button || button.disabled) {
+                    return;
+                }
+
+                button.disabled = true;
+                button.setAttribute('aria-busy', 'true');
+                button.classList.add('cursor-not-allowed', 'opacity-70');
+
+                idle?.classList.add('hidden');
+                loading?.classList.remove('hidden');
+                loading?.classList.add('inline-flex');
+                status?.classList.remove('hidden');
+            });
+        });
+    });
+</script>
+
 </x-app-layout>
