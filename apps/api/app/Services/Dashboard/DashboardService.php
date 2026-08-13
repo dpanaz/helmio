@@ -10,6 +10,7 @@ use App\Models\InvestmentAccount;
 use App\Models\User;
 use App\Services\Audit\AuditHistoryComparisonService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardService
 {
@@ -328,6 +329,35 @@ class DashboardService
                     ),
             ],
         ];
+    }
+
+    /**
+     * Invalidate cached Advisor Audit/dashboard data for a user.
+     *
+     * Several write paths call this method after investor-profile,
+     * investment-account-profile, or brokerage data changes. The current
+     * dashboard implementation is persisted-data driven and does not itself
+     * cache build(), but older/current Advisor Audit readers may still use
+     * these user-scoped cache keys.
+     *
+     * Keep cache invalidation centralized here so callers do not need to
+     * know the underlying key format.
+     */
+    public function clearAdvisorAuditCache(
+        int $userId,
+    ): void {
+        $keys = [
+            "advisor-audit:user:{$userId}",
+            "advisor_audit:user:{$userId}",
+            "advisor-audit:{$userId}",
+            "advisor_audit:{$userId}",
+            "dashboard:user:{$userId}",
+            "dashboard:{$userId}",
+        ];
+
+        foreach ($keys as $key) {
+            Cache::forget($key);
+        }
     }
 
     /**
