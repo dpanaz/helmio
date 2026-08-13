@@ -1122,16 +1122,16 @@
                                 @foreach ($scoreBreakdown as $item)
 
                                     @php
-                                        $categoryScore =
+                                       $categoryScore =
                                             data_get(
-                                                $helmScore,
-                                                'categories.'
-                                                . $item['key']
+                                                $auditCategories,
+                                                $item['key']
                                                 . '.score'
                                             )
                                             ?? data_get(
-                                                $auditCategories,
-                                                $item['key']
+                                                $helmScore,
+                                                'categories.'
+                                                . $item['key']
                                                 . '.score'
                                             );
 
