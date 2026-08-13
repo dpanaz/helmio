@@ -303,6 +303,16 @@
                             —
                         </p>
 
+                        <div
+                            id="audit-confidence-wrap"
+                            class="mt-3 flex justify-center"
+                        >
+                            <span
+                                id="audit-confidence"
+                                class="hidden inline-flex rounded-full border px-3 py-1 text-xs font-semibold"
+                            ></span>
+                        </div>
+
                         <div class="mt-6">
                             <div
                                 class="flex items-center justify-between text-sm"
@@ -845,6 +855,9 @@
                     risk:
                         'Risk',
 
+                    suitability:
+                        'Suitability',
+
                     trading:
                         'Trading Discipline',
 
@@ -872,6 +885,9 @@
 
                     risk:
                         '{{ route('analytics.risk') }}',
+
+                    suitability:
+                        '#',
 
                     trading:
                         '{{ route('analytics.trading-discipline') }}',
@@ -906,6 +922,81 @@
                     ?? 'border-slate-700 bg-slate-800 text-slate-300';
             };
 
+            const escapeHtml = (value) => {
+                const element =
+                    document.createElement('div');
+
+                element.textContent =
+                    value ?? '';
+
+                return element.innerHTML;
+            };
+
+            const categoryStatusLabel = (category) => {
+                if (
+                    category?.available !== false
+                    && category?.score !== null
+                    && category?.score !== undefined
+                ) {
+                    return category.label
+                        ?? 'Available';
+                }
+
+                const message =
+                    String(
+                        category?.message
+                        ?? ''
+                    ).toLowerCase();
+
+                if (
+                    message.includes('building')
+                    || message.includes('waiting')
+                    || message.includes('history')
+                ) {
+                    return 'Building history';
+                }
+
+                return category?.label
+                    ?? 'Insufficient data';
+            };
+
+            const categoryMessage = (category) => {
+                if (
+                    category?.available === false
+                    || category?.score === null
+                    || category?.score === undefined
+                ) {
+                    return category?.message
+                        ?? 'More data is required.';
+                }
+
+                return 'Open category details →';
+            };
+
+            const confidenceClasses = (status) => {
+                if (status === 'provisional') {
+                    return 'border-amber-500/20 bg-amber-500/10 text-amber-300';
+                }
+
+                if (status === 'complete') {
+                    return 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300';
+                }
+
+                return 'border-slate-700 bg-slate-800 text-slate-400';
+            };
+
+            const confidenceLabel = (data) => {
+                if (data?.status === 'provisional') {
+                    return 'Provisional score';
+                }
+
+                if (data?.status === 'complete') {
+                    return 'Established score';
+                }
+
+                return 'Building advisor audit';
+            };
+
             const renderCategories = (
                 categories
             ) => {
@@ -924,16 +1015,35 @@
                             category.score
                             ?? null;
 
+                        const isAvailable =
+                            category.available !== false
+                            && score !== null
+                            && score !== undefined;
+
                         const card =
                             document.createElement(
-                                'a'
+                                isAvailable ? 'a' : 'div'
                             );
 
-                        card.href =
-                            categoryRoute(key);
+                        if (isAvailable) {
+                            card.href =
+                                categoryRoute(key);
+                        }
 
                         card.className =
-                            'block rounded-2xl border border-slate-800 bg-slate-950 p-5 transition hover:-translate-y-0.5 hover:border-blue-500/40';
+                            isAvailable
+                                ? 'block rounded-2xl border border-slate-800 bg-slate-950 p-5 transition hover:-translate-y-0.5 hover:border-blue-500/40'
+                                : 'block rounded-2xl border border-slate-800 bg-slate-950 p-5';
+
+                        const statusLabel =
+                            categoryStatusLabel(
+                                category
+                            );
+
+                        const detailMessage =
+                            categoryMessage(
+                                category
+                            );
 
                         card.innerHTML = `
                             <div class="flex items-start justify-between gap-3">
@@ -948,7 +1058,7 @@
                                 </div>
 
                                 <span class="inline-flex rounded-full border px-2.5 py-1 text-xs font-semibold ${labelClasses(score)}">
-                                    ${category.label ?? 'Insufficient data'}
+                                    ${escapeHtml(statusLabel)}
                                 </span>
                             </div>
 
@@ -960,11 +1070,7 @@
                             </div>
 
                             <p class="mt-4 text-xs text-slate-600">
-                                ${
-                                    category.available === false
-                                        ? 'More data is required.'
-                                        : 'Open category details →'
-                                }
+                                ${escapeHtml(detailMessage)}
                             </p>
                         `;
 
@@ -1270,6 +1376,21 @@
                                     data.advisor_rating
                                 );
 
+                        const confidenceBadge =
+                            document.getElementById(
+                                'audit-confidence'
+                            );
+
+                        confidenceBadge.textContent =
+                            confidenceLabel(data);
+
+                        confidenceBadge.className =
+                            `inline-flex rounded-full border px-3 py-1 text-xs font-semibold ${confidenceClasses(data.status)}`;
+
+                        confidenceBadge
+                            .classList
+                            .remove('hidden');
+
                         document
                             .getElementById(
                                 'data-completeness'
@@ -1331,7 +1452,11 @@
                             )
                             .textContent =
                                 executive.headline
-                                ?? 'Advisor audit complete';
+                                ?? (
+                                    data.status === 'provisional'
+                                        ? 'Advisor audit is still building'
+                                        : 'Advisor audit complete'
+                                );
 
                         document
                             .getElementById(
@@ -1339,7 +1464,11 @@
                             )
                             .textContent =
                                 executive.summary
-                                ?? 'No executive summary was generated.';
+                                ?? (
+                                    data.status === 'provisional'
+                                        ? `${Math.round((data.data_completeness ?? 0) * 100)}% of audit categories currently have sufficient data. The score is provisional and will update as more history becomes available.`
+                                        : 'No executive summary was generated.'
+                                );
 
                         const summary =
                             data.findings

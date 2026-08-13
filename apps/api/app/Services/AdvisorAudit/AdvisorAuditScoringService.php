@@ -5,7 +5,7 @@ namespace App\Services\AdvisorAudit;
 class AdvisorAuditScoringService
 {
     public const FORMULA_VERSION =
-        'advisor-audit-score-0.2.0';
+        'advisor-audit-score-0.3.0';
 
     /**
      * Category weights total 100%.
@@ -26,6 +26,10 @@ class AdvisorAuditScoringService
         'cash' => 0.05,
         'tax' => 0.10,
     ];
+
+    private const MINIMUM_AVAILABLE_CATEGORY_COUNT = 4;
+    private const MINIMUM_AVAILABLE_WEIGHT = 0.50;
+    private const COMPLETE_AVAILABLE_WEIGHT = 0.80;
 
     /**
      * @param array<string, array<string, mixed>> $categories
@@ -69,6 +73,15 @@ class AdvisorAuditScoringService
                             ? 'complete'
                             : 'insufficient_data'
                     ),
+
+                /*
+                 * Preserve the category-specific readiness explanation so
+                 * the Advisor Audit Blade can display meaningful messages
+                 * such as "building risk history" instead of a generic
+                 * "more data is required."
+                 */
+                'message' =>
+                    $categoryData['message'] ?? null,
 
                 'weight' => $weight,
                 'available' => $isAvailable,
@@ -117,7 +130,7 @@ class AdvisorAuditScoringService
                 : 0.0;
 
         /*
-         * Reweight available categories so missing categories do not
+         * Reweight available categories so unavailable categories do not
          * automatically reduce the Advisor Audit score.
          */
         $overallScore =
@@ -132,22 +145,37 @@ class AdvisorAuditScoringService
                 )
                 : null;
 
-        /*
-         * Require at least four categories and 50% of configured
-         * weighting before presenting an overall score.
-         */
-        if (
-            $availableCategoryCount < 4
-            || $availableWeight < 0.50
-        ) {
+        $meetsMinimumCoverage =
+            $availableCategoryCount
+                >= self::MINIMUM_AVAILABLE_CATEGORY_COUNT
+            && $availableWeight
+                >= self::MINIMUM_AVAILABLE_WEIGHT;
+
+        if (! $meetsMinimumCoverage) {
             $overallScore = null;
         }
 
+        $status = match (true) {
+            $overallScore === null =>
+                'insufficient_data',
+
+            $availableWeight
+                < self::COMPLETE_AVAILABLE_WEIGHT =>
+                    'provisional',
+
+            default =>
+                'complete',
+        };
+
+        $confidenceLevel = match ($status) {
+            'complete' => 'established',
+            'provisional' => 'provisional',
+            default => 'insufficient',
+        };
+
         return [
             'status' =>
-                $overallScore === null
-                    ? 'insufficient_data'
-                    : 'complete',
+                $status,
 
             'overall_score' =>
                 $overallScore,
@@ -163,6 +191,38 @@ class AdvisorAuditScoringService
                     : $this->advisorRating(
                         $overallScore
                     ),
+
+            'confidence' => [
+                'level' =>
+                    $confidenceLevel,
+
+                'is_provisional' =>
+                    $status === 'provisional',
+
+                'is_complete' =>
+                    $status === 'complete',
+
+                'minimum_available_category_count' =>
+                    self::MINIMUM_AVAILABLE_CATEGORY_COUNT,
+
+                'minimum_available_weight' =>
+                    self::MINIMUM_AVAILABLE_WEIGHT,
+
+                'complete_available_weight' =>
+                    self::COMPLETE_AVAILABLE_WEIGHT,
+
+                'available_category_count' =>
+                    $availableCategoryCount,
+
+                'total_category_count' =>
+                    $totalCategoryCount,
+
+                'available_weight' =>
+                    round($availableWeight, 8),
+
+                'data_completeness' =>
+                    round($dataCompleteness, 8),
+            ],
 
             'data_completeness' =>
                 round($dataCompleteness, 8),
