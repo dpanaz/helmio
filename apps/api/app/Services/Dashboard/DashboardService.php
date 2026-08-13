@@ -48,7 +48,9 @@ class DashboardService
                 'profile',
                 'holdings.security',
             ])
-            ->withCount('holdings')
+           ->withCount([
+                'currentHoldings as holdings_count',
+            ])
             ->orderBy('name')
             ->get();
 
