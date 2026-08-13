@@ -10,6 +10,7 @@ use App\Models\InvestmentAccount;
 use App\Models\User;
 use App\Services\Audit\AuditHistoryComparisonService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 
 class DashboardService
 {
@@ -245,12 +246,10 @@ class DashboardService
                 $user->investorProfile,
 
             'suitability' =>
-                $this->dashboardSuitability(
-                    user:
-                        $user,
-
-                    advisorAudit:
-                        $advisorAudit,
+                data_get(
+                    $advisorAudit,
+                    'categories.suitability',
+                    [],
                 ),
 
             'currentAuditRun' =>
@@ -333,140 +332,32 @@ class DashboardService
     }
 
     /**
-     * Build the dashboard suitability payload from the freshest sources.
+     * Invalidate cached Advisor Audit/dashboard data for a user.
      *
-     * Expected risk and profile completeness come directly from the current
-     * InvestorProfile so a profile edit is reflected immediately.
+     * Several write paths call this method after investor-profile,
+     * investment-account-profile, or brokerage data changes. The current
+     * dashboard implementation is persisted-data driven and does not itself
+     * cache build(), but older/current Advisor Audit readers may still use
+     * these user-scoped cache keys.
      *
-     * Measured risk and risk gap remain sourced from persisted analytics.
-     * They are intentionally left unavailable while Risk/Suitability are
-     * still building sufficient portfolio history.
-     *
-     * @return array<string, mixed>
+     * Keep cache invalidation centralized here so callers do not need to
+     * know the underlying key format.
      */
-    private function dashboardSuitability(
-        User $user,
-        array $advisorAudit,
-    ): array {
-        $persistedSuitability = data_get(
-            $advisorAudit,
-            'categories.suitability',
-            [],
-        );
-
-        if (! is_array($persistedSuitability)) {
-            $persistedSuitability = [];
-        }
-
-        $profile = $user->investorProfile;
-
-        $expectedRiskTolerance =
-            $profile?->risk_tolerance;
-
-        $profileFields = [
-            $profile?->date_of_birth,
-            $profile?->planned_retirement_age,
-            $profile?->investment_experience,
-            $profile?->primary_objective,
-            $profile?->time_horizon_years,
-            $profile?->risk_tolerance,
-            $profile?->liquidity_needs,
+    public function clearAdvisorAuditCache(
+        int $userId,
+    ): void {
+        $keys = [
+            "advisor-audit:user:{$userId}",
+            "advisor_audit:user:{$userId}",
+            "advisor-audit:{$userId}",
+            "advisor_audit:{$userId}",
+            "dashboard:user:{$userId}",
+            "dashboard:{$userId}",
         ];
 
-        $completedProfileFields = collect(
-            $profileFields
-        )
-            ->filter(
-                fn ($value): bool =>
-                    $value !== null
-                    && $value !== '',
-            )
-            ->count();
-
-        $profileCompleteness =
-            count($profileFields) > 0
-                ? $completedProfileFields
-                    / count($profileFields)
-                : 0.0;
-
-        $metrics = data_get(
-            $persistedSuitability,
-            'metrics',
-            [],
-        );
-
-        if (! is_array($metrics)) {
-            $metrics = [];
+        foreach ($keys as $key) {
+            Cache::forget($key);
         }
-
-        /*
-         * Prefer the current profile for expected risk/completeness.
-         * Keep measured-risk fields from persisted analytics only.
-         */
-        $metrics['expected_risk_tolerance'] =
-            $expectedRiskTolerance;
-
-        $metrics['profile_completeness'] =
-            $profileCompleteness;
-
-        $actualRiskLevel =
-            data_get(
-                $metrics,
-                'actual_risk_level',
-            );
-
-        $riskGap =
-            data_get(
-                $metrics,
-                'risk_gap',
-            );
-
-        $accountOverrideCount =
-            (int) data_get(
-                $metrics,
-                'account_override_count',
-                0,
-            );
-
-        $persistedSuitability['metrics'] =
-            $metrics;
-
-        $persistedSuitability['expected_risk_tolerance'] =
-            $expectedRiskTolerance;
-
-        $persistedSuitability['actual_risk_level'] =
-            $actualRiskLevel;
-
-        $persistedSuitability['risk_gap'] =
-            $riskGap;
-
-        $persistedSuitability['account_override_count'] =
-            $accountOverrideCount;
-
-        $persistedSuitability['profile_completeness'] =
-            $profileCompleteness;
-
-        /*
-         * When the investor profile is complete enough to identify expected
-         * risk but measured risk is not yet established, use a dashboard-
-         * friendly state instead of implying that the profile itself is
-         * missing.
-         */
-        if (
-            $expectedRiskTolerance !== null
-            && $actualRiskLevel === null
-        ) {
-            $persistedSuitability['status'] =
-                'insufficient_data';
-
-            $persistedSuitability['label'] =
-                'Building risk history';
-
-            $persistedSuitability['message'] =
-                'Your investor profile is available. Helmio is still building enough portfolio history to measure actual risk.';
-        }
-
-        return $persistedSuitability;
     }
 
     /**
