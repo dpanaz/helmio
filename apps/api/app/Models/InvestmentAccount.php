@@ -10,81 +10,131 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 class InvestmentAccount extends Model
 {
     protected $fillable = [
-          'user_id',
-    'brokerage_connection_id',
-    'institution_id',
-    'name',
-    'account_type',
-    'account_number_mask',
-    'currency',
-    'current_value',
-    'cash_value',
-    'annual_advisory_fee_rate',
-    'annual_account_fee',
-    'advisory_fee_applies_to_cash',
-    'status',
-    'last_synced_at',
-    'metadata',
-    'benchmark_id',
-    'brokerage_connection_id',
-    'provider_account_id',
-    'provider',
-    'provider_synced_at',
-    'provider_metadata',
+        'user_id',
+        'brokerage_connection_id',
+        'institution_id',
+        'name',
+        'account_type',
+        'account_number_mask',
+        'currency',
+        'current_value',
+        'cash_value',
+        'annual_advisory_fee_rate',
+        'annual_account_fee',
+        'advisory_fee_applies_to_cash',
+        'status',
+        'last_synced_at',
+        'metadata',
+        'benchmark_id',
+        'provider_account_id',
+        'provider',
+        'provider_synced_at',
+        'provider_metadata',
     ];
 
     protected function casts(): array
     {
         return [
-             'current_value' => 'decimal:2',
-        'cash_value' => 'decimal:2',
-        'annual_advisory_fee_rate' => 'decimal:6',
-        'annual_account_fee' => 'decimal:2',
-        'advisory_fee_applies_to_cash' => 'boolean',
-        'last_synced_at' => 'datetime',
-        'metadata' => 'array',
-        'provider_synced_at' => 'datetime',
-        'provider_metadata' => 'array',
+            'current_value' =>
+                'decimal:2',
+
+            'cash_value' =>
+                'decimal:2',
+
+            'annual_advisory_fee_rate' =>
+                'decimal:6',
+
+            'annual_account_fee' =>
+                'decimal:2',
+
+            'advisory_fee_applies_to_cash' =>
+                'boolean',
+
+            'last_synced_at' =>
+                'datetime',
+
+            'metadata' =>
+                'array',
+
+            'provider_synced_at' =>
+                'datetime',
+
+            'provider_metadata' =>
+                'array',
         ];
     }
 
     public function profile(): HasOne
-{
-    return $this->hasOne(
-        InvestmentAccountProfile::class
-    );
-}
+    {
+        return $this->hasOne(
+            InvestmentAccountProfile::class
+        );
+    }
 
     public function user(): BelongsTo
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(
+            User::class
+        );
     }
 
     public function institution(): BelongsTo
     {
-        return $this->belongsTo(Institution::class);
+        return $this->belongsTo(
+            Institution::class
+        );
     }
 
     public function brokerageConnection(): BelongsTo
     {
-        return $this->belongsTo(BrokerageConnection::class);
+        return $this->belongsTo(
+            BrokerageConnection::class
+        );
     }
 
+    /**
+     * All historical holding snapshots for this account.
+     *
+     * Do not use this relationship for current portfolio calculations.
+     */
     public function holdings(): HasMany
     {
-    return $this->hasMany(Holding::class);
+        return $this->hasMany(
+            Holding::class
+        );
     }
-    public function transactions(): HasMany
-{
-    return $this->hasMany(InvestmentTransaction::class);
-}
-public function benchmark(): BelongsTo
-{
-    return $this->belongsTo(Benchmark::class);
-}
 
-public function portfolioSnapshots(): HasMany
-{
-    return $this->hasMany(PortfolioSnapshot::class);
-}
+    /**
+     * Current holdings from the latest available snapshot date.
+     *
+     * Use this relationship for dashboard values, current holdings pages,
+     * diversification, AI context, and other current-portfolio analysis.
+     */
+    public function currentHoldings(): HasMany
+    {
+        return $this->hasMany(
+            Holding::class
+        )->currentSnapshot();
+    }
+
+    public function transactions(): HasMany
+    {
+        return $this->hasMany(
+            InvestmentTransaction::class
+        );
+    }
+
+    public function benchmark(): BelongsTo
+    {
+        return $this->belongsTo(
+            Benchmark::class
+        );
+    }
+
+    public function portfolioSnapshots(): HasMany
+    {
+        return $this->hasMany(
+            PortfolioSnapshot::class
+        );
+    }
 }
