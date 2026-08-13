@@ -10,7 +10,7 @@ use Carbon\CarbonInterface;
 class SuitabilityRiskService
 {
     public const FORMULA_VERSION =
-        'suitability-risk-0.2.0';
+        'suitability-risk-0.3.0';
 
     public function __construct(
         private readonly RiskAnalyticsService $riskAnalyticsService,
@@ -51,22 +51,56 @@ class SuitabilityRiskService
             $this->suitabilityProfileService
                 ->portfolioSummary($accounts);
 
-        $actualRiskLevel =
+        $riskStatus =
             data_get(
                 $riskAnalytics,
-                'risk_level'
+                'status'
+            );
+
+        $riskConfidence =
+            data_get(
+                $riskAnalytics,
+                'confidence.level'
             )
             ?? data_get(
                 $riskAnalytics,
-                'metrics.risk_level'
+                'data.confidence.level'
+            );
+
+        $riskIsReady =
+            $riskStatus === 'complete'
+            && $riskConfidence !== 'insufficient';
+
+        $actualRiskLevel =
+            $riskIsReady
+                ? (
+                    data_get(
+                        $riskAnalytics,
+                        'risk_level'
+                    )
+                    ?? data_get(
+                        $riskAnalytics,
+                        'metrics.risk_level'
+                    )
+                    ?? data_get(
+                        $riskAnalytics,
+                        'data.risk_level'
+                    )
+                    ?? data_get(
+                        $riskAnalytics,
+                        'risk_metrics.risk_level'
+                    )
+                )
+                : null;
+
+        $provisionalRiskLevel =
+            data_get(
+                $riskAnalytics,
+                'provisional_risk_level'
             )
             ?? data_get(
                 $riskAnalytics,
-                'data.risk_level'
-            )
-            ?? data_get(
-                $riskAnalytics,
-                'risk_metrics.risk_level'
+                'data.provisional_risk_level'
             );
 
         $expectedRiskTolerance =
@@ -125,7 +159,11 @@ class SuitabilityRiskService
 
             'message' =>
                 $score === null
-                    ? 'A complete investor risk profile and sufficient portfolio risk history are required.'
+                    ? (
+                        ! $riskIsReady
+                            ? 'Suitability scoring is waiting for sufficient established portfolio risk history.'
+                            : 'A complete investor risk profile and sufficient portfolio risk history are required.'
+                    )
                     : null,
 
             'score' =>
@@ -142,6 +180,15 @@ class SuitabilityRiskService
 
                 'actual_risk_score' =>
                     $actualRiskScore,
+
+                'provisional_risk_level' =>
+                    $provisionalRiskLevel,
+
+                'risk_analytics_status' =>
+                    $riskStatus,
+
+                'risk_confidence' =>
+                    $riskConfidence,
 
                 'expected_risk_tolerance' =>
                     $expectedRiskTolerance,
@@ -176,6 +223,15 @@ class SuitabilityRiskService
 
                     suitability:
                         $suitability,
+
+                    riskIsReady:
+                        $riskIsReady,
+
+                    riskStatus:
+                        $riskStatus,
+
+                    riskConfidence:
+                        $riskConfidence,
                 ),
 
             'recommendations' =>
@@ -383,10 +439,27 @@ class SuitabilityRiskService
         ?string $actualRiskLevel,
         ?string $expectedRiskTolerance,
         array $suitability,
+        bool $riskIsReady,
+        ?string $riskStatus,
+        ?string $riskConfidence,
     ): array {
         $warnings = [];
 
-        if ($actualRiskLevel === null) {
+        if (! $riskIsReady) {
+            $warnings[] = [
+                'code' =>
+                    'risk_history_not_ready',
+
+                'message' =>
+                    'Suitability scoring is waiting for sufficient portfolio risk history.',
+
+                'risk_status' =>
+                    $riskStatus,
+
+                'risk_confidence' =>
+                    $riskConfidence,
+            ];
+        } elseif ($actualRiskLevel === null) {
             $warnings[] = [
                 'code' =>
                     'actual_risk_unavailable',
