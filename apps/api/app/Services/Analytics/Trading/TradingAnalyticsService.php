@@ -10,9 +10,10 @@ use Carbon\CarbonInterface;
 
 class TradingAnalyticsService
 {
-    public const FORMULA_VERSION = 'trading-0.4.0';
+    public const FORMULA_VERSION = 'trading-0.5.0';
 
-    private const LIMITED_VALUATION_COUNT = 20;
+    private const MINIMUM_SCORABLE_VALUATION_COUNT = 20;
+    private const ESTABLISHED_VALUATION_COUNT = 60;
 
     public function __construct(
         private readonly TradingMetricsService $tradingMetricsService,
@@ -379,6 +380,73 @@ class TradingAnalyticsService
             )
         );
 
+        $valuationCount =
+            $valuations->count();
+
+        $confidence =
+            $this->confidenceData(
+                valuationCount:
+                    $valuationCount,
+            );
+
+        /*
+         * Turnover can be calculated with a very short valuation history,
+         * but Helmio should not promote that estimate into an established
+         * consumer-facing trading score until enough valuation points exist.
+         */
+        if (
+            $valuationCount
+            < self::MINIMUM_SCORABLE_VALUATION_COUNT
+        ) {
+            return $this->legacyCompatibleResult(
+                AnalyticsResult::insufficientData(
+                    message:
+                        sprintf(
+                            'Helmio is still building trading history. At least %d consolidated portfolio valuation points are required before a trading score is assigned.',
+                            self::MINIMUM_SCORABLE_VALUATION_COUNT
+                        ),
+
+                    metrics:
+                        $tradingMetricsResult['metrics']
+                        ?? [],
+
+                    warnings:
+                        $warnings,
+
+                    data: [
+                        'period' =>
+                            $effectivePeriod,
+
+                        'requested_period' =>
+                            $requestedPeriod,
+
+                        'effective_period' =>
+                            $effectivePeriod,
+
+                        'summary' =>
+                            $summary,
+
+                        'risk_level' =>
+                            null,
+
+                        'provisional_risk_level' =>
+                            $tradingMetricsResult[
+                                'risk_level'
+                            ] ?? null,
+
+                        'round_trip_analysis' =>
+                            $roundTripResult,
+
+                        'confidence' =>
+                            $confidence,
+                    ],
+
+                    formulaVersion:
+                        self::FORMULA_VERSION,
+                )
+            );
+        }
+
         $score =
             $this->calculateScore(
                 metrics:
@@ -387,6 +455,9 @@ class TradingAnalyticsService
 
                 roundTripResult:
                     $roundTripResult,
+
+                valuationCount:
+                    $valuationCount,
             );
 
         $result =
@@ -426,6 +497,9 @@ class TradingAnalyticsService
 
                     'round_trip_analysis' =>
                         $roundTripResult,
+
+                    'confidence' =>
+                        $confidence,
                 ],
 
                 score:
@@ -457,7 +531,8 @@ class TradingAnalyticsService
      */
     private function calculateScore(
         array $metrics,
-        array $roundTripResult
+        array $roundTripResult,
+        int $valuationCount
     ): ?int {
         $turnoverRate =
             $metrics['turnover_rate']
@@ -539,6 +614,13 @@ class TradingAnalyticsService
             $score -= 20;
         } elseif ($veryShortRoundTripCount >= 1) {
             $score -= 8;
+        }
+
+        if (
+            $valuationCount
+            < self::ESTABLISHED_VALUATION_COUNT
+        ) {
+            $score -= 5;
         }
 
         return max(
@@ -640,7 +722,22 @@ class TradingAnalyticsService
 
         if (
             $valuationCount
-            < self::LIMITED_VALUATION_COUNT
+            < self::MINIMUM_SCORABLE_VALUATION_COUNT
+        ) {
+            $warnings[] = [
+                'code' =>
+                    'insufficient_trading_history',
+
+                'message' =>
+                    sprintf(
+                        'Trading turnover is based on only %d consolidated portfolio valuation point(s); at least %d are required before Helmio assigns a trading score.',
+                        $valuationCount,
+                        self::MINIMUM_SCORABLE_VALUATION_COUNT
+                    ),
+            ];
+        } elseif (
+            $valuationCount
+            < self::ESTABLISHED_VALUATION_COUNT
         ) {
             $warnings[] = [
                 'code' =>
@@ -648,13 +745,52 @@ class TradingAnalyticsService
 
                 'message' =>
                     sprintf(
-                        'Trading turnover is based on only %d consolidated portfolio valuation point(s).',
-                        $valuationCount
+                        'Trading turnover is based on %d consolidated portfolio valuation point(s) and should be interpreted with additional caution until at least %d are available.',
+                        $valuationCount,
+                        self::ESTABLISHED_VALUATION_COUNT
                     ),
             ];
         }
 
         return $warnings;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function confidenceData(
+        int $valuationCount
+    ): array {
+        $level = match (true) {
+            $valuationCount
+                < self::MINIMUM_SCORABLE_VALUATION_COUNT =>
+                    'insufficient',
+
+            $valuationCount
+                < self::ESTABLISHED_VALUATION_COUNT =>
+                    'limited',
+
+            default =>
+                'established',
+        };
+
+        return [
+            'level' =>
+                $level,
+
+            'valuation_count' =>
+                $valuationCount,
+
+            'minimum_scorable_valuation_count' =>
+                self::MINIMUM_SCORABLE_VALUATION_COUNT,
+
+            'established_valuation_count' =>
+                self::ESTABLISHED_VALUATION_COUNT,
+
+            'is_scorable' =>
+                $valuationCount
+                >= self::MINIMUM_SCORABLE_VALUATION_COUNT,
+        ];
     }
 
     /**
