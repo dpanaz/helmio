@@ -1,3 +1,146 @@
+@php
+    $dashboardSuitability =
+        is_array($suitability ?? null)
+            ? $suitability
+            : [];
+
+    $dashboardInvestorProfile =
+        $investorProfile
+        ?? data_get(
+            $dashboard ?? [],
+            'investorProfile'
+        );
+
+    $expectedRiskTolerance =
+        $dashboardInvestorProfile?->risk_tolerance
+        ?? data_get(
+            $dashboardSuitability,
+            'expected_risk_tolerance'
+        )
+        ?? data_get(
+            $dashboardSuitability,
+            'metrics.expected_risk_tolerance'
+        );
+
+    $actualRiskLevel =
+        data_get(
+            $dashboardSuitability,
+            'actual_risk_level'
+        )
+        ?? data_get(
+            $dashboardSuitability,
+            'metrics.actual_risk_level'
+        );
+
+    $riskGap =
+        data_get(
+            $dashboardSuitability,
+            'risk_gap'
+        )
+        ?? data_get(
+            $dashboardSuitability,
+            'metrics.risk_gap'
+        );
+
+    $accountOverrideCount =
+        (int) (
+            data_get(
+                $dashboardSuitability,
+                'account_override_count'
+            )
+            ?? data_get(
+                $dashboardSuitability,
+                'metrics.account_override_count',
+                0
+            )
+        );
+
+    $profileFields = [
+        $dashboardInvestorProfile?->date_of_birth,
+        $dashboardInvestorProfile?->planned_retirement_age,
+        $dashboardInvestorProfile?->investment_experience,
+        $dashboardInvestorProfile?->primary_objective,
+        $dashboardInvestorProfile?->time_horizon_years,
+        $dashboardInvestorProfile?->risk_tolerance,
+        $dashboardInvestorProfile?->liquidity_needs,
+    ];
+
+    $completedProfileFields =
+        collect($profileFields)
+            ->filter(
+                fn ($value) =>
+                    $value !== null
+                    && $value !== ''
+            )
+            ->count();
+
+    $profileCompleteness =
+        count($profileFields) > 0
+            ? $completedProfileFields
+                / count($profileFields)
+            : 0.0;
+
+    $suitabilityScore =
+        data_get(
+            $dashboardSuitability,
+            'score'
+        );
+
+    $suitabilityLabel =
+        data_get(
+            $dashboardSuitability,
+            'label'
+        )
+        ?? (
+            $actualRiskLevel === null
+                && $expectedRiskTolerance !== null
+                    ? 'Building risk history'
+                    : 'Complete your investor profile'
+        );
+
+    $riskLabel = static function (
+        ?string $risk
+    ): string {
+        if ($risk === null || $risk === '') {
+            return 'Not available';
+        }
+
+        return match ($risk) {
+            'very_low' =>
+                'Very low',
+
+            'low' =>
+                'Low',
+
+            'moderate' =>
+                'Moderate',
+
+            'moderately_aggressive' =>
+                'Moderately aggressive',
+
+            'aggressive' =>
+                'Aggressive',
+
+            'very_high' =>
+                'Very high',
+
+            default =>
+                str($risk)
+                    ->replace('_', ' ')
+                    ->title()
+                    ->toString(),
+        };
+    };
+
+    $measuredRiskLabel =
+        $actualRiskLevel === null
+            && $expectedRiskTolerance !== null
+                ? 'Building history'
+                : $riskLabel(
+                    $actualRiskLevel
+                );
+@endphp
+
 <section
     class="overflow-hidden rounded-3xl border border-blue-200 bg-gradient-to-br from-blue-50 via-white to-white p-5 shadow-sm sm:p-6"
 >
@@ -36,9 +179,18 @@
             <p
                 class="mt-4 max-w-2xl text-sm leading-6 text-slate-600"
             >
-                Helmio compares measured portfolio risk with your age,
-                time horizon, objective, liquidity needs, and account-level
-                settings.
+                @if (
+                    $actualRiskLevel === null
+                    && $expectedRiskTolerance !== null
+                )
+                    Your investor profile is available. Helmio is still
+                    building enough portfolio history to measure actual
+                    risk and calculate the suitability gap.
+                @else
+                    Helmio compares measured portfolio risk with your age,
+                    time horizon, objective, liquidity needs, and
+                    account-level settings.
+                @endif
             </p>
         </div>
 
@@ -73,7 +225,7 @@
                 <p
                     class="mt-2 break-words font-semibold text-slate-900"
                 >
-                    {{ $riskLabel($actualRiskLevel) }}
+                    {{ $measuredRiskLabel }}
                 </p>
             </div>
 
@@ -90,7 +242,14 @@
                     class="mt-2 break-words font-semibold text-slate-900"
                 >
                     @if ($riskGap === null)
-                        Not available
+                        @if (
+                            $actualRiskLevel === null
+                            && $expectedRiskTolerance !== null
+                        )
+                            Waiting for measured risk
+                        @else
+                            Not available
+                        @endif
                     @elseif ((int) $riskGap === 0)
                         Aligned
                     @elseif ((int) $riskGap > 0)
