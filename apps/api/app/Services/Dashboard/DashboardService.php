@@ -449,18 +449,17 @@ class DashboardService
         ?AuditRun $currentAuditRun,
         ?array $helm,
     ): array {
-        $categories = is_array(
+        $helmCategories =
             data_get(
                 $helm,
                 'categories',
-            ),
-        )
-            ? data_get(
-                $helm,
-                'categories',
                 [],
-            )
-            : [];
+            );
+
+        $helmCategories =
+            is_array($helmCategories)
+                ? $helmCategories
+                : [];
 
         if ($currentAuditRun === null) {
             return [
@@ -479,6 +478,9 @@ class DashboardService
                 'advisor_rating' =>
                     null,
 
+                'confidence' =>
+                    null,
+
                 'data_completeness' =>
                     (float) data_get(
                         $helm,
@@ -486,12 +488,61 @@ class DashboardService
                         0.0,
                     ),
 
+                'available_weight' =>
+                    0.0,
+
+                'available_category_count' =>
+                    0,
+
+                'total_category_count' =>
+                    count($helmCategories),
+
                 'categories' =>
-                    $categories,
+                    $helmCategories,
 
                 'findings' =>
                     $this->emptyFindingSummary(),
             ];
+        }
+
+        /*
+         * The persisted Advisor Audit is the primary source of truth for
+         * dashboard category results. Helm Score categories are only a
+         * fallback for legacy AuditRun rows without full audit_details.
+         */
+        $auditDetails =
+            $currentAuditRun->audit_details;
+
+        if (is_string($auditDetails)) {
+            $decoded = json_decode(
+                $auditDetails,
+                true,
+            );
+
+            $auditDetails =
+                is_array($decoded)
+                    ? $decoded
+                    : [];
+        }
+
+        if (! is_array($auditDetails)) {
+            $auditDetails = [];
+        }
+
+        $categories =
+            data_get(
+                $auditDetails,
+                'categories',
+                [],
+            );
+
+        if (! is_array($categories)) {
+            $categories = [];
+        }
+
+        if ($categories === []) {
+            $categories =
+                $helmCategories;
         }
 
         $findings = collect(
@@ -557,44 +608,116 @@ class DashboardService
             )
             ->values();
 
-        $auditScore = data_get(
-            $currentAuditRun,
-            'audit_score',
-        );
+        $auditScore =
+            data_get(
+                $auditDetails,
+                'overall_score',
+                data_get(
+                    $currentAuditRun,
+                    'audit_score',
+                ),
+            );
 
-        $auditScore = $auditScore !== null
-            ? (int) $auditScore
-            : null;
+        $auditScore =
+            $auditScore !== null
+            && is_numeric($auditScore)
+                ? (int) $auditScore
+                : null;
+
+        $status =
+            (string) data_get(
+                $auditDetails,
+                'status',
+                'complete',
+            );
+
+        $overallLabel =
+            data_get(
+                $auditDetails,
+                'overall_label',
+            )
+            ?? $this->auditLabel(
+                $auditScore,
+            );
+
+        $recommendations =
+            data_get(
+                $auditDetails,
+                'findings.recommendations',
+                [],
+            );
+
+        if (! is_array($recommendations)) {
+            $recommendations = [];
+        }
 
         return [
             'status' =>
-                'complete',
+                $status,
 
             'message' =>
-                null,
+                data_get(
+                    $auditDetails,
+                    'message',
+                ),
 
             'overall_score' =>
                 $auditScore,
 
             'overall_label' =>
-                $this->auditLabel(
-                    $auditScore,
-                ),
+                $overallLabel,
 
             'advisor_rating' =>
-                null,
+                data_get(
+                    $auditDetails,
+                    'advisor_rating',
+                ),
+
+            'confidence' =>
+                data_get(
+                    $auditDetails,
+                    'confidence',
+                ),
 
             'data_completeness' =>
-                (float) (
+                (float) data_get(
+                    $auditDetails,
+                    'data_completeness',
                     data_get(
-                        $currentAuditRun,
-                        'data_completeness',
-                    )
-                    ?? data_get(
                         $helm,
                         'data_completeness',
                         0.0,
-                    )
+                    ),
+                ),
+
+            'available_weight' =>
+                (float) data_get(
+                    $auditDetails,
+                    'available_weight',
+                    0.0,
+                ),
+
+            'available_category_count' =>
+                (int) data_get(
+                    $auditDetails,
+                    'available_category_count',
+                    collect($categories)
+                        ->filter(
+                            fn ($category): bool =>
+                                is_array($category)
+                                && data_get(
+                                    $category,
+                                    'score',
+                                ) !== null,
+                        )
+                        ->count(),
+                ),
+
+            'total_category_count' =>
+                (int) data_get(
+                    $auditDetails,
+                    'total_category_count',
+                    count($categories),
                 ),
 
             'calculated_for_date' =>
@@ -616,7 +739,7 @@ class DashboardService
                     $opportunities->all(),
 
                 'recommendations' =>
-                    [],
+                    $recommendations,
 
                 'all' =>
                     $findings->values()->all(),
@@ -632,12 +755,38 @@ class DashboardService
                         $opportunities->count(),
 
                     'recommendation_count' =>
-                        0,
+                        count($recommendations),
 
                     'total_finding_count' =>
                         $findings->count(),
                 ],
             ],
+
+            'executive_summary' =>
+                is_array(
+                    data_get(
+                        $auditDetails,
+                        'executive_summary',
+                    ),
+                )
+                    ? data_get(
+                        $auditDetails,
+                        'executive_summary',
+                        [],
+                    )
+                    : [],
+
+            'formula_version' =>
+                data_get(
+                    $auditDetails,
+                    'formula_version',
+                ),
+
+            'scoring_formula_version' =>
+                data_get(
+                    $auditDetails,
+                    'scoring_formula_version',
+                ),
         ];
     }
 
