@@ -1,11 +1,14 @@
 <?php
 
-namespace App\Services\Analytics\Risk;
+namespace App\Services\Analytics;
 
 use App\Data\Analytics\AnalyticsResult;
 use App\Models\Benchmark;
 use App\Models\PortfolioValuation;
 use App\Models\User;
+use App\Services\Analytics\Risk\BenchmarkReturnBuilder;
+use App\Services\Analytics\Risk\DailyReturnBuilder;
+use App\Services\Analytics\Risk\RiskMetricsService;
 use Carbon\CarbonInterface;
 
 class RiskAnalyticsService
@@ -18,7 +21,6 @@ class RiskAnalyticsService
         private readonly RiskMetricsService $riskMetricsService
     ) {
     }
-
     /**
      * @return array<string, mixed>
      */

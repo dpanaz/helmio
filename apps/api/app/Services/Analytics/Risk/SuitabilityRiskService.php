@@ -4,12 +4,13 @@ namespace App\Services\Analytics\Risk;
 
 use App\Models\Benchmark;
 use App\Models\User;
+use App\Services\Analytics\RiskAnalyticsService;
 use Carbon\CarbonInterface;
 
 class SuitabilityRiskService
 {
     public const FORMULA_VERSION =
-        'suitability-risk-0.1.0';
+        'suitability-risk-0.2.0';
 
     public function __construct(
         private readonly RiskAnalyticsService $riskAnalyticsService,
@@ -54,6 +55,18 @@ class SuitabilityRiskService
             data_get(
                 $riskAnalytics,
                 'risk_level'
+            )
+            ?? data_get(
+                $riskAnalytics,
+                'metrics.risk_level'
+            )
+            ?? data_get(
+                $riskAnalytics,
+                'data.risk_level'
+            )
+            ?? data_get(
+                $riskAnalytics,
+                'risk_metrics.risk_level'
             );
 
         $expectedRiskTolerance =

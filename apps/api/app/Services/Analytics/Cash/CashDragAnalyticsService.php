@@ -406,19 +406,25 @@ class CashDragAnalyticsService
     ): array {
         $shared = $result->toArray();
 
-        $legacyScore = [
-            'score' => $result->score,
-            'rating' => data_get(
-                $result->data,
-                'rating'
-            ),
-        ];
-
         return array_merge(
             $shared,
             $result->data,
             [
-                'score' => $legacyScore,
+                /*
+                 * Keep the standardized score numeric so shared
+                 * consumers such as Advisor Audit and Helm Score
+                 * can consume Cash Drag consistently.
+                 */
+                'score' => $result->score,
+
+                /*
+                 * Preserve the legacy top-level rating for the
+                 * existing Cash Drag page and other UI consumers.
+                 */
+                'rating' => data_get(
+                    $result->data,
+                    'rating'
+                ),
             ]
         );
     }

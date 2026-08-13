@@ -1,11 +1,14 @@
 <?php
 
-namespace App\Services\Analytics\Performance;
+namespace App\Services\Analytics;
 
 use App\Data\Analytics\AnalyticsResult;
 use App\Models\Benchmark;
 use App\Models\PortfolioValuation;
 use App\Models\User;
+use App\Services\Analytics\Performance\BenchmarkSeriesService;
+use App\Services\Analytics\Performance\ReturnCalculator;
+use App\Services\Analytics\Performance\TimeWeightedReturnService;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
