@@ -21,7 +21,7 @@ use Throwable;
 class AdvisorAuditService
 {
     public const FORMULA_VERSION =
-        'advisor-audit-0.2.0';
+        'advisor-audit-0.3.0';
 
     public function __construct(
         private readonly CostAnalyticsService $costAnalytics,
@@ -261,10 +261,16 @@ class AdvisorAuditService
                 $scoreResult['status'],
 
             'message' =>
-                $scoreResult['status']
-                    === 'complete'
-                        ? null
-                        : 'More complete account data is required before Helmio can present a full advisor score.',
+                match ($scoreResult['status']) {
+                    'complete' =>
+                        null,
+
+                    'provisional' =>
+                        'This Advisor Audit score is provisional and will become more comprehensive as additional account history becomes available.',
+
+                    default =>
+                        'More complete account data is required before Helmio can present an advisor score.',
+                },
 
             'overall_score' =>
                 $scoreResult[
@@ -280,6 +286,11 @@ class AdvisorAuditService
                 $scoreResult[
                     'advisor_rating'
                 ],
+
+            'confidence' =>
+                $scoreResult[
+                    'confidence'
+                ] ?? null,
 
             'data_completeness' =>
                 $scoreResult[
@@ -511,6 +522,9 @@ class AdvisorAuditService
                         ? 'complete'
                         : 'insufficient_data'
                 ),
+
+            'message' =>
+                $result['message'] ?? null,
 
             'reasons' =>
                 $reasons,
@@ -1201,6 +1215,17 @@ class AdvisorAuditService
 
             'advisor_rating' =>
                 null,
+
+            'confidence' => [
+                'level' =>
+                    'insufficient',
+
+                'is_provisional' =>
+                    false,
+
+                'is_complete' =>
+                    false,
+            ],
 
             'data_completeness' =>
                 0.0,
