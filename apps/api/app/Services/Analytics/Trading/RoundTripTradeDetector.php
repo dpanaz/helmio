@@ -8,20 +8,54 @@ use Illuminate\Support\Collection;
 
 class RoundTripTradeDetector
 {
+    public const FORMULA_VERSION = 'round-trip-0.2.0';
+
     /**
      * Match buys and sells using FIFO lots.
      *
+     * Cash and cash-equivalent securities are excluded because sweep and
+     * money-market movements should not be interpreted as speculative
+     * round-trip trading or churning behavior.
+     *
      * @param Collection<int, InvestmentTransaction> $transactions
      */
-    public function analyze(Collection $transactions): array
-    {
+    public function analyze(
+        Collection $transactions
+    ): array {
+        $transactions->each(
+            fn (
+                InvestmentTransaction $transaction
+            ) =>
+                $transaction->loadMissing(
+                    'security'
+                )
+        );
+
+        $excludedCashEquivalentCount =
+            $transactions
+                ->filter(
+                    fn (
+                        InvestmentTransaction $transaction
+                    ): bool =>
+                        $this->isCashEquivalent(
+                            $transaction
+                        )
+                )
+                ->count();
+
         $transactions = $transactions
             ->filter(
-                fn (InvestmentTransaction $transaction): bool =>
+                fn (
+                    InvestmentTransaction $transaction
+                ): bool =>
                     $transaction->security_id !== null
+                    && ! $this->isCashEquivalent(
+                        $transaction
+                    )
                     && in_array(
                         $this->normalizeType(
-                            $transaction->transaction_type
+                            $transaction
+                                ->transaction_type
                         ),
                         [
                             'buy',
@@ -33,26 +67,41 @@ class RoundTripTradeDetector
                     )
             )
             ->sortBy([
-                ['transaction_date', 'asc'],
-                ['id', 'asc'],
+                [
+                    'transaction_date',
+                    'asc',
+                ],
+                [
+                    'id',
+                    'asc',
+                ],
             ])
             ->values();
 
         if ($transactions->isEmpty()) {
-            return $this->emptyResult();
+            return $this->emptyResult(
+                excludedCashEquivalentCount:
+                    $excludedCashEquivalentCount,
+            );
         }
 
-        $transactionsByPosition = $transactions->groupBy(
-            fn (InvestmentTransaction $transaction): string =>
-                $transaction->investment_account_id
-                . ':'
-                . $transaction->security_id
-        );
+        $transactionsByPosition =
+            $transactions->groupBy(
+                fn (
+                    InvestmentTransaction $transaction
+                ): string =>
+                    $transaction
+                        ->investment_account_id
+                    . ':'
+                    . $transaction
+                        ->security_id
+            );
 
         $roundTrips = [];
 
         foreach (
-            $transactionsByPosition as $positionTransactions
+            $transactionsByPosition
+                as $positionTransactions
         ) {
             $roundTrips = array_merge(
                 $roundTrips,
@@ -62,40 +111,61 @@ class RoundTripTradeDetector
             );
         }
 
-        $roundTripsCollection = collect($roundTrips);
+        $roundTripsCollection =
+            collect($roundTrips);
 
-        $shortTermRoundTrips = $roundTripsCollection
-            ->where('holding_period_days', '<=', 30)
-            ->count();
+        $shortTermRoundTrips =
+            $roundTripsCollection
+                ->where(
+                    'holding_period_days',
+                    '<=',
+                    30
+                )
+                ->count();
 
-        $veryShortRoundTrips = $roundTripsCollection
-            ->where('holding_period_days', '<=', 7)
-            ->count();
+        $veryShortRoundTrips =
+            $roundTripsCollection
+                ->where(
+                    'holding_period_days',
+                    '<=',
+                    7
+                )
+                ->count();
 
-        $totalFees = $roundTripsCollection->sum(
-            fn (array $roundTrip): float =>
-                (float) $roundTrip['allocated_fees']
-        );
+        $totalFees =
+            $roundTripsCollection->sum(
+                fn (
+                    array $roundTrip
+                ): float =>
+                    (float) $roundTrip[
+                        'allocated_fees'
+                    ]
+            );
 
         $totalRealizedGainLoss =
             $roundTripsCollection->sum(
-                fn (array $roundTrip): float =>
+                fn (
+                    array $roundTrip
+                ): float =>
                     (float) $roundTrip[
                         'realized_gain_loss'
                     ]
             );
 
         $averageHoldingPeriod =
-            $roundTripsCollection->isEmpty()
-                ? null
-                : $roundTripsCollection->avg(
-                    'holding_period_days'
-                );
+            $roundTripsCollection
+                ->isEmpty()
+                    ? null
+                    : $roundTripsCollection
+                        ->avg(
+                            'holding_period_days'
+                        );
 
         return [
-            'status' => $roundTrips === []
-                ? 'insufficient_data'
-                : 'complete',
+            'status' =>
+                $roundTrips === []
+                    ? 'insufficient_data'
+                    : 'complete',
 
             'metrics' => [
                 'round_trip_count' =>
@@ -116,28 +186,47 @@ class RoundTripTradeDetector
                         ),
 
                 'total_round_trip_fees' =>
-                    round($totalFees, 2),
+                    round(
+                        $totalFees,
+                        2
+                    ),
 
                 'total_realized_gain_loss' =>
                     round(
                         $totalRealizedGainLoss,
                         2
                     ),
+
+                'excluded_cash_equivalent_transaction_count' =>
+                    $excludedCashEquivalentCount,
             ],
 
-            'round_trips' => $roundTrips,
+            'round_trips' =>
+                $roundTrips,
 
-            'flags' => $this->buildFlags(
-                roundTripCount: count($roundTrips),
-                shortTermRoundTripCount:
-                    $shortTermRoundTrips,
-                veryShortRoundTripCount:
-                    $veryShortRoundTrips,
-                totalFees: $totalFees,
-            ),
+            'flags' =>
+                $this->buildFlags(
+                    roundTripCount:
+                        count($roundTrips),
+
+                    shortTermRoundTripCount:
+                        $shortTermRoundTrips,
+
+                    veryShortRoundTripCount:
+                        $veryShortRoundTrips,
+
+                    totalFees:
+                        $totalFees,
+                ),
+
+            'warnings' =>
+                $this->buildWarnings(
+                    excludedCashEquivalentCount:
+                        $excludedCashEquivalentCount,
+                ),
 
             'formula_version' =>
-                'round-trip-0.1.0',
+                self::FORMULA_VERSION,
         ];
     }
 
@@ -150,23 +239,36 @@ class RoundTripTradeDetector
         $openLots = [];
         $roundTrips = [];
 
-        foreach ($transactions as $transaction) {
-            $type = $this->normalizeType(
-                $transaction->transaction_type
-            );
+        foreach (
+            $transactions as $transaction
+        ) {
+            $type =
+                $this->normalizeType(
+                    $transaction
+                        ->transaction_type
+                );
 
             $quantity = abs(
-                (float) ($transaction->quantity ?? 0)
+                (float) (
+                    $transaction->quantity
+                    ?? 0
+                )
             );
 
             if ($quantity <= 0) {
                 continue;
             }
 
-            if (in_array($type, [
-                'buy',
-                'purchase',
-            ], true)) {
+            if (
+                in_array(
+                    $type,
+                    [
+                        'buy',
+                        'purchase',
+                    ],
+                    true
+                )
+            ) {
                 $openLots[] = [
                     'transaction_id' =>
                         $transaction->id,
@@ -194,7 +296,8 @@ class RoundTripTradeDetector
                     'fees' =>
                         abs(
                             (float) (
-                                $transaction->fees ?? 0
+                                $transaction->fees
+                                ?? 0
                             )
                         ),
 
@@ -205,31 +308,44 @@ class RoundTripTradeDetector
                 continue;
             }
 
-            if (! in_array($type, [
-                'sell',
-                'sale',
-            ], true)) {
+            if (
+                ! in_array(
+                    $type,
+                    [
+                        'sell',
+                        'sale',
+                    ],
+                    true
+                )
+            ) {
                 continue;
             }
 
-            $remainingSellQuantity = $quantity;
+            $remainingSellQuantity =
+                $quantity;
 
             while (
                 $remainingSellQuantity > 0
                 && $openLots !== []
             ) {
-                $lot = &$openLots[0];
+                $lot =
+                    &$openLots[0];
 
-                $matchedQuantity = min(
-                    $remainingSellQuantity,
-                    $lot['remaining_quantity']
-                );
+                $matchedQuantity =
+                    min(
+                        $remainingSellQuantity,
+                        $lot[
+                            'remaining_quantity'
+                        ]
+                    );
 
                 $buyFeeAllocation =
                     $lot['original_quantity'] > 0
                         ? (
                             $matchedQuantity
-                            / $lot['original_quantity']
+                            / $lot[
+                                'original_quantity'
+                            ]
                         ) * $lot['fees']
                         : 0;
 
@@ -240,7 +356,8 @@ class RoundTripTradeDetector
                             / $quantity
                         ) * abs(
                             (float) (
-                                $transaction->fees ?? 0
+                                $transaction->fees
+                                ?? 0
                             )
                         )
                         : 0;
@@ -254,18 +371,25 @@ class RoundTripTradeDetector
                     );
 
                 $grossGainLoss =
-                    ($sellPrice - $buyPrice)
+                    (
+                        $sellPrice
+                        - $buyPrice
+                    )
                     * $matchedQuantity;
 
                 $allocatedFees =
                     $buyFeeAllocation
                     + $sellFeeAllocation;
 
-                $holdingPeriodDays = Carbon::parse(
-                    $lot['transaction_date']
-                )->diffInDays(
-                    $transaction->transaction_date
-                );
+                $holdingPeriodDays =
+                    Carbon::parse(
+                        $lot[
+                            'transaction_date'
+                        ]
+                    )->diffInDays(
+                        $transaction
+                            ->transaction_date
+                    );
 
                 $roundTrips[] = [
                     'investment_account_id' =>
@@ -276,13 +400,17 @@ class RoundTripTradeDetector
                         $transaction->security_id,
 
                     'buy_transaction_id' =>
-                        $lot['transaction_id'],
+                        $lot[
+                            'transaction_id'
+                        ],
 
                     'sell_transaction_id' =>
                         $transaction->id,
 
                     'buy_date' =>
-                        $lot['transaction_date'],
+                        $lot[
+                            'transaction_date'
+                        ],
 
                     'sell_date' =>
                         $transaction
@@ -296,10 +424,16 @@ class RoundTripTradeDetector
                         ),
 
                     'buy_price' =>
-                        round($buyPrice, 8),
+                        round(
+                            $buyPrice,
+                            8
+                        ),
 
                     'sell_price' =>
-                        round($sellPrice, 8),
+                        round(
+                            $sellPrice,
+                            8
+                        ),
 
                     'holding_period_days' =>
                         $holdingPeriodDays,
@@ -327,14 +461,18 @@ class RoundTripTradeDetector
                 $remainingSellQuantity -=
                     $matchedQuantity;
 
-                $lot['remaining_quantity'] -=
-                    $matchedQuantity;
+                $lot[
+                    'remaining_quantity'
+                ] -= $matchedQuantity;
 
                 if (
-                    $lot['remaining_quantity']
-                    <= 0.00000001
+                    $lot[
+                        'remaining_quantity'
+                    ] <= 0.00000001
                 ) {
-                    array_shift($openLots);
+                    array_shift(
+                        $openLots
+                    );
                 }
 
                 unset($lot);
@@ -347,14 +485,19 @@ class RoundTripTradeDetector
     private function transactionPrice(
         InvestmentTransaction $transaction
     ): float {
-        if ($transaction->price !== null) {
+        if (
+            $transaction->price !== null
+        ) {
             return abs(
                 (float) $transaction->price
             );
         }
 
         $quantity = abs(
-            (float) ($transaction->quantity ?? 0)
+            (float) (
+                $transaction->quantity
+                ?? 0
+            )
         );
 
         $grossAmount = abs(
@@ -369,7 +512,41 @@ class RoundTripTradeDetector
             return 0.0;
         }
 
-        return $grossAmount / $quantity;
+        return $grossAmount
+            / $quantity;
+    }
+
+    private function isCashEquivalent(
+        InvestmentTransaction $transaction
+    ): bool {
+        $security =
+            $transaction->security;
+
+        if ($security === null) {
+            return false;
+        }
+
+        $securityType =
+            strtolower(
+                trim(
+                    (string) (
+                        $security
+                            ->security_type
+                        ?? ''
+                    )
+                )
+            );
+
+        return in_array(
+            $securityType,
+            [
+                'cash',
+                'cash_equivalent',
+                'money_market',
+                'money_market_fund',
+            ],
+            true
+        );
     }
 
     private function buildFlags(
@@ -380,12 +557,15 @@ class RoundTripTradeDetector
     ): array {
         $flags = [];
 
-        if ($veryShortRoundTripCount >= 3) {
+        if (
+            $veryShortRoundTripCount >= 3
+        ) {
             $flags[] = [
                 'code' =>
                     'repeated_very_short_round_trips',
 
-                'severity' => 'high',
+                'severity' =>
+                    'high',
 
                 'title' =>
                     'Repeated rapid trading detected',
@@ -395,12 +575,15 @@ class RoundTripTradeDetector
             ];
         }
 
-        if ($shortTermRoundTripCount >= 5) {
+        if (
+            $shortTermRoundTripCount >= 5
+        ) {
             $flags[] = [
                 'code' =>
                     'frequent_short_term_round_trips',
 
-                'severity' => 'high',
+                'severity' =>
+                    'high',
 
                 'title' =>
                     'Frequent short-term round trips',
@@ -418,7 +601,8 @@ class RoundTripTradeDetector
                 'code' =>
                     'possible_churning_pattern',
 
-                'severity' => 'high',
+                'severity' =>
+                    'high',
 
                 'title' =>
                     'Possible churning pattern',
@@ -443,11 +627,37 @@ class RoundTripTradeDetector
                     'Round-trip trades detected',
 
                 'message' =>
-                    "{$roundTripCount} completed buy-and-sell sequences were identified.",
+                    "{$roundTripCount} completed non-cash buy-and-sell sequences were identified.",
             ];
         }
 
         return $flags;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildWarnings(
+        int $excludedCashEquivalentCount
+    ): array {
+        if (
+            $excludedCashEquivalentCount <= 0
+        ) {
+            return [];
+        }
+
+        return [
+            [
+                'code' =>
+                    'cash_equivalent_transactions_excluded',
+
+                'message' =>
+                    sprintf(
+                        '%d cash or cash-equivalent transaction(s) were excluded from round-trip trading analysis.',
+                        $excludedCashEquivalentCount
+                    ),
+            ],
+        ];
     }
 
     private function normalizeType(
@@ -456,16 +666,21 @@ class RoundTripTradeDetector
         return strtolower(
             trim(
                 str_replace(
-                    ['-', ' '],
+                    [
+                        '-',
+                        ' ',
+                    ],
                     '_',
-                    $type ?? ''
+                    $type
+                    ?? ''
                 )
             )
         );
     }
 
-    private function emptyResult(): array
-    {
+    private function emptyResult(
+        int $excludedCashEquivalentCount = 0
+    ): array {
         return [
             'status' =>
                 'insufficient_data',
@@ -477,13 +692,25 @@ class RoundTripTradeDetector
                 'average_holding_period_days' => null,
                 'total_round_trip_fees' => 0,
                 'total_realized_gain_loss' => 0,
+
+                'excluded_cash_equivalent_transaction_count' =>
+                    $excludedCashEquivalentCount,
             ],
 
-            'round_trips' => [],
-            'flags' => [],
+            'round_trips' =>
+                [],
+
+            'flags' =>
+                [],
+
+            'warnings' =>
+                $this->buildWarnings(
+                    excludedCashEquivalentCount:
+                        $excludedCashEquivalentCount,
+                ),
 
             'formula_version' =>
-                'round-trip-0.1.0',
+                self::FORMULA_VERSION,
         ];
     }
 }

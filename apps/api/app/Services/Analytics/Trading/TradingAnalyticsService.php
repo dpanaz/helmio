@@ -10,7 +10,9 @@ use Carbon\CarbonInterface;
 
 class TradingAnalyticsService
 {
-    public const FORMULA_VERSION = 'trading-0.3.0';
+    public const FORMULA_VERSION = 'trading-0.4.0';
+
+    private const LIMITED_VALUATION_COUNT = 20;
 
     public function __construct(
         private readonly TradingMetricsService $tradingMetricsService,
@@ -21,6 +23,11 @@ class TradingAnalyticsService
     /**
      * Analyze trading activity for one user and date range.
      *
+     * Turnover is calculated only over the period for which consolidated
+     * portfolio valuations actually exist. This prevents a full year of
+     * transactions from being divided by a portfolio-value denominator
+     * based on only a few recent valuation dates.
+     *
      * @return array<string, mixed>
      */
     public function analyze(
@@ -28,24 +35,13 @@ class TradingAnalyticsService
         CarbonInterface $startDate,
         CarbonInterface $endDate
     ): array {
-        $transactions = InvestmentTransaction::query()
-            ->whereHas(
-                'investmentAccount',
-                fn ($query) => $query->where(
-                    'user_id',
-                    $user->id
-                )
-            )
-            ->whereBetween(
-                'transaction_date',
-                [
-                    $startDate->toDateString(),
-                    $endDate->toDateString(),
-                ]
-            )
-            ->orderBy('transaction_date')
-            ->orderBy('id')
-            ->get();
+        $requestedPeriod = [
+            'start_date' =>
+                $startDate->toDateString(),
+
+            'end_date' =>
+                $endDate->toDateString(),
+        ];
 
         $valuations = PortfolioValuation::query()
             ->where('user_id', $user->id)
@@ -60,38 +56,11 @@ class TradingAnalyticsService
             ->orderBy('valuation_date')
             ->get();
 
-        $period = [
-            'start_date' =>
-                $startDate->toDateString(),
-
-            'end_date' =>
-                $endDate->toDateString(),
-        ];
-
-        $averagePortfolioValue = $valuations->isEmpty()
-            ? 0.0
-            : (float) $valuations->avg(
-                fn (
-                    PortfolioValuation $valuation
-                ): float => $valuation->total_value
-            );
-
-        $summary = [
-            'transaction_count' =>
-                $transactions->count(),
-
-            'average_portfolio_value' =>
-                round($averagePortfolioValue, 2),
-
-            'valuation_count' =>
-                $valuations->count(),
-        ];
-
-        if ($transactions->isEmpty()) {
+        if ($valuations->isEmpty()) {
             return $this->legacyCompatibleResult(
                 AnalyticsResult::insufficientData(
                     message:
-                        'No investment transactions were found for the selected period.',
+                        'Portfolio valuation history is required before trading turnover can be calculated.',
 
                     metrics: [
                         'buy_amount' => 0.0,
@@ -106,37 +75,221 @@ class TradingAnalyticsService
                     warnings: [
                         [
                             'code' =>
-                                'no_trading_transactions',
+                                'portfolio_valuations_missing',
 
                             'message' =>
-                                'No qualifying trading activity was available for analysis.',
+                                'No consolidated portfolio valuations were available for the requested period.',
                         ],
                     ],
 
                     data: [
-                        'period' => $period,
-                        'summary' => $summary,
-                        'risk_level' => null,
+                        'period' =>
+                            $requestedPeriod,
 
-                        'round_trip_analysis' => [
-                            'status' =>
-                                'insufficient_data',
+                        'requested_period' =>
+                            $requestedPeriod,
 
-                            'metrics' => [
-                                'round_trip_count' => 0,
-                                'short_term_round_trip_count' => 0,
-                                'very_short_round_trip_count' => 0,
-                                'average_holding_period_days' => null,
-                                'total_round_trip_fees' => 0.0,
-                                'total_realized_gain_loss' => 0.0,
-                            ],
+                        'effective_period' =>
+                            null,
 
-                            'round_trips' => [],
-                            'flags' => [],
-
-                            'formula_version' =>
-                                'round-trip-0.1.0',
+                        'summary' => [
+                            'transaction_count' => 0,
+                            'requested_transaction_count' => 0,
+                            'excluded_transaction_count' => 0,
+                            'average_portfolio_value' => 0.0,
+                            'valuation_count' => 0,
                         ],
+
+                        'risk_level' =>
+                            null,
+
+                        'round_trip_analysis' =>
+                            $this->emptyRoundTripResult(),
+                    ],
+
+                    formulaVersion:
+                        self::FORMULA_VERSION,
+                )
+            );
+        }
+
+        $firstValuationDate =
+            $valuations
+                ->first()
+                ->valuation_date
+                ->copy()
+                ->startOfDay();
+
+        $lastValuationDate =
+            $valuations
+                ->last()
+                ->valuation_date
+                ->copy()
+                ->endOfDay();
+
+        $effectiveStartDate =
+            $firstValuationDate->greaterThan($startDate)
+                ? $firstValuationDate
+                : $startDate;
+
+        $effectiveEndDate =
+            $lastValuationDate->lessThan($endDate)
+                ? $lastValuationDate
+                : $endDate;
+
+        $effectivePeriod = [
+            'start_date' =>
+                $effectiveStartDate->toDateString(),
+
+            'end_date' =>
+                $effectiveEndDate->toDateString(),
+        ];
+
+        /*
+         * Count all transactions in the originally requested period so the
+         * response can disclose how many were excluded from turnover scoring
+         * because matching valuation history was unavailable.
+         */
+        $requestedTransactionCount =
+            InvestmentTransaction::query()
+                ->whereHas(
+                    'investmentAccount',
+                    fn ($query) => $query->where(
+                        'user_id',
+                        $user->id
+                    )
+                )
+                ->whereBetween(
+                    'transaction_date',
+                    [
+                        $startDate->toDateString(),
+                        $endDate->toDateString(),
+                    ]
+                )
+                ->count();
+
+        /*
+         * Only transactions inside the effective valuation-backed period
+         * participate in turnover and round-trip scoring.
+         */
+        $transactions = InvestmentTransaction::query()
+            ->with('security')
+            ->whereHas(
+                'investmentAccount',
+                fn ($query) => $query->where(
+                    'user_id',
+                    $user->id
+                )
+            )
+            ->whereBetween(
+                'transaction_date',
+                [
+                    $effectiveStartDate->toDateString(),
+                    $effectiveEndDate->toDateString(),
+                ]
+            )
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->get();
+
+        $averagePortfolioValue =
+            (float) $valuations->avg(
+                fn (
+                    PortfolioValuation $valuation
+                ): float =>
+                    $valuation->total_value
+            );
+
+        $excludedTransactionCount =
+            max(
+                0,
+                $requestedTransactionCount
+                - $transactions->count()
+            );
+
+        $summary = [
+            'transaction_count' =>
+                $transactions->count(),
+
+            'requested_transaction_count' =>
+                $requestedTransactionCount,
+
+            'excluded_transaction_count' =>
+                $excludedTransactionCount,
+
+            'average_portfolio_value' =>
+                round($averagePortfolioValue, 2),
+
+            'valuation_count' =>
+                $valuations->count(),
+        ];
+
+        if ($transactions->isEmpty()) {
+            $warnings = [
+                [
+                    'code' =>
+                        'no_trading_transactions',
+
+                    'message' =>
+                        'No qualifying trading activity was available inside the valuation-backed analysis period.',
+                ],
+            ];
+
+            $warnings = array_values(
+                array_merge(
+                    $warnings,
+                    $this->periodWarnings(
+                        requestedPeriod:
+                            $requestedPeriod,
+
+                        effectivePeriod:
+                            $effectivePeriod,
+
+                        valuationCount:
+                            $valuations->count(),
+
+                        excludedTransactionCount:
+                            $excludedTransactionCount,
+                    )
+                )
+            );
+
+            return $this->legacyCompatibleResult(
+                AnalyticsResult::insufficientData(
+                    message:
+                        'No investment transactions were found inside the valuation-backed analysis period.',
+
+                    metrics: [
+                        'buy_amount' => 0.0,
+                        'sell_amount' => 0.0,
+                        'turnover_amount' => 0.0,
+                        'turnover_rate' => null,
+                        'trade_count' => 0,
+                        'fees' => 0.0,
+                        'fee_rate' => null,
+                    ],
+
+                    warnings:
+                        $warnings,
+
+                    data: [
+                        'period' =>
+                            $effectivePeriod,
+
+                        'requested_period' =>
+                            $requestedPeriod,
+
+                        'effective_period' =>
+                            $effectivePeriod,
+
+                        'summary' =>
+                            $summary,
+
+                        'risk_level' =>
+                            null,
+
+                        'round_trip_analysis' =>
+                            $this->emptyRoundTripResult(),
                     ],
 
                     formulaVersion:
@@ -147,107 +300,147 @@ class TradingAnalyticsService
 
         $tradingMetricsResult =
             $this->tradingMetricsService->analyze(
-                transactions: $transactions
-                    ->map(
-                        fn (
-                            InvestmentTransaction $transaction
-                        ): array => [
-                            'transaction_type' =>
-                                $transaction->transaction_type,
+                transactions:
+                    $transactions
+                        ->map(
+                            fn (
+                                InvestmentTransaction $transaction
+                            ): array => [
+                                'transaction_type' =>
+                                    $transaction->transaction_type,
 
-                            'gross_amount' =>
-                                (float) (
-                                    $transaction->gross_amount
-                                    ?? 0
-                                ),
+                                'gross_amount' =>
+                                    (float) (
+                                        $transaction->gross_amount
+                                        ?? 0
+                                    ),
 
-                            'net_amount' =>
-                                (float) (
-                                    $transaction->net_amount
-                                    ?? 0
-                                ),
+                                'net_amount' =>
+                                    (float) (
+                                        $transaction->net_amount
+                                        ?? 0
+                                    ),
 
-                            'fees' =>
-                                (float) (
-                                    $transaction->fees
-                                    ?? 0
-                                ),
-                        ]
-                    )
-                    ->all(),
+                                'fees' =>
+                                    (float) (
+                                        $transaction->fees
+                                        ?? 0
+                                    ),
+                            ]
+                        )
+                        ->all(),
 
                 averagePortfolioValue:
                     $averagePortfolioValue,
             );
 
         $roundTripResult =
-            $this->roundTripTradeDetector->analyze(
-                $transactions
-            );
+            $this->roundTripTradeDetector
+                ->analyze(
+                    $transactions
+                );
 
         $flags = array_values(
             array_merge(
-                $tradingMetricsResult['flags'] ?? [],
-                $roundTripResult['flags'] ?? [],
+                $tradingMetricsResult['flags']
+                    ?? [],
+
+                $roundTripResult['flags']
+                    ?? [],
             )
         );
 
-        $warnings = $this->buildWarnings(
-            valuations:
-                $valuations->count(),
+        $warnings = array_values(
+            array_merge(
+                $this->buildWarnings(
+                    valuations:
+                        $valuations->count(),
 
-            averagePortfolioValue:
-                $averagePortfolioValue,
+                    averagePortfolioValue:
+                        $averagePortfolioValue,
 
-            roundTripResult:
-                $roundTripResult,
+                    roundTripResult:
+                        $roundTripResult,
+                ),
+
+                $this->periodWarnings(
+                    requestedPeriod:
+                        $requestedPeriod,
+
+                    effectivePeriod:
+                        $effectivePeriod,
+
+                    valuationCount:
+                        $valuations->count(),
+
+                    excludedTransactionCount:
+                        $excludedTransactionCount,
+                )
+            )
         );
 
-        $score = $this->calculateScore(
-            metrics:
-                $tradingMetricsResult['metrics'] ?? [],
+        $score =
+            $this->calculateScore(
+                metrics:
+                    $tradingMetricsResult['metrics']
+                    ?? [],
 
-            roundTripResult:
-                $roundTripResult,
-        );
-
-        $result = AnalyticsResult::complete(
-            metrics:
-                $tradingMetricsResult['metrics'] ?? [],
-
-            flags:
-                $flags,
-
-            warnings:
-                $warnings,
-
-            data: [
-                'period' =>
-                    $period,
-
-                'summary' =>
-                    $summary,
-
-                'risk_level' =>
-                    $tradingMetricsResult[
-                        'risk_level'
-                    ] ?? null,
-
-                'round_trip_analysis' =>
+                roundTripResult:
                     $roundTripResult,
-            ],
+            );
 
-            score:
-                $score,
+        $result =
+            AnalyticsResult::complete(
+                metrics:
+                    $tradingMetricsResult['metrics']
+                    ?? [],
 
-            label:
-                $score === null
-                    ? null
-                    : $this->scoreLabel($score),
+                flags:
+                    $flags,
 
-            formulaVersion:
-                self::FORMULA_VERSION,
-        );
+                warnings:
+                    $warnings,
+
+                data: [
+                    /*
+                     * Keep "period" as the effective scored period for
+                     * existing consumers while also exposing both periods
+                     * explicitly.
+                     */
+                    'period' =>
+                        $effectivePeriod,
+
+                    'requested_period' =>
+                        $requestedPeriod,
+
+                    'effective_period' =>
+                        $effectivePeriod,
+
+                    'summary' =>
+                        $summary,
+
+                    'risk_level' =>
+                        $tradingMetricsResult[
+                            'risk_level'
+                        ] ?? null,
+
+                    'round_trip_analysis' =>
+                        $roundTripResult,
+                ],
+
+                score:
+                    $score,
+
+                label:
+                    $score === null
+                        ? null
+                        : $this->scoreLabel(
+                            $score
+                        ),
+
+                formulaVersion:
+                    self::FORMULA_VERSION,
+            );
 
         return $this->legacyCompatibleResult(
             $result
@@ -267,23 +460,28 @@ class TradingAnalyticsService
         array $roundTripResult
     ): ?int {
         $turnoverRate =
-            $metrics['turnover_rate'] ?? null;
+            $metrics['turnover_rate']
+            ?? null;
 
         if ($turnoverRate === null) {
             return null;
         }
 
         $tradeCount = (int) (
-            $metrics['trade_count'] ?? 0
+            $metrics['trade_count']
+            ?? 0
         );
 
-        $feeRate = $metrics['fee_rate'] ?? null;
+        $feeRate =
+            $metrics['fee_rate']
+            ?? null;
 
-        $roundTripCount = (int) data_get(
-            $roundTripResult,
-            'metrics.round_trip_count',
-            0
-        );
+        $roundTripCount =
+            (int) data_get(
+                $roundTripResult,
+                'metrics.round_trip_count',
+                0
+            );
 
         $shortTermRoundTripCount =
             (int) data_get(
@@ -381,7 +579,8 @@ class TradingAnalyticsService
         }
 
         if (
-            ($roundTripResult['status'] ?? null)
+            ($roundTripResult['status']
+                ?? null)
             === 'insufficient_data'
         ) {
             $warnings[] = [
@@ -389,7 +588,7 @@ class TradingAnalyticsService
                     'round_trip_analysis_limited',
 
                 'message' =>
-                    'No completed buy-and-sell round trips were available for analysis.',
+                    'No completed non-cash buy-and-sell round trips were available for analysis.',
             ];
         }
 
@@ -397,18 +596,110 @@ class TradingAnalyticsService
     }
 
     /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function periodWarnings(
+        array $requestedPeriod,
+        array $effectivePeriod,
+        int $valuationCount,
+        int $excludedTransactionCount
+    ): array {
+        $warnings = [];
+
+        if (
+            $requestedPeriod['start_date']
+            !== $effectivePeriod['start_date']
+            || $requestedPeriod['end_date']
+            !== $effectivePeriod['end_date']
+        ) {
+            $warnings[] = [
+                'code' =>
+                    'trading_period_aligned_to_valuation_history',
+
+                'message' =>
+                    sprintf(
+                        'Trading turnover was scored from %s through %s because consolidated portfolio valuations were not available for the entire requested period.',
+                        $effectivePeriod['start_date'],
+                        $effectivePeriod['end_date'],
+                    ),
+            ];
+        }
+
+        if ($excludedTransactionCount > 0) {
+            $warnings[] = [
+                'code' =>
+                    'transactions_excluded_without_matching_valuation_history',
+
+                'message' =>
+                    sprintf(
+                        '%d transaction(s) outside the valuation-backed period were excluded from turnover and round-trip scoring.',
+                        $excludedTransactionCount
+                    ),
+            ];
+        }
+
+        if (
+            $valuationCount
+            < self::LIMITED_VALUATION_COUNT
+        ) {
+            $warnings[] = [
+                'code' =>
+                    'limited_turnover_history',
+
+                'message' =>
+                    sprintf(
+                        'Trading turnover is based on only %d consolidated portfolio valuation point(s).',
+                        $valuationCount
+                    ),
+            ];
+        }
+
+        return $warnings;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function emptyRoundTripResult(): array
+    {
+        return [
+            'status' =>
+                'insufficient_data',
+
+            'metrics' => [
+                'round_trip_count' => 0,
+                'short_term_round_trip_count' => 0,
+                'very_short_round_trip_count' => 0,
+                'average_holding_period_days' => null,
+                'total_round_trip_fees' => 0.0,
+                'total_realized_gain_loss' => 0.0,
+            ],
+
+            'round_trips' =>
+                [],
+
+            'flags' =>
+                [],
+
+            'warnings' =>
+                [],
+
+            'formula_version' =>
+                'round-trip-0.2.0',
+        ];
+    }
+
+    /**
      * Preserve the fields currently consumed by the controller and Blade
-     * page while also returning the new shared AnalyticsResult structure.
-     *
-     * The duplicated top-level fields can be removed after all consumers
-     * have migrated to the nested "data" element.
+     * page while also returning the shared AnalyticsResult structure.
      *
      * @return array<string, mixed>
      */
     private function legacyCompatibleResult(
         AnalyticsResult $result
     ): array {
-        $shared = $result->toArray();
+        $shared =
+            $result->toArray();
 
         return array_merge(
             $shared,
