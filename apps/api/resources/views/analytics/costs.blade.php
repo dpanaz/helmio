@@ -129,6 +129,31 @@
         $incrementalAnnualCost = data_get($costPerformance, 'comparison.incremental_annual_cost');
         $performanceValueGap = data_get($costPerformance, 'comparison.performance_value_gap');
 
+        $performanceValueDifference =
+            data_get(
+                $costPerformance,
+                'comparison.performance_value_difference'
+            );
+
+        $performanceValueStatus =
+            data_get(
+                $costPerformance,
+                'comparison.performance_value_status'
+            );
+
+        $outperformanceValue =
+            data_get(
+                $costPerformance,
+                'comparison.outperformance_value'
+            );
+
+        $underperformanceValue =
+            data_get(
+                $costPerformance,
+                'comparison.underperformance_value'
+            );
+
+
         $assessmentStatus = data_get(
             $costPerformance,
             'assessment.status',
@@ -479,7 +504,53 @@
                                     {{ $assessmentMessage }}
                                 </p>
 
-                                @if ($performanceValueGap !== null)
+                                @if ($performanceValueDifference !== null)
+                                    <div class="mt-6 rounded-xl border border-slate-700 bg-slate-900 p-4">
+                                        @if ($performanceValueStatus === 'outperformance')
+                                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                                Estimated outperformance value
+                                            </p>
+
+                                            <p class="mt-2 text-3xl font-semibold tracking-tight text-emerald-300">
+                                                ${{ number_format(
+                                                    abs((float) $performanceValueDifference),
+                                                    0
+                                                ) }}
+                                            </p>
+
+                                            <p class="mt-2 text-xs leading-5 text-slate-400">
+                                                Estimated additional portfolio value associated with performance above the selected benchmark during this period.
+                                            </p>
+                                        @elseif ($performanceValueStatus === 'underperformance')
+                                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                                Estimated performance opportunity cost
+                                            </p>
+
+                                            <p class="mt-2 text-3xl font-semibold tracking-tight text-red-300">
+                                                ${{ number_format(
+                                                    abs((float) $performanceValueDifference),
+                                                    0
+                                                ) }}
+                                            </p>
+
+                                            <p class="mt-2 text-xs leading-5 text-slate-400">
+                                                Estimated portfolio value associated with performance below the selected benchmark during this period.
+                                            </p>
+                                        @else
+                                            <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
+                                                Benchmark performance difference
+                                            </p>
+
+                                            <p class="mt-2 text-3xl font-semibold tracking-tight text-white">
+                                                $0
+                                            </p>
+
+                                            <p class="mt-2 text-xs leading-5 text-slate-400">
+                                                Portfolio performance was approximately in line with the selected benchmark during this period.
+                                            </p>
+                                        @endif
+                                    </div>
+                                @elseif ($performanceValueGap !== null)
                                     <div class="mt-6 rounded-xl border border-slate-700 bg-slate-900 p-4">
                                         <p class="text-[11px] font-semibold uppercase tracking-wide text-slate-400">
                                             Benchmark performance gap
@@ -980,7 +1051,7 @@
                                 </p>
 
                                 <p>
-                                    The performance opportunity-cost figure is Helmio's existing benchmark-relative performance calculation. It should not be interpreted as a guarantee, damages estimate, or forecast.
+                                    Benchmark-relative dollar values are estimates derived from portfolio value and observed return differences. They are directional comparisons, not guarantees, damages estimates, or forecasts.
                                 </p>
                             </div>
                         </div>
