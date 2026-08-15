@@ -10,7 +10,7 @@
             </h2>
 
             <p class="mt-2 text-sm text-slate-400">
-                Review concentration across securities, sectors, and asset classes.
+                Review concentration, hidden overlap, and allocation drift across the portfolio.
             </p>
         </div>
     </x-slot>
@@ -136,6 +136,77 @@
             };
         };
 
+        $driftStatus =
+            data_get(
+                $drift ?? [],
+                'status'
+            );
+
+        $driftMetrics =
+            data_get(
+                $drift ?? [],
+                'metrics',
+                []
+            );
+
+        $driftSummary =
+            data_get(
+                $drift ?? [],
+                'summary',
+                []
+            );
+
+        $driftAllocations =
+            collect(
+                data_get(
+                    $drift ?? [],
+                    'allocations',
+                    []
+                )
+            );
+
+        $driftBadgeClasses = static function (
+            ?string $status
+        ): string {
+            return match ($status) {
+                'high' =>
+                    'border-red-500/30 bg-red-500/10 text-red-300',
+
+                'moderate' =>
+                    'border-orange-500/30 bg-orange-500/10 text-orange-300',
+
+                'mild' =>
+                    'border-amber-500/30 bg-amber-500/10 text-amber-300',
+
+                'on_target' =>
+                    'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+
+                default =>
+                    'border-slate-700 bg-slate-800 text-slate-300',
+            };
+        };
+
+        $driftBarClasses = static function (
+            ?string $status
+        ): string {
+            return match ($status) {
+                'high' =>
+                    'from-red-300 via-red-500 to-red-700',
+
+                'moderate' =>
+                    'from-orange-300 via-orange-500 to-orange-700',
+
+                'mild' =>
+                    'from-amber-200 via-amber-400 to-amber-600',
+
+                'on_target' =>
+                    'from-emerald-300 via-emerald-500 to-emerald-700',
+
+                default =>
+                    'from-slate-400 via-slate-500 to-slate-600',
+            };
+        };
+
         /*
          * Donut chart data.
          *
@@ -183,13 +254,13 @@
         $chartOffset = 0.0;
     @endphp
 
-    <div class="bg-slate-950 py-8">
-        <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+    <div class="min-h-screen bg-slate-950 py-7">
+        <div class="mx-auto max-w-[1400px] space-y-5 px-4 sm:px-6 lg:px-8">
 
             {{-- Executive summary --}}
-            <section class="rounded-2xl border border-slate-800 bg-slate-900 p-6 shadow-lg">
-                <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
-                    <div class="max-w-4xl">
+            <section class="overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-900 shadow-lg">
+                <div class="grid lg:grid-cols-[1fr_280px]">
+                    <div class="p-6 sm:p-7">
                         <div class="flex flex-wrap items-center gap-2">
                             <span class="rounded-full border border-blue-500/25 bg-blue-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-300">
                                 Helmio diversification review
@@ -202,68 +273,157 @@
                             @endif
                         </div>
 
-                        <h3 class="mt-4 text-xl font-semibold tracking-tight text-white">
+                        <h3 class="mt-4 max-w-3xl text-2xl font-semibold tracking-tight text-white">
                             {{ $summary['headline'] ?? $scoreLabel }}
                         </h3>
 
-                        <p class="mt-2 text-sm leading-6 text-slate-400">
+                        <p class="mt-2 max-w-4xl text-sm leading-6 text-slate-400">
                             {{ $summary['message']
-                                ?? 'Helmio is evaluating security, sector, and asset-class concentration using the current invested holdings.' }}
+                                ?? 'Helmio is evaluating security, sector, asset-class concentration, hidden fund overlap, and allocation drift.' }}
                         </p>
+
+                        <div class="mt-5 flex flex-wrap gap-2">
+                            @if (($summary['material_finding_count'] ?? 0) > 0)
+                                <span class="inline-flex items-center gap-2 rounded-lg border border-orange-500/20 bg-orange-500/[0.06] px-3 py-2 text-xs font-semibold text-orange-300">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-orange-400"></span>
+                                    {{ $summary['material_finding_count'] }} material findings
+                                </span>
+                            @endif
+
+                            @if ($driftStatus === 'complete' && ($driftMetrics['review_recommended'] ?? false))
+                                <span class="inline-flex items-center gap-2 rounded-lg border border-red-500/20 bg-red-500/[0.06] px-3 py-2 text-xs font-semibold text-red-300">
+                                    <span class="h-1.5 w-1.5 rounded-full bg-red-400"></span>
+                                    Rebalancing review recommended
+                                </span>
+                            @endif
+
+                            @if ($fundPairs->isNotEmpty())
+                                <span class="inline-flex items-center gap-2 rounded-lg border border-blue-500/20 bg-blue-500/[0.05] px-3 py-2 text-xs font-semibold text-blue-300">
+                                    Fund overlap detected
+                                </span>
+                            @endif
+                        </div>
                     </div>
 
-                    @if (($summary['material_finding_count'] ?? 0) > 0)
-                        <div class="shrink-0 rounded-xl border border-slate-800 bg-slate-950 px-5 py-4 text-center">
-                            <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
-                                Material findings
+                    <div class="border-t border-slate-800 bg-slate-950/35 p-6 lg:border-l lg:border-t-0">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-500">
+                            Diversification score
+                        </p>
+
+                        <div class="mt-3 flex items-end gap-2">
+                            <p class="text-5xl font-semibold tracking-tight text-white">
+                                {{ $score ?? '—' }}
                             </p>
 
-                            <p class="mt-1 text-3xl font-semibold text-white">
-                                {{ $summary['material_finding_count'] }}
-                            </p>
+                            @if ($score !== null)
+                                <span class="pb-1 text-sm text-slate-600">/100</span>
+                            @endif
                         </div>
-                    @endif
+
+                        <p class="mt-2 text-sm font-medium text-slate-400">
+                            {{ $scoreLabel }}
+                        </p>
+
+                        @if ($score !== null)
+                            <div class="mt-5 h-2 overflow-hidden rounded-full bg-slate-800">
+                                <div
+                                    class="h-full rounded-full bg-gradient-to-r from-blue-300 via-blue-500 to-blue-800"
+                                    style="width: {{ min(100, max(0, $score)) }}%"
+                                ></div>
+                            </div>
+                        @endif
+                    </div>
                 </div>
             </section>
 
-            {{-- KPI row --}}
-            <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                <x-analytics.metric-card
-                    label="Diversification score"
-                    description="{{ $scoreLabel }}"
-                >
-                    {{ $score ?? '—' }}
-                </x-analytics.metric-card>
+            {{-- Portfolio snapshot --}}
+            <section class="overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-900 shadow-lg">
+                <div class="grid divide-y divide-slate-800/80 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+                    <div class="px-5 py-4 sm:px-6">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-500">
+                            Securities
+                        </p>
 
-                <x-analytics.metric-card label="Securities">
-                    {{ $analytics['metrics']['security_count'] ?? 0 }}
-                </x-analytics.metric-card>
+                        <p class="mt-2 text-2xl font-semibold text-white">
+                            {{ $analytics['metrics']['security_count'] ?? 0 }}
+                        </p>
 
-                <x-analytics.metric-card label="Largest holding">
-                    @if (isset($analytics['metrics']['largest_security_weight']))
-                        {{ number_format(
-                            $analytics['metrics']['largest_security_weight'] * 100,
-                            1
-                        ) }}%
-                    @else
-                        —
-                    @endif
-                </x-analytics.metric-card>
+                        <p class="mt-1 text-xs text-slate-500">
+                            Non-cash invested positions
+                        </p>
+                    </div>
 
-                <x-analytics.metric-card label="Top five holdings">
-                    @if (isset($analytics['metrics']['top_five_weight']))
-                        {{ number_format(
-                            $analytics['metrics']['top_five_weight'] * 100,
-                            1
-                        ) }}%
-                    @else
-                        —
-                    @endif
-                </x-analytics.metric-card>
-            </div>
+                    <div class="px-5 py-4 sm:px-6">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-500">
+                            Largest holding
+                        </p>
+
+                        <p class="mt-2 text-2xl font-semibold text-white">
+                            @if (isset($analytics['metrics']['largest_security_weight']))
+                                {{ number_format(
+                                    $analytics['metrics']['largest_security_weight'] * 100,
+                                    1
+                                ) }}%
+                            @else
+                                —
+                            @endif
+                        </p>
+
+                        <p class="mt-1 text-xs text-slate-500">
+                            Single-position concentration
+                        </p>
+                    </div>
+
+                    <div class="px-5 py-4 sm:px-6">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-500">
+                            Top five holdings
+                        </p>
+
+                        <p class="mt-2 text-2xl font-semibold text-white">
+                            @if (isset($analytics['metrics']['top_five_weight']))
+                                {{ number_format(
+                                    $analytics['metrics']['top_five_weight'] * 100,
+                                    1
+                                ) }}%
+                            @else
+                                —
+                            @endif
+                        </p>
+
+                        <p class="mt-1 text-xs text-slate-500">
+                            Combined concentration
+                        </p>
+                    </div>
+
+                    <div class="px-5 py-4 sm:px-6">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.13em] text-slate-500">
+                            Largest drift
+                        </p>
+
+                        <p class="mt-2 text-2xl font-semibold {{ ($driftMetrics['overall_status'] ?? null) === 'high'
+                            ? 'text-red-300'
+                            : (($driftMetrics['overall_status'] ?? null) === 'moderate'
+                                ? 'text-orange-300'
+                                : 'text-white') }}">
+                            @if ($driftStatus === 'complete')
+                                {{ number_format(
+                                    ($driftMetrics['largest_drift'] ?? 0) * 100,
+                                    1
+                                ) }} pts
+                            @else
+                                —
+                            @endif
+                        </p>
+
+                        <p class="mt-1 text-xs text-slate-500">
+                            Versus documented target
+                        </p>
+                    </div>
+                </div>
+            </section>
 
             {{-- Portfolio allocation intelligence --}}
-            <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-lg">
+            <section class="overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-900 shadow-lg">
                 <div class="border-b border-slate-800 px-6 py-5">
                     <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
                         <div>
@@ -272,7 +432,7 @@
                             </p>
 
                             <h3 class="mt-1 font-semibold text-white">
-                                Concentration at a glance
+                                How concentrated is the portfolio?
                             </h3>
                         </div>
 
@@ -282,9 +442,9 @@
                     </div>
                 </div>
 
-                <div class="grid gap-4 p-5 lg:grid-cols-[180px_1fr] lg:items-center">
+                <div class="grid gap-6 p-5 sm:p-6 lg:grid-cols-[190px_1fr] lg:items-center">
                     {{-- Smaller donut --}}
-                    <div class="mx-auto w-[150px] max-w-full sm:w-[165px]">
+                    <div class="mx-auto w-[140px] max-w-full sm:w-[150px]">
                         @if ($chartSegments->isNotEmpty())
                             <div class="relative aspect-square">
                                 <svg
@@ -489,11 +649,11 @@
                                 </div>
 
                                 <h3 class="mt-2 font-semibold text-white">
-                                    Hidden overlap beneath funds
+                                    What do your funds actually own?
                                 </h3>
 
                                 <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
-                                    Helmio decomposes available ETF holdings to estimate the underlying companies you actually own through multiple positions.
+                                    Helmio looks through available fund holdings to reveal duplicated underlying exposure that a top-level holdings list can hide.
                                 </p>
                             </div>
 
@@ -736,156 +896,298 @@
                 </section>
             @endif
 
-            {{-- Findings + actions --}}
-
-            <div class="grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
-                <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-lg">
-                    <div class="border-b border-slate-800 px-6 py-5">
-                        <div class="flex items-center justify-between gap-4">
-                            <div>
-                                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
-                                    What Helmio found
-                                </p>
-
-                                <h3 class="mt-1 font-semibold text-white">
-                                    Ranked diversification findings
-                                </h3>
-                            </div>
-
-                            @if ($findings->isNotEmpty())
-                                <span class="rounded-full border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs font-semibold text-slate-300">
-                                    {{ $findings->count() }}
-                                </span>
-                            @endif
-                        </div>
-                    </div>
-
-                    <div class="divide-y divide-slate-800">
-                        @forelse ($findings as $finding)
-                            <article class="px-6 py-5">
-                                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                                    <div class="min-w-0">
-                                        <div class="flex flex-wrap items-center gap-2">
-                                            <span class="inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] {{ $severityClasses($finding['severity'] ?? null) }}">
-                                                <span class="h-1.5 w-1.5 rounded-full {{ $severityDotClasses($finding['severity'] ?? null) }}"></span>
-
-                                                {{ ucfirst($finding['severity'] ?? 'information') }}
-                                            </span>
-
-                                            @if (($finding['metric'] ?? null) !== null)
-                                                <span class="text-xs font-semibold {{ $severityTextClasses($finding['severity'] ?? null) }}">
-                                                    {{ $finding['metric'] }}
-                                                </span>
-                                            @endif
-                                        </div>
-
-                                        <h4 class="mt-3 font-semibold text-white">
-                                            {{ $finding['title'] ?? 'Diversification finding' }}
-                                        </h4>
-
-                                        <p class="mt-2 text-sm leading-6 text-slate-400">
-                                            {{ $finding['message'] ?? '' }}
-                                        </p>
-                                    </div>
-
-                                    @if (($finding['score_impact'] ?? 0) < 0)
-                                        <div class="shrink-0 text-right">
-                                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
-                                                Score impact
-                                            </p>
-
-                                            <p class="mt-1 text-sm font-semibold text-red-300">
-                                                {{ $finding['score_impact'] }} pts
-                                            </p>
-                                        </div>
-                                    @endif
-                                </div>
-                            </article>
-                        @empty
-                            <div class="p-8 text-center">
-                                <p class="font-semibold text-white">
-                                    No material concentration concerns
-                                </p>
-
-                                <p class="mt-2 text-sm text-slate-500">
-                                    Helmio did not identify a ranked diversification finding from the current holdings.
-                                </p>
-                            </div>
-                        @endforelse
-                    </div>
-                </section>
-
-                <section class="rounded-2xl border border-blue-500/20 bg-blue-500/[0.06] p-6 shadow-lg">
-                    <p class="text-xs font-semibold uppercase tracking-[0.14em] text-blue-300">
-                        Recommended review
-                    </p>
-
-                    <h3 class="mt-2 text-lg font-semibold text-white">
-                        What to review next
-                    </h3>
-
-                    <div class="mt-5 space-y-4">
-                        @forelse ($actions as $action)
-                            <article class="rounded-xl border border-blue-500/15 bg-slate-950/40 p-4">
-                                <div class="flex gap-3">
-                                    <div class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-xs font-semibold text-blue-300">
-                                        {{ $loop->iteration }}
-                                    </div>
-
-                                    <div>
-                                        <p class="font-semibold text-slate-100">
-                                            {{ $action['title'] ?? 'Review diversification' }}
-                                        </p>
-
-                                        <p class="mt-1.5 text-sm leading-6 text-slate-400">
-                                            {{ $action['message'] ?? '' }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </article>
-                        @empty
-                            <p class="text-sm leading-6 text-slate-400">
-                                Continue monitoring changes in security, sector, and asset-class concentration.
-                            </p>
-                        @endforelse
-                    </div>
-                </section>
-            </div>
-
-            {{-- Data quality --}}
-            @if ($warnings->isNotEmpty())
-                <section class="rounded-2xl border border-amber-500/20 bg-amber-500/[0.05] p-5">
-                    <div class="flex gap-3">
-                        <svg
-                            class="mt-0.5 h-5 w-5 shrink-0 text-amber-300"
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                            stroke-width="2"
-                        >
-                            <path
-                                stroke-linecap="round"
-                                stroke-linejoin="round"
-                                d="M12 9v4m0 4h.01M10.3 3.6 2.6 17a2 2 0 0 0 1.73 3h15.34A2 2 0 0 0 21.4 17L13.7 3.6a2 2 0 0 0-3.4 0Z"
-                            />
-                        </svg>
-
+            {{-- Portfolio drift --}}
+            <section class="overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-900 shadow-lg">
+                <div class="border-b border-slate-800/80 px-6 py-5">
+                    <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
                         <div>
-                            <h3 class="font-semibold text-amber-200">
-                                Data-quality notes
+                            <div class="flex flex-wrap items-center gap-2">
+                                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-blue-400">
+                                    Portfolio drift
+                                </p>
+
+                                @if ($driftStatus === 'complete')
+                                    <span
+                                        class="rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] {{ $driftBadgeClasses(
+                                            $driftMetrics['overall_status']
+                                            ?? null
+                                        ) }}"
+                                    >
+                                        {{ str(
+                                            $driftMetrics['overall_status']
+                                            ?? 'unknown'
+                                        )->replace('_', ' ')->title() }}
+                                    </span>
+                                @endif
+                            </div>
+
+                            <h3 class="mt-2 font-semibold text-white">
+                                How far has the portfolio moved from target?
                             </h3>
 
-                            <div class="mt-2 space-y-1.5">
-                                @foreach ($warnings as $warning)
-                                    <p class="text-sm leading-6 text-amber-200/75">
-                                        {{ $warning['message'] ?? $warning }}
+                            <p class="mt-1 max-w-3xl text-sm leading-6 text-slate-400">
+                                Helmio compares current asset-class weights with the documented target allocation. Drift is a monitoring signal, not an automatic instruction to trade.
+                            </p>
+                        </div>
+
+                        @if ($driftStatus === 'complete')
+                            <div class="grid grid-cols-2 gap-2 sm:flex">
+                                <div class="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-right">
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                        Largest drift
                                     </p>
+
+                                    <p class="mt-1 text-lg font-semibold text-white">
+                                        {{ number_format(
+                                            ($driftMetrics['largest_drift'] ?? 0) * 100,
+                                            1
+                                        ) }} pts
+                                    </p>
+                                </div>
+
+                                <div class="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-right">
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                        Rebalance distance
+                                    </p>
+
+                                    <p class="mt-1 text-lg font-semibold text-white">
+                                        {{ number_format(
+                                            ($driftMetrics['rebalance_distance'] ?? 0) * 100,
+                                            1
+                                        ) }}%
+                                    </p>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+
+                @if ($driftStatus === 'complete')
+                    <div class="grid gap-0 xl:grid-cols-[1fr_340px]">
+                        <div class="p-6 xl:border-r xl:border-slate-800">
+                            <div class="grid grid-cols-[minmax(125px,1.15fr)_80px_80px_85px] items-end gap-3 border-b border-slate-800 pb-3 text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600 sm:grid-cols-[minmax(180px,1.5fr)_100px_100px_100px]">
+                                <span>Asset class</span>
+                                <span class="text-right">Current</span>
+                                <span class="text-right">Target</span>
+                                <span class="text-right">Drift</span>
+                            </div>
+
+                            <div class="divide-y divide-slate-800">
+                                @foreach ($driftAllocations as $allocation)
+                                    @php
+                                        $currentPercent =
+                                            (float) (
+                                                $allocation[
+                                                    'current_weight'
+                                                ] ?? 0
+                                            ) * 100;
+
+                                        $targetPercent =
+                                            (float) (
+                                                $allocation[
+                                                    'target_weight'
+                                                ] ?? 0
+                                            ) * 100;
+
+                                        $driftPercent =
+                                            (float) (
+                                                $allocation[
+                                                    'drift'
+                                                ] ?? 0
+                                            ) * 100;
+
+                                        $absoluteDriftPercent =
+                                            abs(
+                                                $driftPercent
+                                            );
+
+                                        $barMax =
+                                            max(
+                                                $currentPercent,
+                                                $targetPercent,
+                                                1
+                                            );
+
+                                        $currentBarWidth =
+                                            min(
+                                                100,
+                                                ($currentPercent / $barMax) * 100
+                                            );
+
+                                        $targetMarkerLeft =
+                                            min(
+                                                100,
+                                                ($targetPercent / $barMax) * 100
+                                            );
+                                    @endphp
+
+                                    <div class="py-4">
+                                        <div class="grid grid-cols-[minmax(125px,1.15fr)_80px_80px_85px] items-center gap-3 sm:grid-cols-[minmax(180px,1.5fr)_100px_100px_100px]">
+                                            <div class="min-w-0">
+                                                <div class="flex flex-wrap items-center gap-2">
+                                                    <p class="truncate text-sm font-semibold text-white">
+                                                        {{ $allocation['label'] }}
+                                                    </p>
+
+                                                    <span
+                                                        class="rounded-full border px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wide {{ $driftBadgeClasses(
+                                                            $allocation['status']
+                                                            ?? null
+                                                        ) }}"
+                                                    >
+                                                        {{ str(
+                                                            $allocation['status']
+                                                            ?? 'unknown'
+                                                        )->replace('_', ' ')->title() }}
+                                                    </span>
+                                                </div>
+
+                                                <div class="relative mt-2 h-1.5 overflow-visible rounded-full bg-slate-800">
+                                                    <div
+                                                        class="h-full rounded-full bg-gradient-to-r {{ $driftBarClasses(
+                                                            $allocation['status']
+                                                            ?? null
+                                                        ) }}"
+                                                        style="width: {{ $currentBarWidth }}%"
+                                                    ></div>
+
+                                                    <span
+                                                        class="absolute top-1/2 h-3 w-px -translate-y-1/2 bg-white/80"
+                                                        style="left: {{ $targetMarkerLeft }}%"
+                                                        title="Target {{ number_format($targetPercent, 1) }}%"
+                                                    ></span>
+                                                </div>
+                                            </div>
+
+                                            <p class="text-right text-sm font-semibold text-white">
+                                                {{ number_format(
+                                                    $currentPercent,
+                                                    1
+                                                ) }}%
+                                            </p>
+
+                                            <p class="text-right text-sm font-medium text-slate-400">
+                                                {{ number_format(
+                                                    $targetPercent,
+                                                    1
+                                                ) }}%
+                                            </p>
+
+                                            <div class="text-right">
+                                                <p
+                                                    class="text-sm font-semibold {{ $driftPercent > 0
+                                                        ? 'text-orange-300'
+                                                        : ($driftPercent < 0
+                                                            ? 'text-blue-300'
+                                                            : 'text-emerald-300')
+                                                    }}"
+                                                >
+                                                    {{ $driftPercent > 0 ? '+' : '' }}{{ number_format(
+                                                        $driftPercent,
+                                                        1
+                                                    ) }}
+                                                </p>
+
+                                                <p class="mt-0.5 text-[9px] uppercase tracking-wide text-slate-600">
+                                                    {{ str(
+                                                        $allocation['direction']
+                                                        ?? 'on_target'
+                                                    )->replace('_', ' ') }}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
                                 @endforeach
                             </div>
                         </div>
+
+                        <aside class="border-t border-slate-800 p-6 xl:border-t-0">
+                            <p class="text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                Helmio interpretation
+                            </p>
+
+                            <h4 class="mt-3 text-lg font-semibold text-white">
+                                {{ $driftSummary['headline']
+                                    ?? 'Portfolio drift review' }}
+                            </h4>
+
+                            <p class="mt-2 text-sm leading-6 text-slate-400">
+                                {{ $driftSummary['message']
+                                    ?? 'Helmio is comparing current asset allocation with the documented target.' }}
+                            </p>
+
+                            <div class="mt-5 space-y-3">
+                                <div class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950 px-4 py-3">
+                                    <span class="text-xs text-slate-500">
+                                        High-drift classes
+                                    </span>
+
+                                    <span class="text-sm font-semibold text-red-300">
+                                        {{ number_format(
+                                            $driftMetrics['high_drift_count']
+                                            ?? 0
+                                        ) }}
+                                    </span>
+                                </div>
+
+                                <div class="flex items-center justify-between rounded-xl border border-slate-800 bg-slate-950 px-4 py-3">
+                                    <span class="text-xs text-slate-500">
+                                        Moderate-drift classes
+                                    </span>
+
+                                    <span class="text-sm font-semibold text-orange-300">
+                                        {{ number_format(
+                                            $driftMetrics['moderate_drift_count']
+                                            ?? 0
+                                        ) }}
+                                    </span>
+                                </div>
+
+                                @if ($driftMetrics['review_recommended'] ?? false)
+                                    <div class="rounded-xl border border-orange-500/20 bg-orange-500/[0.05] p-4">
+                                        <p class="text-xs font-semibold text-orange-300">
+                                            Rebalancing review recommended
+                                        </p>
+
+                                        <p class="mt-1 text-xs leading-5 text-slate-500">
+                                            Review taxes, account types, transaction costs, and suitability before making allocation changes.
+                                        </p>
+                                    </div>
+                                @else
+                                    <div class="rounded-xl border border-emerald-500/20 bg-emerald-500/[0.05] p-4">
+                                        <p class="text-xs font-semibold text-emerald-300">
+                                            Allocation remains near target
+                                        </p>
+                                    </div>
+                                @endif
+                            </div>
+                        </aside>
                     </div>
-                </section>
-            @endif
+                @else
+                    <div class="p-6">
+                        <div class="rounded-xl border border-slate-800 bg-slate-950 p-5">
+                            <p class="text-sm font-semibold text-white">
+                                Target allocation needed
+                            </p>
+
+                            <p class="mt-2 text-sm leading-6 text-slate-500">
+                                {{ data_get(
+                                    $drift ?? [],
+                                    'reason',
+                                    'Document a target asset allocation in the investor profile to begin monitoring portfolio drift.'
+                                ) }}
+                            </p>
+
+                            <a
+                                href="{{ route('investor-profile.edit') }}"
+                                class="mt-4 inline-flex rounded-lg bg-blue-600 px-3.5 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-500"
+                            >
+                                Update Investor Profile
+                            </a>
+                        </div>
+                    </div>
+                @endif
+            </section>
 
             {{-- Security + sector exposure --}}
             <div class="grid gap-6 lg:grid-cols-2">
@@ -1030,17 +1332,169 @@
                 </div>
             </x-analytics.panel>
 
+            {{-- Findings + actions --}}
+
+            <div class="grid gap-6 lg:grid-cols-[1.15fr_.85fr]">
+                <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-lg">
+                    <div class="border-b border-slate-800 px-6 py-5">
+                        <div class="flex items-center justify-between gap-4">
+                            <div>
+                                <p class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-500">
+                                    What Helmio found
+                                </p>
+
+                                <h3 class="mt-1 font-semibold text-white">
+                                    What needs your attention
+                                </h3>
+                            </div>
+
+                            @if ($findings->isNotEmpty())
+                                <span class="rounded-full border border-slate-700 bg-slate-950 px-2.5 py-1 text-xs font-semibold text-slate-300">
+                                    {{ $findings->count() }}
+                                </span>
+                            @endif
+                        </div>
+                    </div>
+
+                    <div class="divide-y divide-slate-800">
+                        @forelse ($findings as $finding)
+                            <article class="px-6 py-5">
+                                <div class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                                    <div class="min-w-0">
+                                        <div class="flex flex-wrap items-center gap-2">
+                                            <span class="inline-flex items-center gap-2 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] {{ $severityClasses($finding['severity'] ?? null) }}">
+                                                <span class="h-1.5 w-1.5 rounded-full {{ $severityDotClasses($finding['severity'] ?? null) }}"></span>
+
+                                                {{ ucfirst($finding['severity'] ?? 'information') }}
+                                            </span>
+
+                                            @if (($finding['metric'] ?? null) !== null)
+                                                <span class="text-xs font-semibold {{ $severityTextClasses($finding['severity'] ?? null) }}">
+                                                    {{ $finding['metric'] }}
+                                                </span>
+                                            @endif
+                                        </div>
+
+                                        <h4 class="mt-3 font-semibold text-white">
+                                            {{ $finding['title'] ?? 'Diversification finding' }}
+                                        </h4>
+
+                                        <p class="mt-2 text-sm leading-6 text-slate-400">
+                                            {{ $finding['message'] ?? '' }}
+                                        </p>
+                                    </div>
+
+                                    @if (($finding['score_impact'] ?? 0) < 0)
+                                        <div class="shrink-0 text-right">
+                                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                                                Score impact
+                                            </p>
+
+                                            <p class="mt-1 text-sm font-semibold text-red-300">
+                                                {{ $finding['score_impact'] }} pts
+                                            </p>
+                                        </div>
+                                    @endif
+                                </div>
+                            </article>
+                        @empty
+                            <div class="p-8 text-center">
+                                <p class="font-semibold text-white">
+                                    No material concentration concerns
+                                </p>
+
+                                <p class="mt-2 text-sm text-slate-500">
+                                    Helmio did not identify a ranked diversification finding from the current holdings.
+                                </p>
+                            </div>
+                        @endforelse
+                    </div>
+                </section>
+
+                <section class="rounded-2xl border border-blue-500/20 bg-blue-500/[0.06] p-6 shadow-lg">
+                    <p class="text-xs font-semibold uppercase tracking-[0.14em] text-blue-300">
+                        Recommended review
+                    </p>
+
+                    <h3 class="mt-2 text-lg font-semibold text-white">
+                        Recommended next review
+                    </h3>
+
+                    <div class="mt-5 space-y-4">
+                        @forelse ($actions as $action)
+                            <article class="rounded-xl border border-blue-500/15 bg-slate-950/40 p-4">
+                                <div class="flex gap-3">
+                                    <div class="mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-blue-500/20 bg-blue-500/10 text-xs font-semibold text-blue-300">
+                                        {{ $loop->iteration }}
+                                    </div>
+
+                                    <div>
+                                        <p class="font-semibold text-slate-100">
+                                            {{ $action['title'] ?? 'Review diversification' }}
+                                        </p>
+
+                                        <p class="mt-1.5 text-sm leading-6 text-slate-400">
+                                            {{ $action['message'] ?? '' }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </article>
+                        @empty
+                            <p class="text-sm leading-6 text-slate-400">
+                                Continue monitoring changes in security, sector, and asset-class concentration.
+                            </p>
+                        @endforelse
+                    </div>
+                </section>
+            </div>
+
+            {{-- Data quality --}}
+            @if ($warnings->isNotEmpty())
+                <section class="rounded-2xl border border-amber-500/20 bg-amber-500/[0.05] p-5">
+                    <div class="flex gap-3">
+                        <svg
+                            class="mt-0.5 h-5 w-5 shrink-0 text-amber-300"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M12 9v4m0 4h.01M10.3 3.6 2.6 17a2 2 0 0 0 1.73 3h15.34A2 2 0 0 0 21.4 17L13.7 3.6a2 2 0 0 0-3.4 0Z"
+                            />
+                        </svg>
+
+                        <div>
+                            <h3 class="font-semibold text-amber-200">
+                                Data-quality notes
+                            </h3>
+
+                            <div class="mt-2 space-y-1.5">
+                                @foreach ($warnings as $warning)
+                                    <p class="text-sm leading-6 text-amber-200/75">
+                                        {{ $warning['message'] ?? $warning }}
+                                    </p>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </section>
+            @endif
+
+
             {{-- Methodology --}}
             <x-analytics.methodology
                 :formula-version="$analytics['formula_version']"
             >
                 Helmio evaluates non-cash security concentration, top-five
                 concentration, sector exposure, asset-class exposure,
-                classification coverage, and concentration indices. When
-                constituent data is available, Helmio also estimates effective
-                underlying exposure and weighted fund-to-fund overlap. Coverage
-                is shown explicitly because pooled investments without
-                look-through data are not treated as fully transparent.
+                classification coverage, concentration indices, and documented
+                allocation drift. When constituent data is available, Helmio
+                also estimates effective underlying exposure and weighted
+                fund-to-fund overlap. Drift is monitored separately from the
+                diversification score so the score remains explainable.
                 Geographic exposure, correlation, and factor concentration are
                 not yet included.
             </x-analytics.methodology>

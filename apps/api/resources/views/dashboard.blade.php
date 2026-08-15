@@ -935,7 +935,7 @@
                         {{-- ================================================= --}}
 
                         <section
-                            class="flex min-w-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg sm:p-6 lg:w-1/3"
+                            class="flex min-w-0 flex-col rounded-2xl border border-slate-800/90 bg-slate-900 p-5 shadow-lg sm:p-6 lg:w-[30%]"
                         >
                             <div class="flex items-center justify-between gap-3">
 
@@ -1124,7 +1124,7 @@
                         {{-- ================================================= --}}
 
                         <section
-                            class="min-w-0 rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg sm:p-6 lg:w-2/3"
+                            class="min-w-0 flex-1 rounded-2xl border border-slate-800/90 bg-slate-900 p-5 shadow-lg sm:p-6"
                         >
 
                             <div
@@ -1288,7 +1288,9 @@
                                             $categoryPalette['dark'];
 
                                         $categoryIconColor =
-                                            $categoryPalette['dark'];
+                                            '#60a5fa';
+                                         $categoryIconBackground =
+                                            'rgba(37, 99, 235, 0.12)';
 
                                         $categoryScoreCapped =
                                             $categoryScore !== null
@@ -1319,9 +1321,9 @@
                                             <div
                                                 class="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:flex"
                                                 style="
-                                                    color: {{ $categoryIconColor }};
-                                                    background-color: {{ $categoryPalette['icon_bg'] }};
-                                                "
+                                                            color: {{ $categoryIconColor }};
+                                                            background-color: {{ $categoryIconBackground }};
+                                                        "
                                             >
 
                                                 @switch($item['key'])
@@ -1520,341 +1522,16 @@
 
 
                 {{-- ===================================================== --}}
-                {{-- SECONDARY KPI ROW --}}
-                {{-- ===================================================== --}}
-
-                <div
-                    class="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-4"
-                >
-
-                    {{-- Estimated annual cost --}}
-
-                    <section
-                        class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg"
-                    >
-                        <p
-                            class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400"
-                        >
-                            Estimated Annual Cost
-                        </p>
-
-                        <div class="mt-4 flex items-center gap-3">
-
-                            <div
-                                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-blue-500/20 bg-blue-500/10 text-blue-300"
-                            >
-                                <span class="text-xl">
-                                    $
-                                </span>
-                            </div>
-
-                            <div>
-                                <p
-                                    class="text-2xl font-semibold tracking-tight text-white"
-                                >
-                                    @if ($allInCostDollars !== null)
-
-                                        {{ money($allInCostDollars) }}
-
-                                    @else
-
-                                        —
-
-                                    @endif
-                                </p>
-
-                                <p
-                                    class="mt-1 text-xs text-slate-500"
-                                >
-                                    @if ($allInCostRate !== null)
-
-                                        {{ number_format(
-                                            (float) $allInCostRate,
-                                            2
-                                        ) }}% of assets annually
-
-                                    @else
-
-                                        Cost data is still being calculated
-
-                                    @endif
-                                </p>
-                            </div>
-
-                        </div>
-
-                        <a
-                            href="{{ route('analytics.costs') }}"
-                            class="mt-5 inline-flex text-xs font-semibold text-blue-400 hover:text-blue-300"
-                        >
-                            View Cost Analysis →
-                        </a>
-                    </section>
-
-
-                    {{-- Top finding --}}
-
-                    <section
-                        class="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg"
-                    >
-                        @if ($topConcern)
-                            <div
-                                class="absolute inset-y-0 left-0 w-1 {{ in_array($topConcernSeverity, ['critical', 'high'], true) ? 'bg-red-500' : 'bg-orange-500' }}"
-                            ></div>
-                        @endif
-                        <div class="flex items-center justify-between gap-3">
-                            <p
-                                class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400"
-                            >
-                                Top Finding
-                            </p>
-
-                            @if ($topConcern)
-                                <span
-                                    class="rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] {{ $topConcernClasses['badge'] }}"
-                                >
-                                    {{ str($topConcernSeverity)
-                                        ->replace('_', ' ')
-                                        ->title() }}
-                                </span>
-                            @endif
-                        </div>
-
-                        @if ($topConcern)
-
-                            <h3
-                                class="mt-4 line-clamp-2 text-base font-semibold leading-6 text-white"
-                            >
-                                {{ data_get(
-                                    $topConcern,
-                                    'title',
-                                    'Portfolio finding'
-                                ) }}
-                            </h3>
-
-                            <p
-                                class="mt-2 line-clamp-3 text-xs leading-5 text-slate-400"
-                            >
-                                {{ data_get(
-                                    $topConcern,
-                                    'message',
-                                    data_get(
-                                        $topConcern,
-                                        'description',
-                                        'Review this portfolio finding.'
-                                    )
-                                ) }}
-                            </p>
-
-                            <a
-                                href="{{ route('advisor-action-center.index') }}"
-                                class="mt-5 inline-flex items-center rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-red-500/40 hover:text-white"
-                            >
-                                Review Finding →
-                            </a>
-
-                        @else
-
-                            <div class="mt-4">
-
-                                <p
-                                    class="text-base font-semibold text-emerald-300"
-                                >
-                                    No urgent finding
-                                </p>
-
-                                <p
-                                    class="mt-2 text-xs leading-5 text-slate-500"
-                                >
-                                    Helmio has not identified a major open concern.
-                                </p>
-
-                            </div>
-
-                        @endif
-                    </section>
-
-
-                    {{-- Accounts --}}
-
-                    <section
-                        class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg"
-                    >
-                        <p
-                            class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400"
-                        >
-                            Accounts
-                        </p>
-
-                        <div
-                            class="mt-4 flex items-end justify-between gap-4"
-                        >
-                            <div>
-                                <p
-                                    class="text-3xl font-semibold text-white"
-                                >
-                                    {{ number_format(
-                                        $connectedAccountCount
-                                    ) }}
-                                </p>
-
-                                <p
-                                    class="mt-1 text-xs text-slate-500"
-                                >
-                                    Connected
-                                </p>
-                            </div>
-
-                            <div class="text-right">
-
-                                <p
-                                    class="text-sm font-semibold text-slate-200"
-                                >
-                                    {{ money(
-                                        $portfolioValue
-                                    ) }}
-                                </p>
-
-                                <p
-                                    class="mt-1 text-[10px] uppercase tracking-wide text-slate-600"
-                                >
-                                    Total value
-                                </p>
-
-                            </div>
-                        </div>
-
-                        <div
-                            class="mt-5 h-2 overflow-hidden rounded-full bg-slate-800"
-                        >
-                            <div
-                                class="h-full w-full rounded-full bg-blue-500"
-                            ></div>
-                        </div>
-
-                        <a
-                            href="{{ route('accounts.index') }}"
-                            class="mt-5 inline-flex text-xs font-semibold text-blue-400 hover:text-blue-300"
-                        >
-                            View Accounts →
-                        </a>
-                    </section>
-
-
-                    {{-- Advisor audit --}}
-
-                    <section
-                        class="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg"
-                    >
-                        @if ($auditScore !== null)
-                            <div
-                                class="absolute inset-x-0 top-0 h-px"
-                                style="background-color: {{ $auditScoreColor }}"
-                            ></div>
-                        @endif
-                        <div class="flex items-center justify-between gap-3">
-                            <p
-                                class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400"
-                            >
-                                Advisor Audit
-                            </p>
-
-                            @if ($auditScore !== null)
-                                <span
-                                    class="rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] {{ $auditScore !== null && $auditScore < 40
-                                        ? 'border-red-500/30 bg-red-500/10 text-red-300'
-                                        : ($auditScore !== null && $auditScore < 60
-                                            ? 'border-orange-500/30 bg-orange-500/10 text-orange-300'
-                                            : ($auditScore !== null && $auditScore < 70
-                                                ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
-                                                : 'border-blue-500/30 bg-blue-500/10 text-blue-300'))
-                                    }}"
-                                >
-                                    {{ $auditLabel }}
-                                </span>
-                            @endif
-                        </div>
-
-                        <div
-                            class="mt-4 flex items-baseline gap-1"
-                        >
-                            <p
-                                class="text-3xl font-semibold text-white"
-                            >
-                                {{ $auditScore ?? '—' }}
-                            </p>
-
-                            @if ($auditScore !== null)
-                                <span class="text-xs text-slate-500">
-                                    /100
-                                </span>
-                            @endif
-                        </div>
-
-                        @if ($auditScore !== null && $needsAttention)
-                            <div class="mt-4 flex flex-wrap gap-2">
-                                @if ($criticalCount > 0)
-                                    <span
-                                        class="rounded-lg border border-red-500/25 bg-red-500/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-red-300"
-                                    >
-                                        {{ number_format($criticalCount) }} Critical
-                                    </span>
-                                @endif
-
-                                @if ($importantCount > 0)
-                                    <span
-                                        class="rounded-lg border border-orange-500/25 bg-orange-500/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-orange-300"
-                                    >
-                                        {{ number_format($importantCount) }} Important
-                                    </span>
-                                @endif
-                            </div>
-                        @endif
-
-                        <div class="mt-4 flex items-center justify-between gap-3">
-                            <p class="text-[10px] uppercase tracking-wide text-slate-600">
-                                Data completeness
-                            </p>
-
-                            <p class="text-xs font-semibold text-slate-400">
-                                {{ number_format($auditCompleteness * 100) }}%
-                            </p>
-                        </div>
-
-                        <div
-                            class="mt-2 h-2 overflow-hidden rounded-full bg-slate-800"
-                        >
-                            <div
-                                class="h-full rounded-full bg-blue-500"
-                                style="
-                                    width: {{ min(
-                                        100,
-                                        max(
-                                            0,
-                                            $auditCompleteness * 100
-                                        )
-                                    ) }}%;
-                                "
-                            ></div>
-                        </div>
-
-                        <a
-                            href="{{ route('advisor-audit.report') }}"
-                            class="mt-5 inline-flex text-xs font-semibold text-blue-400 hover:text-blue-300"
-                        >
-                            View Audit →
-                        </a>
-                    </section>
-
-                </div>
-
-
-                {{-- ===================================================== --}}
-                {{-- NEEDS YOUR ATTENTION --}}
+                {{-- PRIORITY ACTION --}}
                 {{-- ===================================================== --}}
 
                 <section
-                    class="relative mt-4 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 px-5 py-4 shadow-lg"
+                    class="relative mt-4 overflow-hidden rounded-2xl border {{ $needsAttention
+                        ? ($hasCriticalFindings
+                            ? 'border-red-500/25'
+                            : 'border-orange-500/25')
+                        : 'border-emerald-500/20'
+                    }} bg-slate-900 shadow-lg"
                 >
                     <div
                         class="absolute inset-y-0 left-0 w-1 {{ $needsAttention
@@ -1864,22 +1541,18 @@
                     ></div>
 
                     <div
-                        class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
+                        class="flex flex-col gap-4 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between"
                     >
-
-                        <div class="flex items-center gap-3">
-
+                        <div class="flex min-w-0 items-center gap-3">
                             <div
                                 class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ $needsAttention
                                     ? ($hasCriticalFindings
-                                        ? 'bg-red-500/15 text-red-300'
-                                        : 'bg-orange-500/15 text-orange-300')
+                                        ? 'bg-red-500/12 text-red-300'
+                                        : 'bg-orange-500/12 text-orange-300')
                                     : 'bg-emerald-500/10 text-emerald-300'
                                 }}"
                             >
-
                                 @if ($needsAttention)
-
                                     <svg
                                         class="h-5 w-5"
                                         fill="none"
@@ -1893,9 +1566,7 @@
                                             d="M12 9v4m0 4h.01M10.3 4.5 2.6 18a1 1 0 0 0 .87 1.5h17.06a1 1 0 0 0 .87-1.5L13.7 4.5a1 1 0 0 0-1.74 0Z"
                                         />
                                     </svg>
-
                                 @else
-
                                     <svg
                                         class="h-5 w-5"
                                         fill="none"
@@ -1909,207 +1580,283 @@
                                             d="m5 12 4 4L19 6"
                                         />
                                     </svg>
-
                                 @endif
-
                             </div>
 
-
-                            <div>
-
-                                <h2
-                                    class="text-base font-semibold text-white"
+                            <div class="min-w-0">
+                                <p
+                                    class="text-[10px] font-semibold uppercase tracking-[0.14em] {{ $needsAttention
+                                        ? ($hasCriticalFindings ? 'text-red-400' : 'text-orange-400')
+                                        : 'text-emerald-400'
+                                    }}"
                                 >
-                                    @if ($hasCriticalFindings)
+                                    {{ $needsAttention ? 'Priority action' : 'Portfolio status' }}
+                                </p>
 
+                                <h2 class="mt-1 text-sm font-semibold text-white sm:text-base">
+                                    @if ($hasCriticalFindings)
                                         {{ number_format($criticalCount) }}
                                         critical
                                         {{ Str::plural('concern', $criticalCount) }}
                                         require attention
-
                                     @elseif ($needsAttention)
-
                                         {{ number_format($importantCount) }}
                                         important
                                         {{ Str::plural('finding', $importantCount) }}
                                         should be reviewed
-
                                     @else
-
                                         Nothing urgent needs your attention
-
                                     @endif
                                 </h2>
 
-                                <p
-                                    class="mt-1 text-xs text-slate-500"
-                                >
+                                <p class="mt-1 text-xs leading-5 text-slate-500">
                                     @if ($hasCriticalFindings)
-
-                                        Start with the highest-priority findings below, then work through the Action Center.
-
+                                        Start with the highest-priority findings, then work through the Action Center.
                                     @elseif ($needsAttention)
-
-                                        Review these findings to strengthen your portfolio.
-
+                                        Review these findings to strengthen the portfolio.
                                     @else
-
                                         Helmio has not identified a major open concern.
-
                                     @endif
                                 </p>
-
                             </div>
-
                         </div>
 
+                        <div class="flex flex-wrap items-center gap-2 lg:justify-end">
+                            @if ($criticalCount > 0)
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-lg border border-red-500/25 bg-red-500/[0.07] px-3 py-2 text-xs font-semibold text-red-300"
+                                >
+                                    <span class="h-1.5 w-1.5 rounded-full bg-red-400"></span>
+                                    {{ number_format((int) $criticalCount) }} critical
+                                </span>
+                            @endif
 
-                        @if ($needsAttention)
+                            @if ($importantCount > 0)
+                                <span
+                                    class="inline-flex items-center gap-1.5 rounded-lg border border-orange-500/25 bg-orange-500/[0.07] px-3 py-2 text-xs font-semibold text-orange-300"
+                                >
+                                    <span class="h-1.5 w-1.5 rounded-full bg-orange-400"></span>
+                                    {{ number_format((int) $importantCount) }} important
+                                </span>
+                            @endif
 
-                            <div
-                                class="flex flex-wrap items-center gap-2"
-                            >
-
-                                @if ($criticalCount > 0)
-                                    <div
-                                        class="min-w-[5.5rem] rounded-lg border border-red-500/25 bg-red-500/[0.08] px-3 py-2 text-center"
-                                    >
-                                        <p class="text-base font-semibold text-red-300">
-                                            {{ number_format((int) $criticalCount) }}
-                                        </p>
-
-                                        <p class="text-[10px] uppercase tracking-wide text-red-400/80">
-                                            Critical
-                                        </p>
-                                    </div>
-                                @endif
-
-                                @if ($importantCount > 0)
-                                    <div
-                                        class="min-w-[5.5rem] rounded-lg border border-orange-500/25 bg-orange-500/[0.08] px-3 py-2 text-center"
-                                    >
-                                        <p class="text-base font-semibold text-orange-300">
-                                            {{ number_format((int) $importantCount) }}
-                                        </p>
-
-                                        <p class="text-[10px] uppercase tracking-wide text-orange-400/80">
-                                            Important
-                                        </p>
-                                    </div>
-                                @endif
-
-                                @if ($opportunityCount > 0)
-                                    <div
-                                        class="min-w-[5.5rem] rounded-lg border border-blue-500/20 bg-blue-500/[0.05] px-3 py-2 text-center"
-                                    >
-                                        <p class="text-base font-semibold text-blue-300">
-                                            {{ number_format((int) $opportunityCount) }}
-                                        </p>
-
-                                        <p class="text-[10px] uppercase tracking-wide text-blue-400/80">
-                                            Other
-                                        </p>
-                                    </div>
-                                @endif
-
+                            @if ($needsAttention)
                                 <a
                                     href="{{ route('advisor-action-center.index') }}"
-                                    class="ml-0 inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-500 lg:ml-2"
+                                    class="inline-flex items-center justify-center gap-2 rounded-lg bg-blue-600 px-4 py-2 text-xs font-semibold text-white transition hover:bg-blue-500"
                                 >
                                     Review Action Center
+                                    <svg
+                                        class="h-3.5 w-3.5"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="m9 18 6-6-6-6"
+                                        />
+                                    </svg>
                                 </a>
-
-                            </div>
-
-                        @endif
-
+                            @endif
+                        </div>
                     </div>
-
                 </section>
 
 
                 {{-- ===================================================== --}}
-                {{-- RECENT ACTIVITY + AI INSIGHT --}}
+                {{-- PORTFOLIO SNAPSHOT --}}
                 {{-- ===================================================== --}}
 
-                <div
-                    class="mt-4 grid gap-4 xl:grid-cols-[1.25fr_0.75fr]"
+                <section
+                    class="mt-4 overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-900 shadow-lg"
                 >
-
-                    {{-- Recent Activity --}}
-
-                    <section
-                        class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-lg"
+                    <div
+                        class="flex flex-col gap-2 border-b border-slate-800/80 px-5 py-3.5 sm:flex-row sm:items-center sm:justify-between sm:px-6"
                     >
-                        <div
-                            class="flex items-center justify-between border-b border-slate-800 px-5 py-4"
+                        <div>
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                Portfolio snapshot
+                            </p>
+
+                            <p class="mt-1 text-xs text-slate-500">
+                                Key context behind the current Helm Score.
+                            </p>
+                        </div>
+
+                        <span class="text-[10px] font-medium uppercase tracking-wide text-slate-600">
+                            Current view
+                        </span>
+                    </div>
+
+                    <div class="grid divide-y divide-slate-800/80 sm:grid-cols-2 sm:divide-x sm:divide-y-0 xl:grid-cols-4">
+                        <a
+                            href="{{ route('accounts.index') }}"
+                            class="group px-5 py-4 transition hover:bg-slate-800/25 sm:px-6"
                         >
-                            <div>
-                                <p
-                                    class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400"
-                                >
-                                    Recent Activity
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                Portfolio value
+                            </p>
+
+                            <p class="mt-2 text-xl font-semibold tracking-tight text-white">
+                                {{ money($portfolioValue) }}
+                            </p>
+
+                            <p class="mt-1 text-xs text-slate-500">
+                                Across {{ number_format($connectedAccountCount) }}
+                                {{ Str::plural('account', $connectedAccountCount) }}
+                            </p>
+                        </a>
+
+                        <a
+                            href="{{ route('analytics.costs') }}"
+                            class="group px-5 py-4 transition hover:bg-slate-800/25 sm:px-6"
+                        >
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                Estimated annual cost
+                            </p>
+
+                            <p class="mt-2 text-xl font-semibold tracking-tight text-white">
+                                {{ $allInCostDollars !== null
+                                    ? money($allInCostDollars)
+                                    : '—'
+                                }}
+                            </p>
+
+                            <p class="mt-1 text-xs text-slate-500">
+                                @if ($allInCostRate !== null)
+                                    {{ number_format((float) $allInCostRate, 2) }}% of assets annually
+                                @else
+                                    Cost data is still being calculated
+                                @endif
+                            </p>
+                        </a>
+
+                        <a
+                            href="{{ route('advisor-audit.report') }}"
+                            class="group px-5 py-4 transition hover:bg-slate-800/25 sm:px-6"
+                        >
+                            <div class="flex items-center justify-between gap-3">
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                    Advisor audit
                                 </p>
 
-                                <p
-                                    class="mt-1 text-xs text-slate-500"
-                                >
-                                    Portfolio findings and monitoring events.
+                                @if ($auditScore !== null)
+                                    <span
+                                        class="h-2 w-2 rounded-full {{ $auditScore < 40
+                                            ? 'bg-red-400'
+                                            : ($auditScore < 60
+                                                ? 'bg-orange-400'
+                                                : ($auditScore < 70
+                                                    ? 'bg-amber-400'
+                                                    : 'bg-blue-400'))
+                                        }}"
+                                    ></span>
+                                @endif
+                            </div>
+
+                            <div class="mt-2 flex items-baseline gap-1">
+                                <p class="text-xl font-semibold tracking-tight text-white">
+                                    {{ $auditScore ?? '—' }}
+                                </p>
+
+                                @if ($auditScore !== null)
+                                    <span class="text-xs text-slate-600">/100</span>
+                                @endif
+                            </div>
+
+                            <p class="mt-1 truncate text-xs text-slate-500">
+                                {{ $auditLabel }}
+                            </p>
+                        </a>
+
+                        <div class="px-5 py-4 sm:px-6">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                Monitoring
+                            </p>
+
+                            <div class="mt-2 flex items-baseline gap-1">
+                                <p class="text-xl font-semibold tracking-tight text-white">
+                                    {{ number_format($auditCompleteness * 100) }}%
                                 </p>
                             </div>
 
-                            <a
-                                href="{{ route('advisor-audit.index') }}"
-                                class="text-xs font-semibold text-blue-400 hover:text-blue-300"
-                            >
-                                View All
-                            </a>
-                        </div>
+                            <p class="mt-1 text-xs text-slate-500">
+                                Audit data completeness
+                            </p>
 
-
-                        <div
-                            class="divide-y divide-slate-800"
-                        >
-
-                            @forelse (
-                                $findingsCollection->take(5)
-                                as $finding
-                            )
-
-                                @php
-                                    $severity = data_get(
-                                        $finding,
-                                        'severity',
-                                        'moderate'
-                                    );
-
-                                    $alertColor = match ($severity) {
-                                        'critical',
-                                        'high' =>
-                                            'text-red-300 bg-red-500/10',
-
-                                        'moderate',
-                                        'medium' =>
-                                            'text-amber-300 bg-amber-500/10',
-
-                                        'positive' =>
-                                            'text-emerald-300 bg-emerald-500/10',
-
-                                        default =>
-                                            'text-blue-300 bg-blue-500/10',
-                                    };
-                                @endphp
-
-
+                            <div class="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-800">
                                 <div
-                                    class="flex gap-3 px-5 py-3.5"
-                                >
+                                    class="h-full rounded-full bg-blue-500"
+                                    style="
+                                        width: {{ min(
+                                            100,
+                                            max(
+                                                0,
+                                                $auditCompleteness * 100
+                                            )
+                                        ) }}%;
+                                    "
+                                ></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
 
+
+                {{-- ===================================================== --}}
+                {{-- TOP PRIORITY + AI --}}
+                {{-- ===================================================== --}}
+
+                <div class="mt-4 grid gap-4 xl:grid-cols-[1.15fr_0.85fr]">
+
+                    {{-- Top priority --}}
+
+                    <section
+                        class="relative overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-900 shadow-lg"
+                    >
+                        @if ($topConcern)
+                            <div
+                                class="absolute inset-y-0 left-0 w-1 {{ in_array(
+                                    $topConcernSeverity,
+                                    ['critical', 'high'],
+                                    true
+                                ) ? 'bg-red-500' : 'bg-orange-500' }}"
+                            ></div>
+                        @endif
+
+                        <div class="px-5 py-5 sm:px-6">
+                            <div class="flex items-center justify-between gap-3">
+                                <div>
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                        Top priority
+                                    </p>
+
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        Highest-priority open portfolio finding.
+                                    </p>
+                                </div>
+
+                                @if ($topConcern)
+                                    <span
+                                        class="rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] {{ $topConcernClasses['badge'] }}"
+                                    >
+                                        {{ str($topConcernSeverity)
+                                            ->replace('_', ' ')
+                                            ->title() }}
+                                    </span>
+                                @endif
+                            </div>
+
+                            @if ($topConcern)
+                                <div class="mt-5 flex items-start gap-4">
                                     <div
-                                        class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ $alertColor }}"
+                                        class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ $topConcernClasses['icon'] }}"
                                     >
                                         <svg
-                                            class="h-3.5 w-3.5"
+                                            class="h-5 w-5"
                                             fill="none"
                                             viewBox="0 0 24 24"
                                             stroke="currentColor"
@@ -2123,260 +1870,330 @@
                                         </svg>
                                     </div>
 
-
-                                    <div
-                                        class="min-w-0 flex-1"
-                                    >
-                                        <div
-                                            class="flex items-start justify-between gap-3"
-                                        >
-                                            <p
-                                                class="truncate text-sm font-medium text-white"
-                                            >
-                                                {{ data_get(
-                                                    $finding,
-                                                    'title',
-                                                    'Portfolio finding'
-                                                ) }}
-                                            </p>
-
-                                            <span
-                                                class="shrink-0 text-[10px] capitalize text-slate-600"
-                                            >
-                                                {{ $severity }}
-                                            </span>
-                                        </div>
-
-                                        <p
-                                            class="mt-1 line-clamp-1 text-xs leading-5 text-slate-500"
-                                        >
+                                    <div class="min-w-0 flex-1">
+                                        <h3 class="text-lg font-semibold leading-7 text-white">
                                             {{ data_get(
-                                                $finding,
+                                                $topConcern,
+                                                'title',
+                                                'Portfolio finding'
+                                            ) }}
+                                        </h3>
+
+                                        <p class="mt-2 max-w-2xl text-sm leading-6 text-slate-400">
+                                            {{ data_get(
+                                                $topConcern,
                                                 'message',
-                                                ''
+                                                data_get(
+                                                    $topConcern,
+                                                    'description',
+                                                    'Review this portfolio finding.'
+                                                )
                                             ) }}
                                         </p>
+
+                                        <a
+                                            href="{{ route('advisor-action-center.index') }}"
+                                            class="mt-5 inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-semibold text-slate-200 transition hover:border-red-500/40 hover:text-white"
+                                        >
+                                            Review Finding
+                                            <svg
+                                                class="h-3.5 w-3.5"
+                                                fill="none"
+                                                viewBox="0 0 24 24"
+                                                stroke="currentColor"
+                                                stroke-width="2"
+                                            >
+                                                <path
+                                                    stroke-linecap="round"
+                                                    stroke-linejoin="round"
+                                                    d="m9 18 6-6-6-6"
+                                                />
+                                            </svg>
+                                        </a>
                                     </div>
-
                                 </div>
-
-                            @empty
-
-                                <div
-                                    class="px-5 py-8 text-center"
-                                >
-                                    <p
-                                        class="text-sm font-medium text-emerald-300"
-                                    >
-                                        No open alerts
+                            @else
+                                <div class="mt-5 rounded-xl border border-emerald-500/15 bg-emerald-500/[0.04] p-4">
+                                    <p class="text-sm font-semibold text-emerald-300">
+                                        No urgent finding
                                     </p>
 
-                                    <p
-                                        class="mt-1 text-xs text-slate-500"
-                                    >
-                                        Nothing currently requires immediate attention.
+                                    <p class="mt-1 text-xs leading-5 text-slate-500">
+                                        Helmio has not identified a major open concern.
                                     </p>
                                 </div>
-
-                            @endforelse
-
+                            @endif
                         </div>
-
                     </section>
 
 
                     {{-- AI Portfolio Insight --}}
 
                     <section
-                        class="rounded-2xl border border-violet-500/20 bg-slate-900 p-5 shadow-lg"
+                        class="rounded-2xl border border-violet-500/15 bg-slate-900 shadow-lg"
                     >
-
-                        <div class="flex items-center gap-3">
-
-                            <div
-                                class="flex h-9 w-9 items-center justify-center rounded-xl border border-violet-500/30 bg-violet-500/10 text-violet-300"
-                            >
-                                <svg
-                                    class="h-4 w-4"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    stroke-width="1.8"
+                        <div class="px-5 py-5 sm:px-6">
+                            <div class="flex items-center gap-3">
+                                <div
+                                    class="flex h-9 w-9 items-center justify-center rounded-xl border border-violet-500/25 bg-violet-500/10 text-violet-300"
                                 >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.847-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 0 0-3.09 3.09L9 18.75Z"
-                                    />
-                                </svg>
+                                    <svg
+                                        class="h-4 w-4"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        stroke-width="1.8"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.847-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 0 0-3.09 3.09L9 18.75Z"
+                                        />
+                                    </svg>
+                                </div>
+
+                                <div>
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-400">
+                                        AI Portfolio Insight
+                                    </p>
+
+                                    <p class="mt-0.5 text-xs text-slate-500">
+                                        Plain-English context from Helmio analytics.
+                                    </p>
+                                </div>
                             </div>
 
+                            @if ($latestAiInsight)
+                                <div class="mt-5">
+                                    <div class="flex flex-wrap items-center gap-2">
+                                        @if ($latestAiInsightIsStale)
+                                            <span
+                                                class="rounded-full bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-300"
+                                            >
+                                                Needs refresh
+                                            </span>
+                                        @else
+                                            <span
+                                                class="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-300"
+                                            >
+                                                Current
+                                            </span>
+                                        @endif
 
-                            <div>
-                                <p
-                                    class="text-[11px] font-semibold uppercase tracking-[0.14em] text-violet-400"
-                                >
-                                    AI Portfolio Insight
-                                </p>
+                                        @if ($latestAiInsightGeneratedAt)
+                                            <span class="text-[10px] text-slate-600">
+                                                Generated {{ $latestAiInsightGeneratedAt->diffForHumans() }}
+                                            </span>
+                                        @endif
+                                    </div>
 
-                                <p
-                                    class="mt-0.5 text-xs text-slate-500"
-                                >
-                                    Plain-English context from Helmio analytics.
-                                </p>
-                            </div>
+                                    <h3 class="mt-3 line-clamp-2 text-base font-semibold leading-6 text-white">
+                                        {{ data_get(
+                                            $latestAiInsight,
+                                            'headline',
+                                            data_get(
+                                                $latestAiInsight,
+                                                'title',
+                                                'Portfolio insight'
+                                            )
+                                        ) }}
+                                    </h3>
 
+                                    <p class="mt-2 line-clamp-4 text-xs leading-5 text-slate-400">
+                                        {{ data_get(
+                                            $latestAiInsight,
+                                            'summary',
+                                            data_get(
+                                                $latestAiInsight,
+                                                'content',
+                                                'Your latest Helmio insight is ready.'
+                                            )
+                                        ) }}
+                                    </p>
+
+                                    <div class="mt-4 flex flex-wrap gap-2">
+                                        @if ($latestAiInsightIsStale)
+                                            <form
+                                                method="POST"
+                                                action="{{ route(
+                                                    'ai-insights.regenerate',
+                                                    $latestAiInsight
+                                                ) }}"
+                                            >
+                                                @csrf
+
+                                                <button
+                                                    type="submit"
+                                                    class="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-violet-500"
+                                                >
+                                                    Regenerate
+                                                </button>
+                                            </form>
+                                        @endif
+
+                                        @if (data_get($latestAiInsight, 'id'))
+                                            <a
+                                                href="{{ route(
+                                                    'ai-insights.show',
+                                                    $latestAiInsight
+                                                ) }}"
+                                                class="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-violet-500 hover:text-white"
+                                            >
+                                                Read Insight
+                                            </a>
+                                        @endif
+                                    </div>
+                                </div>
+                            @else
+                                <div class="mt-5">
+                                    <p class="text-sm font-medium text-white">
+                                        No AI insight yet
+                                    </p>
+
+                                    <p class="mt-1 text-xs leading-5 text-slate-500">
+                                        Generate a plain-English explanation of your latest portfolio analytics.
+                                    </p>
+
+                                    <a
+                                        href="{{ route('ai-insights.index') }}"
+                                        class="mt-4 inline-flex rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-violet-500"
+                                    >
+                                        Generate Insight
+                                    </a>
+                                </div>
+                            @endif
+                        </div>
+                    </section>
+                </div>
+
+
+                {{-- ===================================================== --}}
+                {{-- RECENT ACTIVITY --}}
+                {{-- ===================================================== --}}
+
+                <section
+                    class="mt-4 overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-900 shadow-lg"
+                >
+                    <div
+                        class="flex items-center justify-between border-b border-slate-800/80 px-5 py-4 sm:px-6"
+                    >
+                        <div>
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                Recent Activity
+                            </p>
+
+                            <p class="mt-1 text-xs text-slate-500">
+                                Portfolio findings and monitoring events.
+                            </p>
                         </div>
 
+                        <a
+                            href="{{ route('advisor-audit.index') }}"
+                            class="text-xs font-semibold text-blue-400 hover:text-blue-300"
+                        >
+                            View All
+                        </a>
+                    </div>
 
-                        @if ($latestAiInsight)
+                    <div class="divide-y divide-slate-800/80">
+                        @forelse ($findingsCollection->take(5) as $finding)
+                            @php
+                                $severity = data_get(
+                                    $finding,
+                                    'severity',
+                                    'moderate'
+                                );
 
-                            <div class="mt-4">
+                                $alertColor = match ($severity) {
+                                    'critical',
+                                    'high' =>
+                                        'text-red-300 bg-red-500/10',
 
+                                    'moderate',
+                                    'medium' =>
+                                        'text-amber-300 bg-amber-500/10',
+
+                                    'positive' =>
+                                        'text-emerald-300 bg-emerald-500/10',
+
+                                    default =>
+                                        'text-blue-300 bg-blue-500/10',
+                                };
+                            @endphp
+
+                            <div
+                                class="flex gap-3 px-5 py-3.5 transition hover:bg-slate-800/20 sm:px-6"
+                            >
                                 <div
-                                    class="flex flex-wrap items-center gap-2"
+                                    class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg {{ $alertColor }}"
                                 >
-
-                                    @if ($latestAiInsightIsStale)
-
-                                        <span
-                                            class="rounded-full bg-amber-500/10 px-2.5 py-1 text-[10px] font-semibold text-amber-300"
-                                        >
-                                            Needs refresh
-                                        </span>
-
-                                    @else
-
-                                        <span
-                                            class="rounded-full bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-300"
-                                        >
-                                            Current
-                                        </span>
-
-                                    @endif
-
-
-                                    @if ($latestAiInsightGeneratedAt)
-
-                                        <span
-                                            class="text-[10px] text-slate-600"
-                                        >
-                                            Generated
-                                            {{ $latestAiInsightGeneratedAt->diffForHumans() }}
-                                        </span>
-
-                                    @endif
-
+                                    <svg
+                                        class="h-3.5 w-3.5"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                        stroke-width="2"
+                                    >
+                                        <path
+                                            stroke-linecap="round"
+                                            stroke-linejoin="round"
+                                            d="M12 9v4m0 4h.01M10.3 4.5 2.6 18a1 1 0 0 0 .87 1.5h17.06a1 1 0 0 0 .87-1.5L13.7 4.5a1 1 0 0 0-1.74 0Z"
+                                        />
+                                    </svg>
                                 </div>
 
+                                <div class="min-w-0 flex-1">
+                                    <div class="flex items-start justify-between gap-3">
+                                        <p class="truncate text-sm font-medium text-white">
+                                            {{ data_get(
+                                                $finding,
+                                                'title',
+                                                'Portfolio finding'
+                                            ) }}
+                                        </p>
 
-                                <h3
-                                    class="mt-3 line-clamp-2 text-base font-semibold leading-6 text-white"
-                                >
-                                    {{ data_get(
-                                        $latestAiInsight,
-                                        'headline',
-                                        data_get(
-                                            $latestAiInsight,
-                                            'title',
-                                            'Portfolio insight'
-                                        )
-                                    ) }}
-                                </h3>
-
-
-                                <p
-                                    class="mt-2 line-clamp-4 text-xs leading-5 text-slate-400"
-                                >
-                                    {{ data_get(
-                                        $latestAiInsight,
-                                        'summary',
-                                        data_get(
-                                            $latestAiInsight,
-                                            'content',
-                                            'Your latest Helmio insight is ready.'
-                                        )
-                                    ) }}
-                                </p>
-
-
-                                <div
-                                    class="mt-4 flex flex-wrap gap-2"
-                                >
-
-                                    @if ($latestAiInsightIsStale)
-
-                                        <form
-                                            method="POST"
-                                            action="{{ route(
-                                                'ai-insights.regenerate',
-                                                $latestAiInsight
-                                            ) }}"
+                                        <span
+                                            class="shrink-0 text-[10px] font-medium capitalize {{ in_array(
+                                                $severity,
+                                                ['critical', 'high'],
+                                                true
+                                            )
+                                                ? 'text-red-400'
+                                                : (in_array(
+                                                    $severity,
+                                                    ['moderate', 'medium'],
+                                                    true
+                                                )
+                                                    ? 'text-amber-400'
+                                                    : 'text-slate-600')
+                                            }}"
                                         >
-                                            @csrf
+                                            {{ $severity }}
+                                        </span>
+                                    </div>
 
-                                            <button
-                                                type="submit"
-                                                class="rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-violet-500"
-                                            >
-                                                Regenerate
-                                            </button>
-                                        </form>
-
-                                    @endif
-
-
-                                    @if (data_get(
-                                        $latestAiInsight,
-                                        'id'
-                                    ))
-
-                                        <a
-                                            href="{{ route(
-                                                'ai-insights.show',
-                                                $latestAiInsight
-                                            ) }}"
-                                            class="rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-300 transition hover:border-violet-500 hover:text-white"
-                                        >
-                                            Read Insight
-                                        </a>
-
-                                    @endif
-
+                                    <p class="mt-1 line-clamp-1 text-xs leading-5 text-slate-500">
+                                        {{ data_get(
+                                            $finding,
+                                            'message',
+                                            ''
+                                        ) }}
+                                    </p>
                                 </div>
-
                             </div>
-
-                        @else
-
-                            <div class="mt-4">
-
-                                <p
-                                    class="text-sm font-medium text-white"
-                                >
-                                    No AI insight yet
+                        @empty
+                            <div class="px-6 py-8 text-center">
+                                <p class="text-sm font-medium text-emerald-300">
+                                    No open alerts
                                 </p>
 
-                                <p
-                                    class="mt-1 text-xs leading-5 text-slate-500"
-                                >
-                                    Generate a plain-English explanation of your latest portfolio analytics.
+                                <p class="mt-1 text-xs text-slate-500">
+                                    Nothing currently requires immediate attention.
                                 </p>
-
-                                <a
-                                    href="{{ route('ai-insights.index') }}"
-                                    class="mt-4 inline-flex rounded-lg bg-violet-600 px-3 py-2 text-xs font-semibold text-white transition hover:bg-violet-500"
-                                >
-                                    Generate Insight
-                                </a>
-
                             </div>
-
-                        @endif
-
-                    </section>
-
-                </div>
+                        @endforelse
+                    </div>
+                </section>
 
 
                 {{-- ===================================================== --}}
