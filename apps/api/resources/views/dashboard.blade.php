@@ -1209,18 +1209,86 @@
                                                 'Action recommended',
                                         };
 
-                                        $categoryScoreColor =
-                                            $categoryScore !== null
-                                                ? $scoreBlue(
-                                                    (int) $categoryScore
-                                                )
-                                                : '#64748b';
+                                        /*
+                                         * Health-based score palette.
+                                         *
+                                         * Every category uses the same score-range
+                                         * colors so the user can instantly identify
+                                         * what needs attention:
+                                         *
+                                         * 90–100  Excellent          Emerald
+                                         * 80–89   Strong             Teal
+                                         * 70–79   Good               Blue
+                                         * 60–69   Needs review       Amber
+                                         * 40–59   Needs attention    Orange/Red
+                                         * 0–39    Action recommended Red
+                                         *
+                                         * Each bar still fades from a lighter tint
+                                         * to a darker shade of the same health color.
+                                         */
+                                        $categoryPalette = match (true) {
+                                            $categoryScore === null => [
+                                                'light' => '#e2e8f0',
+                                                'mid' => '#94a3b8',
+                                                'dark' => '#64748b',
+                                                'icon_bg' => 'rgba(100, 116, 139, 0.12)',
+                                                'status' => '#94a3b8',
+                                            ],
 
-                                        $categoryBarColor =
-                                            $categoryScoreColor;
+                                            $categoryScore >= 90 => [
+                                                'light' => '#d1fae5',
+                                                'mid' => '#34d399',
+                                                'dark' => '#059669',
+                                                'icon_bg' => 'rgba(5, 150, 105, 0.12)',
+                                                'status' => '#6ee7b7',
+                                            ],
+
+                                            $categoryScore >= 80 => [
+                                                'light' => '#ccfbf1',
+                                                'mid' => '#2dd4bf',
+                                                'dark' => '#0f766e',
+                                                'icon_bg' => 'rgba(15, 118, 110, 0.12)',
+                                                'status' => '#5eead4',
+                                            ],
+
+                                            $categoryScore >= 70 => [
+                                                'light' => '#dbeafe',
+                                                'mid' => '#60a5fa',
+                                                'dark' => '#2563eb',
+                                                'icon_bg' => 'rgba(37, 99, 235, 0.12)',
+                                                'status' => '#93c5fd',
+                                            ],
+
+                                            $categoryScore >= 60 => [
+                                                'light' => '#fef3c7',
+                                                'mid' => '#fbbf24',
+                                                'dark' => '#d97706',
+                                                'icon_bg' => 'rgba(217, 119, 6, 0.12)',
+                                                'status' => '#fcd34d',
+                                            ],
+
+                                            $categoryScore >= 40 => [
+                                                'light' => '#ffedd5',
+                                                'mid' => '#fb923c',
+                                                'dark' => '#ea580c',
+                                                'icon_bg' => 'rgba(234, 88, 12, 0.13)',
+                                                'status' => '#fdba74',
+                                            ],
+
+                                            default => [
+                                                'light' => '#fee2e2',
+                                                'mid' => '#f87171',
+                                                'dark' => '#dc2626',
+                                                'icon_bg' => 'rgba(220, 38, 38, 0.14)',
+                                                'status' => '#fca5a5',
+                                            ],
+                                        };
+
+                                        $categoryScoreColor =
+                                            $categoryPalette['dark'];
 
                                         $categoryIconColor =
-                                            $categoryScoreColor;
+                                            $categoryPalette['dark'];
 
                                         $categoryScoreCapped =
                                             $categoryScore !== null
@@ -1249,8 +1317,11 @@
                                             {{-- Icon --}}
 
                                             <div
-                                                class="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 sm:flex"
-                                                style="color: {{ $categoryIconColor }}"
+                                                class="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:flex"
+                                                style="
+                                                    color: {{ $categoryIconColor }};
+                                                    background-color: {{ $categoryPalette['icon_bg'] }};
+                                                "
                                             >
 
                                                 @switch($item['key'])
@@ -1377,7 +1448,8 @@
                                                 </p>
 
                                                 <p
-                                                    class="mt-0.5 truncate text-xs text-slate-500"
+                                                    class="mt-0.5 truncate text-xs font-medium"
+                                                    style="color: {{ $categoryPalette['status'] }}"
                                                 >
                                                     {{ $categoryStatus }}
                                                 </p>
@@ -1403,11 +1475,16 @@
                                                                 background:
                                                                     linear-gradient(
                                                                         90deg,
-                                                                        #dbeafe 0%,
-                                                                        #bfdbfe 18%,
-                                                                        #93c5fd 38%,
-                                                                        #60a5fa 58%,
-                                                                        {{ $categoryScoreColor }} 100%
+                                                                        {{ $categoryPalette['light'] }} 0%,
+                                                                        {{ $categoryPalette['mid'] }} 58%,
+                                                                        {{ $categoryPalette['dark'] }} 100%
+                                                                    );
+                                                                box-shadow:
+                                                                    0 0 10px
+                                                                    color-mix(
+                                                                        in srgb,
+                                                                        {{ $categoryPalette['dark'] }} 28%,
+                                                                        transparent
                                                                     );
                                                                 background-repeat: no-repeat;
                                                             "
