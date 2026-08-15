@@ -24,6 +24,10 @@ class OnboardingController extends Controller
     {
         $user = $request->user();
 
+        if ($this->isDemoUser($user)) {
+            return redirect()->route('dashboard');
+        }
+
         if (! $this->subscriptionAccess->hasPremiumAccess($user)) {
             return redirect()->route('billing.pricing');
         }
@@ -38,6 +42,10 @@ class OnboardingController extends Controller
     public function profile(Request $request): View|RedirectResponse
     {
         $user = $request->user();
+
+        if ($this->isDemoUser($user)) {
+            return redirect()->route('dashboard');
+        }
 
         if (! $this->subscriptionAccess->hasPremiumAccess($user)) {
             return redirect()->route('billing.pricing');
@@ -55,6 +63,10 @@ class OnboardingController extends Controller
     public function connect(Request $request): View|RedirectResponse
     {
         $user = $request->user();
+
+        if ($this->isDemoUser($user)) {
+            return redirect()->route('dashboard');
+        }
 
         if (! $this->subscriptionAccess->hasPremiumAccess($user)) {
             return redirect()->route('billing.pricing');
@@ -75,6 +87,10 @@ class OnboardingController extends Controller
     {
         $user = $request->user();
 
+        if ($this->isDemoUser($user)) {
+            return redirect()->route('dashboard');
+        }
+
         if (! $this->hasConnectedAccount($user)) {
             return redirect()->route('onboarding.connect');
         }
@@ -94,6 +110,10 @@ class OnboardingController extends Controller
     {
         $user = $request->user();
 
+        if ($this->isDemoUser($user)) {
+            return redirect()->route('dashboard');
+        }
+
         if (! $this->hasConnectedAccount($user)) {
             return redirect()->route('onboarding.connect');
         }
@@ -110,6 +130,10 @@ class OnboardingController extends Controller
     {
         $user = $request->user();
 
+        if ($this->isDemoUser($user)) {
+            return redirect()->route('dashboard');
+        }
+
         if (! $this->isComplete($user)) {
             return $this->redirectToNextStep($user);
         }
@@ -119,6 +143,10 @@ class OnboardingController extends Controller
 
     public function redirectToNextStep(User $user): RedirectResponse
     {
+        if ($this->isDemoUser($user)) {
+            return redirect()->route('dashboard');
+        }
+
         if (! $this->subscriptionAccess->hasPremiumAccess($user)) {
             return redirect()->route('billing.pricing');
         }
@@ -136,6 +164,10 @@ class OnboardingController extends Controller
 
     public function isComplete(User $user): bool
     {
+        if ($this->isDemoUser($user)) {
+            return true;
+        }
+
         return $this->subscriptionAccess->hasPremiumAccess($user)
             && $this->hasCompletedInvestorProfile($user)
             && $this->hasConnectedAccount($user);
@@ -156,5 +188,10 @@ class OnboardingController extends Controller
                     'failed',
                 ])
                 ->exists();
+    }
+
+    private function isDemoUser(User $user): bool
+    {
+        return strtolower((string) $user->email) === 'demo@myhelmio.com';
     }
 }

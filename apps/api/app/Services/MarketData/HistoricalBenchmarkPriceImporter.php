@@ -42,10 +42,22 @@ class HistoricalBenchmarkPriceImporter
         }
 
         /*
-         * Synthetic/blended benchmarks such as HELMIO-60-40
-         * cannot be fetched directly from Twelve Data.
+         * Synthetic, blended, and composite benchmarks such as
+         * HELMIO-60-40 cannot be fetched directly from Twelve Data.
+         *
+         * Their history must be calculated from their component
+         * benchmark series instead.
          */
-        if ($benchmark->benchmark_type === 'blended') {
+        if (
+            in_array(
+                $benchmark->benchmark_type,
+                [
+                    'blended',
+                    'composite',
+                ],
+                true,
+            )
+        ) {
             return [
                 'benchmark_id' =>
                     $benchmark->id,
@@ -60,10 +72,14 @@ class HistoricalBenchmarkPriceImporter
                     'skipped',
 
                 'reason' =>
-                    'Blended benchmarks require calculated price history.',
+                    'Synthetic or composite benchmarks require calculated price history.',
             ];
         }
 
+        /*
+         * Fetch historical daily market prices from the configured
+         * market-data provider.
+         */
         $prices =
             $this->marketData
                 ->historicalDailyPrices(
@@ -77,6 +93,12 @@ class HistoricalBenchmarkPriceImporter
                         $endDate,
                 );
 
+        /*
+         * Persist each daily benchmark price.
+         *
+         * updateOrCreate keeps the importer idempotent, so rerunning
+         * a historical backfill does not create duplicate rows.
+         */
         foreach ($prices as $price) {
             BenchmarkPrice::updateOrCreate(
                 [
@@ -90,6 +112,14 @@ class HistoricalBenchmarkPriceImporter
                     'close_price' =>
                         $price['close'],
 
+                    /*
+                     * Twelve Data currently supplies the price series
+                     * Helmio uses as its benchmark performance price.
+                     *
+                     * If the provider later supplies a distinct adjusted
+                     * close, this can be updated without changing the
+                     * importer contract.
+                     */
                     'adjusted_close_price' =>
                         $price['close'],
 

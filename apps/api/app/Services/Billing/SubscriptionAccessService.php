@@ -9,6 +9,21 @@ class SubscriptionAccessService
 {
     public function status(User $user): array
     {
+        if ($this->isDemoUser($user)) {
+            return [
+                'has_access' => true,
+                'subscribed' => false,
+                'on_trial' => false,
+                'on_grace_period' => false,
+                'cancelled' => false,
+                'status' => 'demo',
+                'plan' => 'demo',
+                'price_id' => null,
+                'trial_ends_at' => null,
+                'ends_at' => null,
+            ];
+        }
+
         $subscription = $user->subscription('default');
         $subscribed = $user->subscribed('default');
         $onTrial = $subscription?->onTrial() ?? false;
@@ -31,6 +46,11 @@ class SubscriptionAccessService
     public function hasPremiumAccess(User $user): bool
     {
         return (bool) $this->status($user)['has_access'];
+    }
+
+    private function isDemoUser(User $user): bool
+    {
+        return strtolower((string) $user->email) === 'demo@myhelmio.com';
     }
 
     private function resolvePlan(?Subscription $subscription): ?string

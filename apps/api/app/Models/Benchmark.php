@@ -12,6 +12,8 @@ class Benchmark extends Model
         'symbol',
         'description',
         'benchmark_type',
+        'currency',
+        'expense_ratio',
         'is_active',
         'is_default',
         'metadata',
@@ -23,11 +25,43 @@ class Benchmark extends Model
             'is_active' => 'boolean',
             'is_default' => 'boolean',
             'metadata' => 'array',
+            'expense_ratio' => 'float',
         ];
     }
 
     public function prices(): HasMany
     {
-        return $this->hasMany(BenchmarkPrice::class);
+        return $this->hasMany(
+            BenchmarkPrice::class
+        );
+    }
+
+    public function isComposite(): bool
+    {
+        return (bool) data_get(
+            $this->metadata,
+            'composite',
+            false
+        );
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function compositeComponents(): array
+    {
+        if (! $this->isComposite()) {
+            return [];
+        }
+
+        $components = data_get(
+            $this->metadata,
+            'components',
+            []
+        );
+
+        return is_array($components)
+            ? $components
+            : [];
     }
 }

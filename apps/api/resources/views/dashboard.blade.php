@@ -204,27 +204,48 @@
         );
 
         /*
-         * The dial always keeps the Helmio blue gradient.
+         * Continuous Helmio blue score scale.
          *
-         * Only the label beneath the score changes color when the
-         * portfolio needs attention.
+         * The hue stays blue while lightness decreases as the score rises:
+         * low score = lighter blue, high score = deeper blue.
+         *
+         * Red/orange remain reserved for urgency badges and findings.
          */
-        $helmScoreColor = '#60a5fa';
+        $scoreBlue = function (?int $score): string {
+            if ($score === null) {
+                return '#64748b';
+            }
 
-        $helmScoreLabelColor = match (
-            strtolower(
-                trim(
-                    (string) $helmOverallLabel
-                )
-            )
-        ) {
-            'needs attention',
-            'attention needed',
-            'action recommended'
-                => '#f87171',
+            $score = min(100, max(0, $score));
 
-            default
-                => $helmScoreColor,
+            // HSL lightness moves smoothly from 82% at 0
+            // to 28% at 100 while keeping Helmio's blue hue.
+            $lightness =
+                82 - (54 * ($score / 100));
+
+            return sprintf(
+                'hsl(217 91%% %.1f%%)',
+                $lightness
+            );
+        };
+
+        $helmScoreColor =
+            $scoreBlue($helmOverallScore);
+
+        $helmScoreLabelColor =
+            $helmScoreColor;
+
+        $helmScoreBadgeClasses = match (true) {
+            $helmOverallScore >= 80 =>
+                'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+            $helmOverallScore >= 70 =>
+                'border-blue-500/30 bg-blue-500/10 text-blue-300',
+            $helmOverallScore >= 60 =>
+                'border-amber-500/30 bg-amber-500/10 text-amber-300',
+            $helmOverallScore >= 40 =>
+                'border-orange-500/30 bg-orange-500/10 text-orange-300',
+            default =>
+                'border-red-500/30 bg-red-500/10 text-red-300',
         };
 
 
@@ -452,6 +473,31 @@
 
         $needsAttention =
             $totalAdvisorFindings > 0;
+
+        $hasCriticalFindings =
+            $criticalCount > 0;
+
+        $auditScoreColor =
+            $scoreBlue(
+                $auditScore !== null
+                    ? (int) $auditScore
+                    : null
+            );
+
+        $auditCardClasses = match (true) {
+            $auditScore === null =>
+                'border-slate-800 bg-slate-900',
+            $auditScore >= 80 =>
+                'border-emerald-500/20 bg-emerald-500/[0.035]',
+            $auditScore >= 70 =>
+                'border-blue-500/20 bg-blue-500/[0.035]',
+            $auditScore >= 60 =>
+                'border-amber-500/20 bg-amber-500/[0.035]',
+            $auditScore >= 40 =>
+                'border-orange-500/25 bg-orange-500/[0.04]',
+            default =>
+                'border-red-500/30 bg-red-500/[0.05]',
+        };
 
         $topConcernSeverity =
             data_get(
@@ -891,19 +937,28 @@
                         <section
                             class="flex min-w-0 flex-col rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg sm:p-6 lg:w-1/3"
                         >
-                            <div class="flex items-center gap-2">
+                            <div class="flex items-center justify-between gap-3">
 
-                                <p
-                                    class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-300"
-                                >
-                                    Helm Score
-                                </p>
+                                <div class="flex items-center gap-2">
+                                    <p
+                                        class="text-xs font-semibold uppercase tracking-[0.14em] text-slate-300"
+                                    >
+                                        Helm Score
+                                    </p>
+
+                                    <span
+                                        class="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-700 text-[9px] text-slate-500"
+                                        title="A 0–100 summary of portfolio health."
+                                    >
+                                        ?
+                                    </span>
+                                </div>
 
                                 <span
-                                    class="inline-flex h-4 w-4 items-center justify-center rounded-full border border-slate-700 text-[9px] text-slate-500"
-                                    title="A 0–100 summary of portfolio health."
+                                    class="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/[0.06] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-red-300"
                                 >
-                                    ?
+                                    <span class="h-1.5 w-1.5 rounded-full bg-red-400"></span>
+                                    {{ $helmOverallLabel }}
                                 </span>
 
                             </div>
@@ -915,7 +970,7 @@
                                 <div
                                     data-helm-score-dial
                                     data-score="{{ $helmOverallScore }}"
-                                    class="relative flex h-52 w-52 items-center justify-center"
+                                    class="relative flex h-56 w-56 items-center justify-center"
                                 >
 
                                     <svg
@@ -933,35 +988,13 @@
                                                 y2="218"
                                                 gradientTransform="rotate(90 120 120)"
                                             >
-                                                <stop
-                                                    offset="0%"
-                                                    stop-color="#dbeafe"
-                                                />
-
-                                                <stop
-                                                    offset="22%"
-                                                    stop-color="#93c5fd"
-                                                />
-
-                                                <stop
-                                                    offset="45%"
-                                                    stop-color="#60a5fa"
-                                                />
-
-                                                <stop
-                                                    offset="68%"
-                                                    stop-color="#3b82f6"
-                                                />
-
-                                                <stop
-                                                    offset="84%"
-                                                    stop-color="#2563eb"
-                                                />
-
-                                                <stop
-                                                    offset="100%"
-                                                    stop-color="#1e40af"
-                                                />
+                                                <stop offset="0%" stop-color="#dbeafe" />
+                                                <stop offset="20%" stop-color="#bfdbfe" />
+                                                <stop offset="40%" stop-color="#93c5fd" />
+                                                <stop offset="60%" stop-color="#60a5fa" />
+                                                <stop offset="78%" stop-color="#3b82f6" />
+                                                <stop offset="90%" stop-color="#2563eb" />
+                                                <stop offset="100%" stop-color="#1e3a8a" />
                                             </linearGradient>
                                         </defs>
 
@@ -989,15 +1022,15 @@
                                         />
                                     </svg>
 
-
                                     <div
-                                        class="relative flex h-36 w-36 flex-col items-center justify-center rounded-full border border-slate-800 bg-slate-950"
+                                        class="relative flex h-40 w-40 flex-col items-center justify-center rounded-full border border-slate-800/90 bg-slate-950 shadow-inner"
                                     >
                                         <div class="flex items-baseline">
 
                                             <span
                                                 data-helm-score-number
-                                                class="text-5xl font-semibold tracking-tight text-white"
+                                                class="text-6xl font-semibold tracking-tight"
+                                                style="color: {{ $helmScoreColor }}"
                                             >
                                                 0
                                             </span>
@@ -1011,75 +1044,82 @@
                                         </div>
 
                                         <p
-                                            class="mt-1 text-base font-semibold"
-                                            style="color: {{ $helmScoreLabelColor }}"
+                                            class="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500"
                                         >
-                                            {{ $helmOverallLabel }}
+                                            Portfolio health
                                         </p>
                                     </div>
 
                                 </div>
 
-
                                 @if ($needsAttention)
+                                    <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+                                        @if ($criticalCount > 0)
+                                            <span
+                                                class="inline-flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/[0.05] px-2.5 py-1.5 text-xs font-semibold text-red-300"
+                                            >
+                                                <span class="h-1.5 w-1.5 rounded-full bg-red-400"></span>
+                                                {{ number_format($criticalCount) }} critical
+                                            </span>
+                                        @endif
 
-                                    <p
-                                        class="mt-4 max-w-xs text-center text-sm leading-5 text-slate-300"
-                                    >
-                                        Your portfolio is being monitored and
+                                        @if ($importantCount > 0)
+                                            <span
+                                                class="inline-flex items-center gap-1.5 rounded-lg border border-orange-500/20 bg-orange-500/[0.05] px-2.5 py-1.5 text-xs font-semibold text-orange-300"
+                                            >
+                                                <span class="h-1.5 w-1.5 rounded-full bg-orange-400"></span>
+                                                {{ number_format($importantCount) }} important
+                                            </span>
+                                        @endif
+                                    </div>
 
-                                        <span
-                                            class="font-semibold text-white"
-                                        >
-                                            {{ $totalAdvisorFindings }}
-
-                                            {{ Str::plural(
-                                                'item',
-                                                $totalAdvisorFindings
-                                            ) }}
-                                        </span>
-
-                                        may deserve your attention.
+                                    <p class="mt-2 max-w-xs text-center text-xs leading-5 text-slate-500">
+                                        Review the highest-priority findings first.
                                     </p>
-
                                 @else
-
                                     <p
-                                        class="mt-4 max-w-xs text-center text-sm leading-5 text-slate-300"
+                                        class="mt-4 max-w-xs text-center text-sm leading-5 text-slate-400"
                                     >
-                                        Helmio has not identified any major
-                                        open concerns.
+                                        No major open concerns are currently identified.
                                     </p>
-
                                 @endif
 
-
-                                <a
-                                    href="{{ route('analytics.helm-score') }}"
-                                    class="mt-4 inline-flex items-center gap-2 rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-white transition hover:border-blue-500 hover:bg-slate-900"
-                                >
-                                    View Full Report
-
-                                    <svg
-                                        class="h-4 w-4"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        stroke-width="2"
+                                <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+                                    <a
+                                        href="{{ route('analytics.helm-score') }}"
+                                        class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500"
                                     >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="m9 18 6-6-6-6"
-                                        />
-                                    </svg>
-                                </a>
+                                        View Full Report
+
+                                        <svg
+                                            class="h-4 w-4"
+                                            fill="none"
+                                            viewBox="0 0 24 24"
+                                            stroke="currentColor"
+                                            stroke-width="2"
+                                        >
+                                            <path
+                                                stroke-linecap="round"
+                                                stroke-linejoin="round"
+                                                d="m9 18 6-6-6-6"
+                                            />
+                                        </svg>
+                                    </a>
+
+                                    @if ($needsAttention)
+                                        <a
+                                            href="{{ route('advisor-action-center.index') }}"
+                                            class="inline-flex items-center rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-red-500/40 hover:text-white"
+                                        >
+                                            Review Findings
+                                        </a>
+                                    @endif
+                                </div>
 
                             </div>
                         </section>
 
 
-                        {{-- ================================================= --}}
                         {{-- SCORE BREAKDOWN --}}
                         {{-- ================================================= --}}
 
@@ -1162,39 +1202,26 @@
                                             $categoryScore >= 60 =>
                                                 'Needs review',
 
-                                            default =>
-                                                'Attention needed',
-                                        };
-
-                                        $categoryScoreClass = match (true) {
-                                            $categoryScore === null =>
-                                                'text-slate-500',
-
-                                            $categoryScore >= 80 =>
-                                                'text-emerald-300',
-
-                                            $categoryScore >= 70 =>
-                                                'text-blue-300',
-
-                                            $categoryScore >= 60 =>
-                                                'text-amber-300',
+                                            $categoryScore >= 40 =>
+                                                'Needs attention',
 
                                             default =>
-                                                'text-red-300',
+                                                'Action recommended',
                                         };
 
-                                        /*
-                                         * Keep the category bar itself blue.
-                                         *
-                                         * Every category uses one continuous
-                                         * Helmio gradient from light blue at
-                                         * zero to dark blue at 100.
-                                         *
-                                         * background-size stretches the full
-                                         * 0–100 gradient across the available
-                                         * track instead of restarting the
-                                         * gradient inside each filled width.
-                                         */
+                                        $categoryScoreColor =
+                                            $categoryScore !== null
+                                                ? $scoreBlue(
+                                                    (int) $categoryScore
+                                                )
+                                                : '#64748b';
+
+                                        $categoryBarColor =
+                                            $categoryScoreColor;
+
+                                        $categoryIconColor =
+                                            $categoryScoreColor;
+
                                         $categoryScoreCapped =
                                             $categoryScore !== null
                                                 ? max(
@@ -1212,7 +1239,7 @@
                                         href="{{ route(
                                             $categoryRoutes[$item['key']]
                                         ) }}"
-                                        class="group block py-3.5"
+                                        class="group block rounded-lg px-2 py-3.5 transition hover:bg-slate-800/30"
                                     >
 
                                         <div
@@ -1222,7 +1249,8 @@
                                             {{-- Icon --}}
 
                                             <div
-                                                class="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 text-blue-400 sm:flex"
+                                                class="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-blue-500/10 sm:flex"
+                                                style="color: {{ $categoryIconColor }}"
                                             >
 
                                                 @switch($item['key'])
@@ -1364,7 +1392,7 @@
                                                 class="min-w-0 flex-1"
                                             >
                                                 <div
-                                                    class="h-2 overflow-hidden rounded-full bg-slate-800"
+                                                    class="h-2 overflow-hidden rounded-full bg-slate-800/90"
                                                 >
                                                     @if ($categoryScore !== null)
 
@@ -1376,20 +1404,12 @@
                                                                     linear-gradient(
                                                                         90deg,
                                                                         #dbeafe 0%,
-                                                                        #93c5fd 22%,
-                                                                        #60a5fa 45%,
-                                                                        #3b82f6 68%,
-                                                                        #2563eb 84%,
-                                                                        #1e40af 100%
+                                                                        #bfdbfe 18%,
+                                                                        #93c5fd 38%,
+                                                                        #60a5fa 58%,
+                                                                        {{ $categoryScoreColor }} 100%
                                                                     );
-                                                                background-size:
-                                                                    {{ $categoryScoreCapped > 0
-                                                                        ? 10000 / $categoryScoreCapped
-                                                                        : 100 }}% 100%;
-                                                                background-position:
-                                                                    left center;
-                                                                background-repeat:
-                                                                    no-repeat;
+                                                                background-repeat: no-repeat;
                                                             "
                                                         ></div>
 
@@ -1401,7 +1421,8 @@
                                             {{-- Score --}}
 
                                             <span
-                                                class="w-10 shrink-0 text-right text-base font-semibold {{ $categoryScoreClass }}"
+                                                class="w-10 shrink-0 text-right text-base font-semibold"
+                                                style="color: {{ $categoryScoreColor }}"
                                             >
                                                 {{ $categoryScore ?? '—' }}
                                             </span>
@@ -1443,7 +1464,7 @@
                         <div class="mt-4 flex items-center gap-3">
 
                             <div
-                                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-emerald-500/30 bg-emerald-500/10 text-emerald-300"
+                                class="flex h-10 w-10 shrink-0 items-center justify-center rounded-full border border-blue-500/20 bg-blue-500/10 text-blue-300"
                             >
                                 <span class="text-xl">
                                     $
@@ -1497,13 +1518,30 @@
                     {{-- Top finding --}}
 
                     <section
-                        class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg"
+                        class="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg"
                     >
-                        <p
-                            class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400"
-                        >
-                            Top Finding
-                        </p>
+                        @if ($topConcern)
+                            <div
+                                class="absolute inset-y-0 left-0 w-1 {{ in_array($topConcernSeverity, ['critical', 'high'], true) ? 'bg-red-500' : 'bg-orange-500' }}"
+                            ></div>
+                        @endif
+                        <div class="flex items-center justify-between gap-3">
+                            <p
+                                class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400"
+                            >
+                                Top Finding
+                            </p>
+
+                            @if ($topConcern)
+                                <span
+                                    class="rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] {{ $topConcernClasses['badge'] }}"
+                                >
+                                    {{ str($topConcernSeverity)
+                                        ->replace('_', ' ')
+                                        ->title() }}
+                                </span>
+                            @endif
+                        </div>
 
                         @if ($topConcern)
 
@@ -1518,20 +1556,24 @@
                             </h3>
 
                             <p
-                                class="mt-2 line-clamp-2 text-xs leading-5 text-slate-500"
+                                class="mt-2 line-clamp-3 text-xs leading-5 text-slate-400"
                             >
                                 {{ data_get(
                                     $topConcern,
                                     'message',
-                                    'Review this portfolio finding.'
+                                    data_get(
+                                        $topConcern,
+                                        'description',
+                                        'Review this portfolio finding.'
+                                    )
                                 ) }}
                             </p>
 
                             <a
                                 href="{{ route('advisor-action-center.index') }}"
-                                class="mt-5 inline-flex rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-blue-500 hover:text-white"
+                                class="mt-5 inline-flex items-center rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-red-500/40 hover:text-white"
                             >
-                                See Recommendation
+                                Review Finding →
                             </a>
 
                         @else
@@ -1625,13 +1667,36 @@
                     {{-- Advisor audit --}}
 
                     <section
-                        class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg"
+                        class="relative overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg"
                     >
-                        <p
-                            class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400"
-                        >
-                            Advisor Audit
-                        </p>
+                        @if ($auditScore !== null)
+                            <div
+                                class="absolute inset-x-0 top-0 h-px"
+                                style="background-color: {{ $auditScoreColor }}"
+                            ></div>
+                        @endif
+                        <div class="flex items-center justify-between gap-3">
+                            <p
+                                class="text-[11px] font-semibold uppercase tracking-[0.14em] text-slate-400"
+                            >
+                                Advisor Audit
+                            </p>
+
+                            @if ($auditScore !== null)
+                                <span
+                                    class="rounded-full border px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.12em] {{ $auditScore !== null && $auditScore < 40
+                                        ? 'border-red-500/30 bg-red-500/10 text-red-300'
+                                        : ($auditScore !== null && $auditScore < 60
+                                            ? 'border-orange-500/30 bg-orange-500/10 text-orange-300'
+                                            : ($auditScore !== null && $auditScore < 70
+                                                ? 'border-amber-500/30 bg-amber-500/10 text-amber-300'
+                                                : 'border-blue-500/30 bg-blue-500/10 text-blue-300'))
+                                    }}"
+                                >
+                                    {{ $auditLabel }}
+                                </span>
+                            @endif
+                        </div>
 
                         <div
                             class="mt-4 flex items-baseline gap-1"
@@ -1643,43 +1708,56 @@
                             </p>
 
                             @if ($auditScore !== null)
-
-                                <span
-                                    class="text-xs text-slate-500"
-                                >
+                                <span class="text-xs text-slate-500">
                                     /100
                                 </span>
-
                             @endif
                         </div>
 
-                        <p
-                            class="mt-1 text-sm font-semibold text-emerald-300"
-                        >
-                            {{ $auditLabel }}
-                        </p>
+                        @if ($auditScore !== null && $needsAttention)
+                            <div class="mt-4 flex flex-wrap gap-2">
+                                @if ($criticalCount > 0)
+                                    <span
+                                        class="rounded-lg border border-red-500/25 bg-red-500/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-red-300"
+                                    >
+                                        {{ number_format($criticalCount) }} Critical
+                                    </span>
+                                @endif
 
-                        <p
-                            class="mt-3 text-xs text-slate-500"
-                        >
-                            Data completeness:
-                            {{ number_format(
-                                $auditCompleteness * 100
-                            ) }}%
-                        </p>
+                                @if ($importantCount > 0)
+                                    <span
+                                        class="rounded-lg border border-orange-500/25 bg-orange-500/10 px-2.5 py-1.5 text-[10px] font-bold uppercase tracking-wide text-orange-300"
+                                    >
+                                        {{ number_format($importantCount) }} Important
+                                    </span>
+                                @endif
+                            </div>
+                        @endif
+
+                        <div class="mt-4 flex items-center justify-between gap-3">
+                            <p class="text-[10px] uppercase tracking-wide text-slate-600">
+                                Data completeness
+                            </p>
+
+                            <p class="text-xs font-semibold text-slate-400">
+                                {{ number_format($auditCompleteness * 100) }}%
+                            </p>
+                        </div>
 
                         <div
                             class="mt-2 h-2 overflow-hidden rounded-full bg-slate-800"
                         >
                             <div
-                                class="h-full rounded-full bg-emerald-400"
-                                style="width: {{ min(
-                                    100,
-                                    max(
-                                        0,
-                                        $auditCompleteness * 100
-                                    )
-                                ) }}%"
+                                class="h-full rounded-full bg-blue-500"
+                                style="
+                                    width: {{ min(
+                                        100,
+                                        max(
+                                            0,
+                                            $auditCompleteness * 100
+                                        )
+                                    ) }}%;
+                                "
                             ></div>
                         </div>
 
@@ -1699,11 +1777,14 @@
                 {{-- ===================================================== --}}
 
                 <section
-                    class="mt-4 rounded-2xl border {{ $needsAttention
-                        ? 'border-red-500/30 bg-red-500/[0.05]'
-                        : 'border-emerald-500/20 bg-emerald-500/[0.04]'
-                    }} px-5 py-4 shadow-lg"
+                    class="relative mt-4 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 px-5 py-4 shadow-lg"
                 >
+                    <div
+                        class="absolute inset-y-0 left-0 w-1 {{ $needsAttention
+                            ? ($hasCriticalFindings ? 'bg-red-500' : 'bg-orange-500')
+                            : 'bg-emerald-500'
+                        }}"
+                    ></div>
 
                     <div
                         class="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between"
@@ -1713,7 +1794,9 @@
 
                             <div
                                 class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl {{ $needsAttention
-                                    ? 'bg-red-500/10 text-red-300'
+                                    ? ($hasCriticalFindings
+                                        ? 'bg-red-500/15 text-red-300'
+                                        : 'bg-orange-500/15 text-orange-300')
                                     : 'bg-emerald-500/10 text-emerald-300'
                                 }}"
                             >
@@ -1760,18 +1843,19 @@
                                 <h2
                                     class="text-base font-semibold text-white"
                                 >
-                                    @if ($needsAttention)
+                                    @if ($hasCriticalFindings)
 
-                                        {{ number_format(
-                                            $totalAdvisorFindings
-                                        ) }}
+                                        {{ number_format($criticalCount) }}
+                                        critical
+                                        {{ Str::plural('concern', $criticalCount) }}
+                                        require attention
 
-                                        {{ Str::plural(
-                                            'item',
-                                            $totalAdvisorFindings
-                                        ) }}
+                                    @elseif ($needsAttention)
 
-                                        need your attention
+                                        {{ number_format($importantCount) }}
+                                        important
+                                        {{ Str::plural('finding', $importantCount) }}
+                                        should be reviewed
 
                                     @else
 
@@ -1783,7 +1867,11 @@
                                 <p
                                     class="mt-1 text-xs text-slate-500"
                                 >
-                                    @if ($needsAttention)
+                                    @if ($hasCriticalFindings)
+
+                                        Start with the highest-priority findings below, then work through the Action Center.
+
+                                    @elseif ($needsAttention)
 
                                         Review these findings to strengthen your portfolio.
 
@@ -1805,62 +1893,47 @@
                                 class="flex flex-wrap items-center gap-2"
                             >
 
-                                <div
-                                    class="min-w-[5.5rem] rounded-lg border border-red-500/20 bg-red-500/[0.05] px-3 py-2 text-center"
-                                >
-                                    <p
-                                        class="text-base font-semibold text-red-300"
+                                @if ($criticalCount > 0)
+                                    <div
+                                        class="min-w-[5.5rem] rounded-lg border border-red-500/25 bg-red-500/[0.08] px-3 py-2 text-center"
                                     >
-                                        {{ number_format(
-                                            (int) $criticalCount
-                                        ) }}
-                                    </p>
+                                        <p class="text-base font-semibold text-red-300">
+                                            {{ number_format((int) $criticalCount) }}
+                                        </p>
 
-                                    <p
-                                        class="text-[10px] uppercase tracking-wide text-red-400/80"
+                                        <p class="text-[10px] uppercase tracking-wide text-red-400/80">
+                                            Critical
+                                        </p>
+                                    </div>
+                                @endif
+
+                                @if ($importantCount > 0)
+                                    <div
+                                        class="min-w-[5.5rem] rounded-lg border border-orange-500/25 bg-orange-500/[0.08] px-3 py-2 text-center"
                                     >
-                                        Critical
-                                    </p>
-                                </div>
+                                        <p class="text-base font-semibold text-orange-300">
+                                            {{ number_format((int) $importantCount) }}
+                                        </p>
 
+                                        <p class="text-[10px] uppercase tracking-wide text-orange-400/80">
+                                            Important
+                                        </p>
+                                    </div>
+                                @endif
 
-                                <div
-                                    class="min-w-[5.5rem] rounded-lg border border-orange-500/20 bg-orange-500/[0.05] px-3 py-2 text-center"
-                                >
-                                    <p
-                                        class="text-base font-semibold text-orange-300"
+                                @if ($opportunityCount > 0)
+                                    <div
+                                        class="min-w-[5.5rem] rounded-lg border border-blue-500/20 bg-blue-500/[0.05] px-3 py-2 text-center"
                                     >
-                                        {{ number_format(
-                                            (int) $importantCount
-                                        ) }}
-                                    </p>
+                                        <p class="text-base font-semibold text-blue-300">
+                                            {{ number_format((int) $opportunityCount) }}
+                                        </p>
 
-                                    <p
-                                        class="text-[10px] uppercase tracking-wide text-orange-400/80"
-                                    >
-                                        Important
-                                    </p>
-                                </div>
-
-
-                                <div
-                                    class="min-w-[5.5rem] rounded-lg border border-amber-500/20 bg-amber-500/[0.05] px-3 py-2 text-center"
-                                >
-                                    <p
-                                        class="text-base font-semibold text-amber-300"
-                                    >
-                                        {{ number_format(
-                                            (int) $opportunityCount
-                                        ) }}
-                                    </p>
-
-                                    <p
-                                        class="text-[10px] uppercase tracking-wide text-amber-400/80"
-                                    >
-                                        Opportunities
-                                    </p>
-                                </div>
-
+                                        <p class="text-[10px] uppercase tracking-wide text-blue-400/80">
+                                            Other
+                                        </p>
+                                    </div>
+                                @endif
 
                                 <a
                                     href="{{ route('advisor-action-center.index') }}"
