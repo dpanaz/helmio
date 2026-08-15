@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+
 class Security extends Model
 {
     protected $fillable = [
@@ -43,6 +44,36 @@ class Security extends Model
 'trailing_5y_annualized_return' => 'decimal:6',
         ];
     }
+
+    public function constituents(): HasMany
+        {
+            return $this->hasMany(
+                FundConstituent::class,
+                'fund_security_id'
+            );
+        }
+
+        public function heldByFunds(): HasMany
+        {
+            return $this->hasMany(
+                FundConstituent::class,
+                'constituent_security_id'
+            );
+        }
+
+        public function supportsLookThrough(): bool
+        {
+            return in_array(
+                strtolower(
+                    (string) $this->security_type
+                ),
+                [
+                    'etf',
+                    'mutual_fund',
+                ],
+                true,
+            );
+        }
 
     public function holdings(): HasMany
     {

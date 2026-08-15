@@ -7,7 +7,7 @@ use Illuminate\Support\Collection;
 
 class DiversificationAnalyticsService
 {
-    public const FORMULA_VERSION = 'diversification-1.1.0';
+    public const FORMULA_VERSION = 'diversification-1.2.0';
 
     private const CLASSIFICATION_COVERAGE_THRESHOLD = 0.80;
 
@@ -248,6 +248,55 @@ class DiversificationAnalyticsService
                 $sectorHhi,
         );
 
+
+        $findings = $this->buildFindings(
+            securityCount:
+                $securityRows->count(),
+
+            largestSecurityWeight:
+                $largestSecurityWeight,
+
+            topFiveWeight:
+                $topFiveWeight,
+
+            largestSectorWeight:
+                $largestSectorWeight,
+
+            largestAssetClassWeight:
+                $largestAssetClassWeight,
+
+            sectorCoverageRate:
+                $sectorCoverageRate,
+
+            assetClassCoverageRate:
+                $assetClassCoverageRate,
+
+            securityHhi:
+                $securityHhi,
+
+            sectorHhi:
+                $sectorHhi,
+
+            sectors:
+                $sectorRows,
+        );
+
+        $summary = $this->buildSummary(
+            score:
+                $scoreResult['score'],
+
+            findings:
+                $findings,
+        );
+
+        $actions = $this->buildActions(
+            findings:
+                $findings,
+
+            recommendations:
+                $scoreResult['recommendations'],
+        );
+
         $warnings = $this->buildWarnings(
             sectorCoverageRate:
                 $sectorCoverageRate,
@@ -277,6 +326,15 @@ class DiversificationAnalyticsService
 
             'recommendations' =>
                 $scoreResult['recommendations'],
+
+            'summary' =>
+                $summary,
+
+            'findings' =>
+                $findings,
+
+            'actions' =>
+                $actions,
 
             'warnings' =>
                 $warnings,
@@ -649,6 +707,602 @@ class DiversificationAnalyticsService
         ];
     }
 
+
+    /**
+     * Build structured, ranked diversification findings.
+     *
+     * These findings intentionally mirror the existing scoring
+     * thresholds so the UI can explain the score without creating
+     * a second scoring system.
+     *
+     * @param Collection<int, array<string, mixed>> $sectors
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildFindings(
+        int $securityCount,
+        float $largestSecurityWeight,
+        float $topFiveWeight,
+        ?float $largestSectorWeight,
+        ?float $largestAssetClassWeight,
+        float $sectorCoverageRate,
+        float $assetClassCoverageRate,
+        float $securityHhi,
+        ?float $sectorHhi,
+        Collection $sectors,
+    ): array {
+        $findings = [];
+
+        if ($securityCount < 5) {
+            $findings[] = [
+                'code' => 'low_security_count',
+                'severity' => 'high',
+                'title' => 'Portfolio relies on very few securities',
+                'message' => sprintf(
+                    'The invested portfolio contains only %d non-cash securities.',
+                    $securityCount,
+                ),
+                'metric' => (string) $securityCount,
+                'score_impact' => -25,
+                'priority' => 1,
+            ];
+        } elseif ($securityCount < 10) {
+            $findings[] = [
+                'code' => 'low_security_count',
+                'severity' => 'moderate',
+                'title' => 'Security count is limited',
+                'message' => sprintf(
+                    'The invested portfolio contains %d non-cash securities.',
+                    $securityCount,
+                ),
+                'metric' => (string) $securityCount,
+                'score_impact' => -10,
+                'priority' => 4,
+            ];
+        }
+
+        if ($largestSecurityWeight > 0.40) {
+            $findings[] = [
+                'code' => 'largest_security_concentration',
+                'severity' => 'critical',
+                'title' => 'One position dominates the portfolio',
+                'message' => sprintf(
+                    'The largest invested security represents %.1f%% of invested portfolio value.',
+                    $largestSecurityWeight * 100,
+                ),
+                'metric' => sprintf(
+                    '%.1f%%',
+                    $largestSecurityWeight * 100,
+                ),
+                'score_impact' => -35,
+                'priority' => 1,
+            ];
+        } elseif ($largestSecurityWeight > 0.25) {
+            $findings[] = [
+                'code' => 'largest_security_concentration',
+                'severity' => 'high',
+                'title' => 'Largest position is highly concentrated',
+                'message' => sprintf(
+                    'The largest invested security represents %.1f%% of invested portfolio value.',
+                    $largestSecurityWeight * 100,
+                ),
+                'metric' => sprintf(
+                    '%.1f%%',
+                    $largestSecurityWeight * 100,
+                ),
+                'score_impact' => -25,
+                'priority' => 1,
+            ];
+        } elseif ($largestSecurityWeight > 0.15) {
+            $findings[] = [
+                'code' => 'largest_security_concentration',
+                'severity' => 'moderate',
+                'title' => 'Largest position deserves review',
+                'message' => sprintf(
+                    'The largest invested security represents %.1f%% of invested portfolio value.',
+                    $largestSecurityWeight * 100,
+                ),
+                'metric' => sprintf(
+                    '%.1f%%',
+                    $largestSecurityWeight * 100,
+                ),
+                'score_impact' => -10,
+                'priority' => 3,
+            ];
+        }
+
+        if ($topFiveWeight > 0.85) {
+            $findings[] = [
+                'code' => 'top_five_concentration',
+                'severity' => 'high',
+                'title' => 'Top five holdings dominate the portfolio',
+                'message' => sprintf(
+                    'The five largest invested holdings represent %.1f%% of invested portfolio value.',
+                    $topFiveWeight * 100,
+                ),
+                'metric' => sprintf(
+                    '%.1f%%',
+                    $topFiveWeight * 100,
+                ),
+                'score_impact' => -20,
+                'priority' => 2,
+            ];
+        } elseif ($topFiveWeight > 0.70) {
+            $findings[] = [
+                'code' => 'top_five_concentration',
+                'severity' => 'moderate',
+                'title' => 'Portfolio is concentrated in its largest holdings',
+                'message' => sprintf(
+                    'The five largest invested holdings represent %.1f%% of invested portfolio value.',
+                    $topFiveWeight * 100,
+                ),
+                'metric' => sprintf(
+                    '%.1f%%',
+                    $topFiveWeight * 100,
+                ),
+                'score_impact' => -10,
+                'priority' => 2,
+            ];
+        }
+
+        if (
+            $largestSectorWeight !== null
+            && $sectorCoverageRate
+                >= self::CLASSIFICATION_COVERAGE_THRESHOLD
+        ) {
+            $largestSectorName =
+                (string) (
+                    $sectors->first()['name']
+                    ?? 'Largest sector'
+                );
+
+            if ($largestSectorWeight > 0.50) {
+                $findings[] = [
+                    'code' => 'sector_concentration',
+                    'severity' => 'critical',
+                    'title' => "{$largestSectorName} exposure is very high",
+                    'message' => sprintf(
+                        '%s represents %.1f%% of classified invested value.',
+                        $largestSectorName,
+                        $largestSectorWeight * 100,
+                    ),
+                    'metric' => sprintf(
+                        '%.1f%%',
+                        $largestSectorWeight * 100,
+                    ),
+                    'score_impact' => -25,
+                    'priority' => 1,
+                ];
+            } elseif ($largestSectorWeight > 0.35) {
+                $findings[] = [
+                    'code' => 'sector_concentration',
+                    'severity' => 'high',
+                    'title' => "{$largestSectorName} exposure is elevated",
+                    'message' => sprintf(
+                        '%s represents %.1f%% of classified invested value.',
+                        $largestSectorName,
+                        $largestSectorWeight * 100,
+                    ),
+                    'metric' => sprintf(
+                        '%.1f%%',
+                        $largestSectorWeight * 100,
+                    ),
+                    'score_impact' => -15,
+                    'priority' => 1,
+                ];
+            } elseif ($largestSectorWeight > 0.25) {
+                $findings[] = [
+                    'code' => 'sector_concentration',
+                    'severity' => 'moderate',
+                    'title' => "{$largestSectorName} exposure is concentrated",
+                    'message' => sprintf(
+                        '%s represents %.1f%% of classified invested value.',
+                        $largestSectorName,
+                        $largestSectorWeight * 100,
+                    ),
+                    'metric' => sprintf(
+                        '%.1f%%',
+                        $largestSectorWeight * 100,
+                    ),
+                    'score_impact' => -5,
+                    'priority' => 3,
+                ];
+            }
+        }
+
+        if (
+            $largestAssetClassWeight !== null
+            && $assetClassCoverageRate
+                >= self::CLASSIFICATION_COVERAGE_THRESHOLD
+        ) {
+            if ($largestAssetClassWeight > 0.95) {
+                $findings[] = [
+                    'code' => 'asset_class_concentration',
+                    'severity' => 'high',
+                    'title' => 'Portfolio is concentrated in one asset class',
+                    'message' => sprintf(
+                        'The largest classified asset class represents %.1f%% of classified invested value.',
+                        $largestAssetClassWeight * 100,
+                    ),
+                    'metric' => sprintf(
+                        '%.1f%%',
+                        $largestAssetClassWeight * 100,
+                    ),
+                    'score_impact' => -15,
+                    'priority' => 2,
+                ];
+            } elseif ($largestAssetClassWeight > 0.80) {
+                $findings[] = [
+                    'code' => 'asset_class_concentration',
+                    'severity' => 'moderate',
+                    'title' => 'Asset allocation is concentrated',
+                    'message' => sprintf(
+                        'The largest classified asset class represents %.1f%% of classified invested value.',
+                        $largestAssetClassWeight * 100,
+                    ),
+                    'metric' => sprintf(
+                        '%.1f%%',
+                        $largestAssetClassWeight * 100,
+                    ),
+                    'score_impact' => -8,
+                    'priority' => 3,
+                ];
+            }
+        }
+
+        if ($securityHhi > 0.25) {
+            $findings[] = [
+                'code' => 'security_hhi',
+                'severity' => 'moderate',
+                'title' => 'Security concentration index is elevated',
+                'message' =>
+                    'The invested-security concentration index indicates elevated concentration across positions.',
+                'metric' => number_format(
+                    $securityHhi,
+                    3
+                ),
+                'score_impact' => -10,
+                'priority' => 4,
+            ];
+        }
+
+        if (
+            $sectorHhi !== null
+            && $sectorCoverageRate
+                >= self::CLASSIFICATION_COVERAGE_THRESHOLD
+            && $sectorHhi > 0.30
+        ) {
+            $findings[] = [
+                'code' => 'sector_hhi',
+                'severity' => 'moderate',
+                'title' => 'Sector concentration index is elevated',
+                'message' =>
+                    'The classified-sector concentration index indicates elevated sector concentration.',
+                'metric' => number_format(
+                    $sectorHhi,
+                    3
+                ),
+                'score_impact' => -10,
+                'priority' => 4,
+            ];
+        }
+
+        if (
+            $sectorCoverageRate
+            < self::CLASSIFICATION_COVERAGE_THRESHOLD
+        ) {
+            $findings[] = [
+                'code' => 'limited_sector_classification_coverage',
+                'severity' => 'information',
+                'title' => 'Sector classification is incomplete',
+                'message' => sprintf(
+                    'Sector classification covers %.1f%% of invested portfolio value, so sector concentration was not fully scored.',
+                    $sectorCoverageRate * 100,
+                ),
+                'metric' => sprintf(
+                    '%.1f%%',
+                    $sectorCoverageRate * 100,
+                ),
+                'score_impact' => 0,
+                'priority' => 5,
+            ];
+        }
+
+        if (
+            $assetClassCoverageRate
+            < self::CLASSIFICATION_COVERAGE_THRESHOLD
+        ) {
+            $findings[] = [
+                'code' => 'limited_asset_class_classification_coverage',
+                'severity' => 'information',
+                'title' => 'Asset-class classification is incomplete',
+                'message' => sprintf(
+                    'Asset-class classification covers %.1f%% of invested portfolio value, so allocation concentration was not fully scored.',
+                    $assetClassCoverageRate * 100,
+                ),
+                'metric' => sprintf(
+                    '%.1f%%',
+                    $assetClassCoverageRate * 100,
+                ),
+                'score_impact' => 0,
+                'priority' => 5,
+            ];
+        }
+
+        usort(
+            $findings,
+            function (
+                array $a,
+                array $b
+            ): int {
+                $severityOrder = [
+                    'critical' => 0,
+                    'high' => 1,
+                    'moderate' => 2,
+                    'information' => 3,
+                ];
+
+                return [
+                    $a['priority'] ?? 99,
+                    $severityOrder[
+                        $a['severity']
+                        ?? 'information'
+                    ] ?? 99,
+                    $a['code'] ?? '',
+                ] <=> [
+                    $b['priority'] ?? 99,
+                    $severityOrder[
+                        $b['severity']
+                        ?? 'information'
+                    ] ?? 99,
+                    $b['code'] ?? '',
+                ];
+            }
+        );
+
+        return array_values(
+            $findings
+        );
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $findings
+     * @return array<string, mixed>
+     */
+    private function buildSummary(
+        int $score,
+        array $findings,
+    ): array {
+        $materialFindings =
+            collect($findings)
+                ->whereIn(
+                    'severity',
+                    [
+                        'critical',
+                        'high',
+                        'moderate',
+                    ]
+                )
+                ->values();
+
+        $primaryFinding =
+            $materialFindings->first();
+
+        $headline = match (true) {
+            $score >= 80 =>
+                'Diversification appears well balanced',
+
+            $score >= 60 =>
+                'Some concentration deserves review',
+
+            $score >= 40 =>
+                'Moderate concentration risk identified',
+
+            default =>
+                'Significant concentration risk identified',
+        };
+
+        if ($primaryFinding === null) {
+            return [
+                'headline' =>
+                    $headline,
+
+                'message' =>
+                    'No material concentration concerns were identified using the current invested holdings and available classifications.',
+
+                'primary_driver' =>
+                    null,
+
+                'material_finding_count' =>
+                    0,
+            ];
+        }
+
+        $secondaryFinding =
+            $materialFindings
+                ->skip(1)
+                ->first();
+
+        $message =
+            $secondaryFinding !== null
+                ? sprintf(
+                    '%s %s',
+                    rtrim(
+                        (string) $primaryFinding[
+                            'message'
+                        ],
+                        '.'
+                    ) . '.',
+                    (string) $secondaryFinding[
+                        'message'
+                    ]
+                )
+                : (string) $primaryFinding[
+                    'message'
+                ];
+
+        return [
+            'headline' =>
+                $headline,
+
+            'message' =>
+                $message,
+
+            'primary_driver' =>
+                $primaryFinding[
+                    'code'
+                ] ?? null,
+
+            'material_finding_count' =>
+                $materialFindings->count(),
+        ];
+    }
+
+    /**
+     * @param array<int, array<string, mixed>> $findings
+     * @param array<int, string> $recommendations
+     * @return array<int, array<string, mixed>>
+     */
+    private function buildActions(
+        array $findings,
+        array $recommendations,
+    ): array {
+        $actions = [];
+
+        foreach ($findings as $finding) {
+            $code =
+                $finding['code']
+                ?? null;
+
+            $action = match ($code) {
+                'sector_concentration' => [
+                    'title' =>
+                        'Review sector concentration',
+
+                    'message' =>
+                        'Determine whether the largest sector allocation is intentional and consistent with the investor’s documented risk profile.',
+                ],
+
+                'largest_security_concentration' => [
+                    'title' =>
+                        'Review the largest position',
+
+                    'message' =>
+                        'Confirm the investment thesis, target weight, and acceptable downside for the largest holding.',
+                ],
+
+                'top_five_concentration' => [
+                    'title' =>
+                        'Review concentration in the top five holdings',
+
+                    'message' =>
+                        'Evaluate whether the portfolio is sufficiently diversified beyond its largest positions.',
+                ],
+
+                'asset_class_concentration' => [
+                    'title' =>
+                        'Review asset allocation',
+
+                    'message' =>
+                        'Confirm that the current asset-class mix is appropriate for the investor’s time horizon, liquidity needs, and risk tolerance.',
+                ],
+
+                'low_security_count' => [
+                    'title' =>
+                        'Review breadth of holdings',
+
+                    'message' =>
+                        'Determine whether the portfolio relies too heavily on a small number of invested positions.',
+                ],
+
+                'limited_sector_classification_coverage' => [
+                    'title' =>
+                        'Complete sector classifications',
+
+                    'message' =>
+                        'Improve sector metadata before relying on sector-level diversification conclusions.',
+                ],
+
+                'limited_asset_class_classification_coverage' => [
+                    'title' =>
+                        'Complete asset-class classifications',
+
+                    'message' =>
+                        'Improve asset-class metadata before relying on allocation-level diversification conclusions.',
+                ],
+
+                default =>
+                    null,
+            };
+
+            if ($action === null) {
+                continue;
+            }
+
+            $actions[] = [
+                'priority' =>
+                    (int) (
+                        $finding['priority']
+                        ?? 99
+                    ),
+
+                'severity' =>
+                    $finding['severity']
+                    ?? 'information',
+
+                'code' =>
+                    $code,
+
+                'title' =>
+                    $action['title'],
+
+                'message' =>
+                    $action['message'],
+            ];
+        }
+
+        if ($actions === []) {
+            foreach (
+                $recommendations
+                as $index => $recommendation
+            ) {
+                $actions[] = [
+                    'priority' =>
+                        $index + 1,
+
+                    'severity' =>
+                        'information',
+
+                    'code' =>
+                        'general_review',
+
+                    'title' =>
+                        'Continue diversification review',
+
+                    'message' =>
+                        $recommendation,
+                ];
+            }
+        }
+
+        usort(
+            $actions,
+            fn (
+                array $a,
+                array $b
+            ): int =>
+                ($a['priority'] ?? 99)
+                <=>
+                ($b['priority'] ?? 99)
+        );
+
+        return array_values(
+            collect($actions)
+                ->unique('code')
+                ->take(4)
+                ->all()
+        );
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -743,6 +1397,42 @@ class DiversificationAnalyticsService
 
             'recommendations' => [
                 'Add invested holdings and market values to calculate diversification.',
+            ],
+
+            'summary' => [
+                'headline' =>
+                    'Diversification data is unavailable',
+
+                'message' =>
+                    'No non-cash holdings with positive market value are available for diversification analysis.',
+
+                'primary_driver' =>
+                    null,
+
+                'material_finding_count' =>
+                    0,
+            ],
+
+            'findings' =>
+                [],
+
+            'actions' => [
+                [
+                    'priority' =>
+                        1,
+
+                    'severity' =>
+                        'information',
+
+                    'code' =>
+                        'add_invested_holdings',
+
+                    'title' =>
+                        'Add invested holdings',
+
+                    'message' =>
+                        'Add invested holdings and market values to calculate diversification.',
+                ],
             ],
 
             'warnings' =>
