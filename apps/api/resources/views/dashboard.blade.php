@@ -1210,86 +1210,54 @@
                                         };
 
                                         /*
-                                         * Health-based score palette.
+                                         * Category score presentation.
                                          *
-                                         * Every category uses the same score-range
-                                         * colors so the user can instantly identify
-                                         * what needs attention:
+                                         * Bars and score numbers always use Helmio's
+                                         * continuous blue visual language.
                                          *
-                                         * 90–100  Excellent          Emerald
-                                         * 80–89   Strong             Teal
-                                         * 70–79   Good               Blue
-                                         * 60–69   Needs review       Amber
-                                         * 40–59   Needs attention    Orange/Red
-                                         * 0–39    Action recommended Red
+                                         * Status text carries the health/urgency signal:
                                          *
-                                         * Each bar still fades from a lighter tint
-                                         * to a darker shade of the same health color.
+                                         * 90–100  Excellent           Blue
+                                         * 80–89   Strong              Blue
+                                         * 70–79   Good                Blue
+                                         * 60–69   Needs review        Amber
+                                         * 40–59   Needs attention     Orange
+                                         * 0–39    Action recommended  Red
                                          */
-                                        $categoryPalette = match (true) {
-                                            $categoryScore === null => [
-                                                'light' => '#e2e8f0',
-                                                'mid' => '#94a3b8',
-                                                'dark' => '#64748b',
-                                                'icon_bg' => 'rgba(100, 116, 139, 0.12)',
-                                                'status' => '#94a3b8',
-                                            ],
+                                        $categoryStatusColor = match (true) {
+                                            $categoryScore === null =>
+                                                '#94a3b8',
 
-                                            $categoryScore >= 90 => [
-                                                'light' => '#d1fae5',
-                                                'mid' => '#34d399',
-                                                'dark' => '#059669',
-                                                'icon_bg' => 'rgba(5, 150, 105, 0.12)',
-                                                'status' => '#6ee7b7',
-                                            ],
+                                            $categoryScore >= 70 =>
+                                                '#93c5fd',
 
-                                            $categoryScore >= 80 => [
-                                                'light' => '#ccfbf1',
-                                                'mid' => '#2dd4bf',
-                                                'dark' => '#0f766e',
-                                                'icon_bg' => 'rgba(15, 118, 110, 0.12)',
-                                                'status' => '#5eead4',
-                                            ],
+                                            $categoryScore >= 60 =>
+                                                '#fcd34d',
 
-                                            $categoryScore >= 70 => [
-                                                'light' => '#dbeafe',
-                                                'mid' => '#60a5fa',
-                                                'dark' => '#2563eb',
-                                                'icon_bg' => 'rgba(37, 99, 235, 0.12)',
-                                                'status' => '#93c5fd',
-                                            ],
+                                            $categoryScore >= 40 =>
+                                                '#fdba74',
 
-                                            $categoryScore >= 60 => [
-                                                'light' => '#fef3c7',
-                                                'mid' => '#fbbf24',
-                                                'dark' => '#d97706',
-                                                'icon_bg' => 'rgba(217, 119, 6, 0.12)',
-                                                'status' => '#fcd34d',
-                                            ],
-
-                                            $categoryScore >= 40 => [
-                                                'light' => '#ffedd5',
-                                                'mid' => '#fb923c',
-                                                'dark' => '#ea580c',
-                                                'icon_bg' => 'rgba(234, 88, 12, 0.13)',
-                                                'status' => '#fdba74',
-                                            ],
-
-                                            default => [
-                                                'light' => '#fee2e2',
-                                                'mid' => '#f87171',
-                                                'dark' => '#dc2626',
-                                                'icon_bg' => 'rgba(220, 38, 38, 0.14)',
-                                                'status' => '#fca5a5',
-                                            ],
+                                            default =>
+                                                '#fca5a5',
                                         };
 
+                                        /*
+                                         * Continuous Helmio blue score color.
+                                         * Lower scores are lighter blue and higher
+                                         * scores become progressively deeper blue.
+                                         */
                                         $categoryScoreColor =
-                                            $categoryPalette['dark'];
+                                            $scoreBlue(
+                                                $categoryScore
+                                            );
 
+                                        /*
+                                         * Category icons remain consistently Helmio blue.
+                                         */
                                         $categoryIconColor =
                                             '#60a5fa';
-                                         $categoryIconBackground =
+
+                                        $categoryIconBackground =
                                             'rgba(37, 99, 235, 0.12)';
 
                                         $categoryScoreCapped =
@@ -1451,7 +1419,7 @@
 
                                                 <p
                                                     class="mt-0.5 truncate text-xs font-medium"
-                                                    style="color: {{ $categoryPalette['status'] }}"
+                                                    style="color: {{ $categoryStatusColor }}"
                                                 >
                                                     {{ $categoryStatus }}
                                                 </p>
@@ -1477,17 +1445,17 @@
                                                                 background:
                                                                     linear-gradient(
                                                                         90deg,
-                                                                        {{ $categoryPalette['light'] }} 0%,
-                                                                        {{ $categoryPalette['mid'] }} 58%,
-                                                                        {{ $categoryPalette['dark'] }} 100%
+                                                                        #dbeafe 0%,
+                                                                        #bfdbfe 18%,
+                                                                        #93c5fd 38%,
+                                                                        #60a5fa 58%,
+                                                                        #3b82f6 76%,
+                                                                        #2563eb 90%,
+                                                                        #1e3a8a 100%
                                                                     );
                                                                 box-shadow:
                                                                     0 0 10px
-                                                                    color-mix(
-                                                                        in srgb,
-                                                                        {{ $categoryPalette['dark'] }} 28%,
-                                                                        transparent
-                                                                    );
+                                                                    rgba(59, 130, 246, 0.20);
                                                                 background-repeat: no-repeat;
                                                             "
                                                         ></div>
