@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\InvestmentAccount;
+use App\Models\InvestorProfile;
 use App\Services\Analytics\DiversificationAnalyticsService;
 use App\Services\Analytics\LookThroughDiversificationService;
+use App\Services\Analytics\PortfolioDriftService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -14,6 +16,7 @@ class DiversificationAnalyticsController extends Controller
         Request $request,
         DiversificationAnalyticsService $service,
         LookThroughDiversificationService $lookThroughService,
+        PortfolioDriftService $driftService,
     ): View {
         $accounts = InvestmentAccount::query()
             ->where(
@@ -38,6 +41,22 @@ class DiversificationAnalyticsController extends Controller
                 $accounts,
             );
 
+        $profile = InvestorProfile::query()
+            ->where(
+                'user_id',
+                $request->user()->id,
+            )
+            ->first();
+
+        $drift =
+            $driftService->calculate(
+                accounts:
+                    $accounts,
+
+                profile:
+                    $profile,
+            );
+
         return view(
             'analytics.diversification',
             [
@@ -46,6 +65,9 @@ class DiversificationAnalyticsController extends Controller
 
                 'lookThrough' =>
                     $lookThrough,
+
+                'drift' =>
+                    $drift,
             ],
         );
     }

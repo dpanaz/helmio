@@ -48,6 +48,7 @@ class InvestorProfile extends Model
         'risk_tolerance',
         'liquidity_needs',
         'notes',
+        'target_allocation',
     ];
 
     protected function casts(): array
@@ -70,6 +71,7 @@ class InvestorProfile extends Model
 
             'time_horizon_years' =>
                 'integer',
+            'target_allocation' => 'array',
         ];
     }
 
@@ -86,6 +88,8 @@ class InvestorProfile extends Model
             ? $this->date_of_birth->age
             : null;
     }
+
+
 
     public function yearsUntilRetirement(): ?int
     {
