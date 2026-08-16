@@ -242,8 +242,17 @@
                 >
                     See what your financial advisor
 
-                    <span class="text-blue-400">
-                        isn’t telling you.
+                    <span
+                        class="block min-h-[2.15em] text-blue-400 sm:min-h-[1.15em]"
+                        data-hero-rotator
+                        aria-live="polite"
+                    >
+                        <span
+                            class="inline-block transition-all duration-500 ease-out"
+                            data-hero-rotator-text
+                        >
+                            isn’t telling you.
+                        </span>
                     </span>
                 </h1>
 
@@ -1520,6 +1529,101 @@
 
 </div>
 
+
+
+{{-- =============================================================
+    HERO HEADLINE ROTATION
+============================================================= --}}
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const rotator =
+            document.querySelector('[data-hero-rotator]');
+
+        const textElement =
+            document.querySelector('[data-hero-rotator-text]');
+
+        if (!rotator || !textElement) {
+            return;
+        }
+
+        const messages = [
+            'isn’t telling you.',
+            'is really costing you.',
+            'is doing with your money.',
+            'isn’t showing you.',
+        ];
+
+        const reducedMotion =
+            window.matchMedia(
+                '(prefers-reduced-motion: reduce)'
+            ).matches;
+
+        if (reducedMotion) {
+            textElement.textContent = messages[0];
+            return;
+        }
+
+        let index = 0;
+        let intervalId = null;
+
+        function showNextMessage() {
+            textElement.classList.add(
+                'opacity-0',
+                '-translate-y-2'
+            );
+
+            window.setTimeout(function () {
+                index = (index + 1) % messages.length;
+                textElement.textContent = messages[index];
+
+                textElement.classList.remove('-translate-y-2');
+                textElement.classList.add('translate-y-2');
+
+                requestAnimationFrame(function () {
+                    requestAnimationFrame(function () {
+                        textElement.classList.remove(
+                            'opacity-0',
+                            'translate-y-2'
+                        );
+                    });
+                });
+            }, 500);
+        }
+
+        function startRotation() {
+            if (intervalId !== null) {
+                return;
+            }
+
+            intervalId = window.setInterval(
+                showNextMessage,
+                3500
+            );
+        }
+
+        function stopRotation() {
+            if (intervalId === null) {
+                return;
+            }
+
+            window.clearInterval(intervalId);
+            intervalId = null;
+        }
+
+        document.addEventListener(
+            'visibilitychange',
+            function () {
+                if (document.hidden) {
+                    stopRotation();
+                } else {
+                    startRotation();
+                }
+            }
+        );
+
+        startRotation();
+    });
+</script>
 
 {{-- =============================================================
     HELM SCORE ANIMATION
