@@ -582,7 +582,7 @@
     </style>
 
 
-    <div class="min-h-screen bg-slate-950 lg:pl-64">
+    <div class="min-h-screen bg-slate-950">
 
         @if (! $hasPremiumAccess)
 
