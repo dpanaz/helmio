@@ -123,41 +123,58 @@
 
 
         {{-- ========================================================= --}}
-        {{-- OPTIONAL PAGE HEADER --}}
+        {{-- DESKTOP APP CONTENT WRAPPER --}}
         {{-- ========================================================= --}}
         {{--
-            Only render the header when the page actually provides
-            meaningful header content.
+            The desktop sidebar is fixed at 16rem / 256px.
 
-            This prevents an empty Breeze header from creating the
-            white horizontal strip above the Helmio dashboard.
+            All application content gets the matching lg:pl-64 offset
+            here instead of individual pages having to account for it.
+
+            Mobile remains full width because the offset only applies
+            at the lg breakpoint.
         --}}
 
-        @if (
-            isset($header)
-            && trim(strip_tags((string) $header)) !== ''
-        )
-            <header
-                class="border-b border-slate-800 bg-slate-950"
-            >
-                <div
-                    class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8"
+        <div class="min-w-0 lg:pl-64">
+
+            {{-- ===================================================== --}}
+            {{-- OPTIONAL PAGE HEADER --}}
+            {{-- ===================================================== --}}
+            {{--
+                Only render the header when the page actually provides
+                meaningful header content.
+
+                This prevents an empty Breeze header from creating an
+                unnecessary strip above Helmio pages.
+            --}}
+
+            @if (
+                isset($header)
+                && trim(strip_tags((string) $header)) !== ''
+            )
+                <header
+                    class="border-b border-slate-800 bg-slate-950"
                 >
-                    {{ $header }}
-                </div>
-            </header>
-        @endif
+                    <div
+                        class="mx-auto max-w-7xl px-4 py-6 sm:px-6 lg:px-8"
+                    >
+                        {{ $header }}
+                    </div>
+                </header>
+            @endif
 
 
-        {{-- ========================================================= --}}
-        {{-- PAGE CONTENT --}}
-        {{-- ========================================================= --}}
+            {{-- ===================================================== --}}
+            {{-- PAGE CONTENT --}}
+            {{-- ===================================================== --}}
 
-        <main
-            class="min-h-[calc(100vh-5rem)] bg-slate-950 pb-20 sm:pb-0"
-        >
-            {{ $slot }}
-        </main>
+            <main
+                class="min-h-[calc(100vh-5rem)] min-w-0 bg-slate-950 pb-20 sm:pb-0"
+            >
+                {{ $slot }}
+            </main>
+
+        </div>
 
     </div>
 
@@ -168,7 +185,7 @@
 
     <noscript>
         <div
-            class="fixed inset-x-0 bottom-0 z-[100] border-t border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-900"
+            class="fixed inset-x-0 bottom-0 z-[100] border-t border-amber-300 bg-amber-50 px-4 py-3 text-center text-sm font-medium text-amber-900 lg:left-64"
         >
             Helmio requires JavaScript for account synchronization
             and interactive analytics.

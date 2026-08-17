@@ -536,8 +536,53 @@
         };
     @endphp
 
+    <style>
+        /*
+         * Score Breakdown geometry.
+         * Raw CSS is intentional here so the four-column layout does not
+         * depend on Tailwind arbitrary-value class generation.
+         */
+        .helm-score-breakdown-row {
+            display: grid;
+            grid-template-columns: 2rem 9.5rem minmax(0, 1fr) 3rem;
+            align-items: center;
+            column-gap: 0.75rem;
+            min-height: 48px;
+        }
 
-    <div class="min-h-screen bg-slate-950">
+        .helm-score-breakdown-score {
+            justify-self: end;
+        }
+
+        @media (max-width: 639px) {
+            .helm-score-breakdown-row {
+                grid-template-columns: 1fr auto;
+                grid-template-areas:
+                    "label score"
+                    "bar bar";
+                row-gap: 0.5rem;
+            }
+
+            .helm-score-breakdown-icon {
+                display: none;
+            }
+
+            .helm-score-breakdown-label {
+                grid-area: label;
+            }
+
+            .helm-score-breakdown-bar {
+                grid-area: bar;
+            }
+
+            .helm-score-breakdown-score {
+                grid-area: score;
+            }
+        }
+    </style>
+
+
+    <div class="min-h-screen bg-slate-950 lg:pl-64">
 
         @if (! $hasPremiumAccess)
 
@@ -653,7 +698,7 @@
             {{-- ========================================================= --}}
 
             <div
-                class="mx-auto max-w-[1400px] px-4 py-5 sm:px-6 sm:py-6 lg:px-7"
+                class="mx-auto max-w-[1700px] px-4 py-4 sm:px-5 sm:py-5 lg:px-6 xl:px-7"
             >
 
                 {{-- ===================================================== --}}
@@ -661,7 +706,7 @@
                 {{-- ===================================================== --}}
 
                 <div
-                    class="mb-5 flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between"
+                    class="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
                 >
                     <div>
                         <p
@@ -671,13 +716,13 @@
                         </p>
 
                         <h1
-                            class="mt-1.5 text-2xl font-semibold tracking-tight text-white sm:text-3xl"
+                            class="mt-1 text-2xl font-semibold tracking-tight text-white"
                         >
                             {{ $greeting }}, {{ $firstName }}.
                         </h1>
 
                         <p
-                            class="mt-1.5 text-sm leading-5 text-slate-400"
+                            class="mt-1 text-sm leading-5 text-slate-400"
                         >
                             Here’s what Helmio sees across your investments.
                         </p>
@@ -927,7 +972,7 @@
                     <div
                         data-analysis-container
                         data-analysis-running="0"
-                        class="flex flex-col gap-4 lg:flex-row"
+                        class="flex flex-col gap-3 lg:flex-row"
                     >
 
                         {{-- ================================================= --}}
@@ -935,7 +980,7 @@
                         {{-- ================================================= --}}
 
                         <section
-                            class="flex min-w-0 flex-col rounded-2xl border border-slate-800/90 bg-slate-900 p-5 shadow-lg sm:p-6 lg:w-[30%]"
+                            class="flex min-w-0 flex-col rounded-2xl border border-slate-800/90 bg-slate-900 p-4 shadow-lg sm:p-5 lg:w-[27%] xl:w-[25%]"
                         >
                             <div class="flex items-center justify-between gap-3">
 
@@ -964,96 +1009,165 @@
                             </div>
 
                             <div
-                                class="flex flex-1 flex-col items-center justify-center py-4"
+                                class="flex flex-1 flex-col items-center justify-center py-2"
                             >
+
+                                {{-- ================================================= --}}
+                                {{-- HELM SCORE GAUGE                                  --}}
+                                {{-- Keep all gauge typography inside the SVG so the  --}}
+                                {{-- score cannot drift or overlap badges responsively. --}}
+                                {{-- ================================================= --}}
 
                                 <div
                                     data-helm-score-dial
                                     data-score="{{ $helmOverallScore }}"
-                                    class="relative flex h-56 w-56 items-center justify-center"
+                                    class="relative mt-2 w-full max-w-[320px]"
                                 >
-
                                     <svg
-                                        class="absolute inset-0 h-full w-full -rotate-90"
-                                        viewBox="0 0 240 240"
-                                        aria-hidden="true"
+                                        class="block h-auto w-full overflow-visible"
+                                        viewBox="0 0 320 205"
+                                        role="img"
+                                        aria-label="Helm Score {{ $helmOverallScore }} out of 100"
                                     >
                                         <defs>
                                             <linearGradient
                                                 id="helmScoreGradient"
                                                 gradientUnits="userSpaceOnUse"
-                                                x1="120"
-                                                y1="22"
-                                                x2="120"
-                                                y2="218"
-                                                gradientTransform="rotate(90 120 120)"
+                                                x1="42"
+                                                y1="0"
+                                                x2="278"
+                                                y2="0"
                                             >
                                                 <stop offset="0%" stop-color="#dbeafe" />
-                                                <stop offset="20%" stop-color="#bfdbfe" />
-                                                <stop offset="40%" stop-color="#93c5fd" />
-                                                <stop offset="60%" stop-color="#60a5fa" />
-                                                <stop offset="78%" stop-color="#3b82f6" />
-                                                <stop offset="90%" stop-color="#2563eb" />
+                                                <stop offset="24%" stop-color="#93c5fd" />
+                                                <stop offset="52%" stop-color="#60a5fa" />
+                                                <stop offset="78%" stop-color="#2563eb" />
                                                 <stop offset="100%" stop-color="#1e3a8a" />
                                             </linearGradient>
+
+                                            <filter
+                                                id="helmGaugeGlow"
+                                                x="-20%"
+                                                y="-20%"
+                                                width="140%"
+                                                height="140%"
+                                            >
+                                                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                                                <feMerge>
+                                                    <feMergeNode in="blur" />
+                                                    <feMergeNode in="SourceGraphic" />
+                                                </feMerge>
+                                            </filter>
                                         </defs>
 
-                                        <circle
-                                            cx="120"
-                                            cy="120"
-                                            r="98"
+                                        {{-- Gauge track --}}
+                                        <path
+                                            d="M 42 150 A 118 118 0 0 1 278 150"
                                             fill="none"
                                             stroke="#1e293b"
-                                            stroke-width="16"
+                                            stroke-width="18"
+                                            stroke-linecap="round"
+                                            pathLength="100"
                                         />
 
-                                        <circle
+                                        {{-- Subtle inner guide --}}
+                                        <path
+                                            d="M 56 150 A 104 104 0 0 1 264 150"
+                                            fill="none"
+                                            stroke="#334155"
+                                            stroke-width="1"
+                                            stroke-dasharray="2 5"
+                                            opacity="0.55"
+                                        />
+
+                                        {{-- Animated score arc --}}
+                                        <path
                                             data-helm-score-ring
-                                            cx="120"
-                                            cy="120"
-                                            r="98"
+                                            d="M 42 150 A 118 118 0 0 1 278 150"
                                             fill="none"
                                             stroke="url(#helmScoreGradient)"
-                                            stroke-width="16"
+                                            stroke-width="18"
                                             stroke-linecap="round"
                                             pathLength="100"
                                             stroke-dasharray="100"
                                             stroke-dashoffset="100"
+                                            filter="url(#helmGaugeGlow)"
                                         />
+
+                                        {{-- Score-position marker --}}
+                                        <circle
+                                            data-helm-score-marker
+                                            cx="42"
+                                            cy="150"
+                                            r="5.5"
+                                            fill="#f8fafc"
+                                            stroke="#2563eb"
+                                            stroke-width="3"
+                                            opacity="0"
+                                        />
+
+                                        {{-- Scale labels --}}
+                                        <text
+                                            x="37"
+                                            y="179"
+                                            fill="#64748b"
+                                            font-size="10"
+                                            font-weight="600"
+                                            text-anchor="middle"
+                                        >0</text>
+
+                                        <text
+                                            x="160"
+                                            y="25"
+                                            fill="#64748b"
+                                            font-size="10"
+                                            font-weight="600"
+                                            text-anchor="middle"
+                                        >50</text>
+
+                                        <text
+                                            x="283"
+                                            y="179"
+                                            fill="#64748b"
+                                            font-size="10"
+                                            font-weight="600"
+                                            text-anchor="middle"
+                                        >100</text>
+
+                                        {{-- Main score --}}
+                                        <text
+                                            data-helm-score-number
+                                            x="153"
+                                            y="126"
+                                            fill="#f8fafc"
+                                            font-size="58"
+                                            font-weight="650"
+                                            letter-spacing="-3"
+                                            text-anchor="middle"
+                                        >0</text>
+
+                                        <text
+                                            x="203"
+                                            y="126"
+                                            fill="#64748b"
+                                            font-size="12"
+                                            font-weight="600"
+                                        >/100</text>
+
+                                        <text
+                                            x="160"
+                                            y="147"
+                                            fill="#64748b"
+                                            font-size="9"
+                                            font-weight="700"
+                                            letter-spacing="2.2"
+                                            text-anchor="middle"
+                                        >PORTFOLIO HEALTH</text>
                                     </svg>
-
-                                    <div
-                                        class="relative flex h-40 w-40 flex-col items-center justify-center rounded-full border border-slate-800/90 bg-slate-950 shadow-inner"
-                                    >
-                                        <div class="flex items-baseline">
-
-                                            <span
-                                                data-helm-score-number
-                                                class="text-6xl font-semibold tracking-tight"
-                                                style="color: {{ $helmScoreColor }}"
-                                            >
-                                                0
-                                            </span>
-
-                                            <span
-                                                class="ml-1 text-xs font-medium text-slate-500"
-                                            >
-                                                /100
-                                            </span>
-
-                                        </div>
-
-                                        <p
-                                            class="mt-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-500"
-                                        >
-                                            Portfolio health
-                                        </p>
-                                    </div>
-
                                 </div>
 
                                 @if ($needsAttention)
-                                    <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+                                    <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
                                         @if ($criticalCount > 0)
                                             <span
                                                 class="inline-flex items-center gap-1.5 rounded-lg border border-red-500/20 bg-red-500/[0.05] px-2.5 py-1.5 text-xs font-semibold text-red-300"
@@ -1073,21 +1187,21 @@
                                         @endif
                                     </div>
 
-                                    <p class="mt-2 max-w-xs text-center text-xs leading-5 text-slate-500">
+                                    <p class="mt-1.5 max-w-xs text-center text-[11px] leading-4 text-slate-500">
                                         Review the highest-priority findings first.
                                     </p>
                                 @else
                                     <p
-                                        class="mt-4 max-w-xs text-center text-sm leading-5 text-slate-400"
+                                        class="mt-3 max-w-xs text-center text-xs leading-5 text-slate-400"
                                     >
                                         No major open concerns are currently identified.
                                     </p>
                                 @endif
 
-                                <div class="mt-4 flex flex-wrap items-center justify-center gap-2">
+                                <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
                                     <a
                                         href="{{ route('analytics.helm-score') }}"
-                                        class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500"
+                                        class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3 py-2 text-xs font-semibold text-white shadow-sm transition hover:bg-blue-500"
                                     >
                                         View Full Report
 
@@ -1109,7 +1223,7 @@
                                     @if ($needsAttention)
                                         <a
                                             href="{{ route('advisor-action-center.index') }}"
-                                            class="inline-flex items-center rounded-lg border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-slate-200 transition hover:border-red-500/40 hover:text-white"
+                                            class="inline-flex items-center rounded-lg border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-200 transition hover:border-red-500/40 hover:text-white"
                                         >
                                             Review Findings
                                         </a>
@@ -1124,7 +1238,7 @@
                         {{-- ================================================= --}}
 
                         <section
-                            class="min-w-0 flex-1 rounded-2xl border border-slate-800/90 bg-slate-900 p-5 shadow-lg sm:p-6"
+                            class="min-w-0 flex-1 rounded-2xl border border-slate-800/90 bg-slate-900 p-4 shadow-lg sm:p-5"
                         >
 
                             <div
@@ -1156,7 +1270,7 @@
 
 
                             <div
-                                class="mt-3 divide-y divide-slate-800"
+                                class="mt-2 divide-y divide-slate-800"
                             >
 
                                 @foreach ($scoreBreakdown as $item)
@@ -1277,17 +1391,15 @@
                                         href="{{ route(
                                             $categoryRoutes[$item['key']]
                                         ) }}"
-                                        class="group block rounded-lg px-2 py-3.5 transition hover:bg-slate-800/30"
+                                        class="group block rounded-lg px-2 py-2.5 transition hover:bg-slate-800/30"
                                     >
 
-                                        <div
-                                            class="flex flex-col gap-2 sm:flex-row sm:items-center"
-                                        >
+                                        <div class="helm-score-breakdown-row">
 
                                             {{-- Icon --}}
 
                                             <div
-                                                class="hidden h-9 w-9 shrink-0 items-center justify-center rounded-lg sm:flex"
+                                                class="helm-score-breakdown-icon flex h-8 w-8 shrink-0 items-center justify-center rounded-lg"
                                                 style="
                                                             color: {{ $categoryIconColor }};
                                                             background-color: {{ $categoryIconBackground }};
@@ -1409,16 +1521,16 @@
                                             {{-- Label / Status --}}
 
                                             <div
-                                                class="min-w-0 shrink-0 sm:w-36 lg:w-40"
+                                                class="helm-score-breakdown-label min-w-0"
                                             >
                                                 <p
-                                                    class="truncate text-sm font-semibold text-white transition group-hover:text-blue-300"
+                                                    class="truncate text-[13px] font-semibold text-white transition group-hover:text-blue-300"
                                                 >
                                                     {{ $item['label'] }}
                                                 </p>
 
                                                 <p
-                                                    class="mt-0.5 truncate text-xs font-medium"
+                                                    class="mt-0.5 truncate text-[11px] font-medium"
                                                     style="color: {{ $categoryStatusColor }}"
                                                 >
                                                     {{ $categoryStatus }}
@@ -1431,10 +1543,10 @@
                                             {{-- ================================= --}}
 
                                             <div
-                                                class="min-w-0 flex-1"
+                                                class="helm-score-breakdown-bar min-w-0 w-full"
                                             >
                                                 <div
-                                                    class="h-2 overflow-hidden rounded-full bg-slate-800/90"
+                                                    class="h-1.5 overflow-hidden rounded-full bg-slate-800/90"
                                                 >
                                                     @if ($categoryScore !== null)
 
@@ -1468,7 +1580,7 @@
                                             {{-- Score --}}
 
                                             <span
-                                                class="w-10 shrink-0 text-right text-base font-semibold"
+                                                class="helm-score-breakdown-score w-full text-right text-sm font-semibold tabular-nums"
                                                 style="color: {{ $categoryScoreColor }}"
                                             >
                                                 {{ $categoryScore ?? '—' }}
@@ -1494,7 +1606,7 @@
                 {{-- ===================================================== --}}
 
                 <section
-                    class="relative mt-4 overflow-hidden rounded-2xl border {{ $needsAttention
+                    class="relative mt-3 overflow-hidden rounded-2xl border {{ $needsAttention
                         ? ($hasCriticalFindings
                             ? 'border-red-500/25'
                             : 'border-orange-500/25')
@@ -1509,7 +1621,7 @@
                     ></div>
 
                     <div
-                        class="flex flex-col gap-4 px-5 py-4 sm:px-6 lg:flex-row lg:items-center lg:justify-between"
+                        class="flex flex-col gap-3 px-4 py-3.5 sm:px-5 lg:flex-row lg:items-center lg:justify-between"
                     >
                         <div class="flex min-w-0 items-center gap-3">
                             <div
@@ -2586,6 +2698,11 @@
                             '[data-helm-score-ring]'
                         );
 
+                    const marker =
+                        dial.querySelector(
+                            '[data-helm-score-marker]'
+                        );
+
 
                     if (
                         !scoreElement
@@ -2613,6 +2730,24 @@
                             '(prefers-reduced-motion: reduce)'
                         ).matches;
 
+                    function positionMarker(value) {
+                        if (!marker) {
+                            return;
+                        }
+
+                        const clamped = Math.max(0, Math.min(100, value));
+                        const angle = Math.PI * (1 - (clamped / 100));
+                        const radius = 118;
+                        const centerX = 160;
+                        const centerY = 150;
+                        const x = centerX + (radius * Math.cos(angle));
+                        const y = centerY - (radius * Math.sin(angle));
+
+                        marker.setAttribute('cx', x.toFixed(2));
+                        marker.setAttribute('cy', y.toFixed(2));
+                        marker.style.opacity = clamped > 0 ? '1' : '0';
+                    }
+
 
                     if (reducedMotion) {
 
@@ -2623,6 +2758,8 @@
                             String(
                                 100 - target
                             );
+
+                        positionMarker(target);
 
                         return;
                     }
@@ -2674,6 +2811,8 @@
                             String(
                                 100 - current
                             );
+
+                        positionMarker(current);
 
 
                         if (progress < 1) {
