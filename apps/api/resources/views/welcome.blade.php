@@ -943,12 +943,10 @@
                                 class="flex h-52 w-52
                                        items-center justify-center
                                        rounded-full
-                                       border-[13px]
-                                       border-slate-800
-                                       bg-slate-950
+                                       bg-slate-800
                                        shadow-2xl
-                                       sm:h-72 sm:w-72
-                                       sm:border-[18px]"
+                                       sm:h-72 sm:w-72"
+                                style="background: conic-gradient(from -90deg, #1e293b 0deg 360deg);"
                             >
                                 <div
                                     class="flex h-40 w-40
@@ -1642,9 +1640,38 @@
         }
 
         const target =
-            Number(scoreElement.dataset.score || 0);
+            Math.max(
+                0,
+                Math.min(
+                    100,
+                    Number(scoreElement.dataset.score || 0)
+                )
+            );
 
         let hasAnimated = false;
+
+        function renderDial(score) {
+            const clampedScore =
+                Math.max(0, Math.min(100, score));
+
+            const angle =
+                (clampedScore / 100) * 360;
+
+            const midpoint =
+                angle * 0.62;
+
+            scoreWrapper.style.background =
+                `conic-gradient(
+                    from 0deg,
+                    #60a5fa 0deg,
+                    #3b82f6 ${midpoint}deg,
+                    #1d4ed8 ${angle}deg,
+                    #1e293b ${angle}deg,
+                    #1e293b 360deg
+                )`;
+        }
+
+        renderDial(0);
 
 
         function animateScore() {
@@ -1662,6 +1689,7 @@
 
             if (reducedMotion) {
                 scoreElement.textContent = target;
+                renderDial(target);
                 return;
             }
 
@@ -1686,10 +1714,13 @@
                         3
                     );
 
+                const animatedScore =
+                    target * eased;
+
                 scoreElement.textContent =
-                    Math.round(
-                        target * eased
-                    );
+                    Math.round(animatedScore);
+
+                renderDial(animatedScore);
 
 
                 if (progress < 1) {
@@ -1697,6 +1728,8 @@
                 } else {
                     scoreElement.textContent =
                         target;
+
+                    renderDial(target);
                 }
             }
 
