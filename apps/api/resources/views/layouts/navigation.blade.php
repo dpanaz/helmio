@@ -1,16 +1,9 @@
 <div
     x-data="{
-        moreOpen: false,
-        analyticsOpen: false
+        moreOpen: false
     }"
-    x-on:keydown.escape.window="
-        moreOpen = false;
-        analyticsOpen = false;
-    "
+    x-on:keydown.escape.window="moreOpen = false"
     class="w-full max-w-full"
->
-<nav
-    class="relative z-40 w-full max-w-full overflow-x-clip border-b border-slate-800 bg-slate-950"
 >
     @php
         $analyticsItems = [
@@ -31,38 +24,6 @@
             ['route' => 'analytics.tax-efficiency', 'label' => 'Tax Efficiency'],
         ];
 
-        $desktopOversightItems = [
-            ['route' => 'analytics.helm-score', 'label' => 'Helm Score'],
-            ['route' => 'advisor-action-center.index', 'label' => 'Action Center'],
-            ['route' => 'ask-helmio.index', 'label' => 'Ask Helmio'],
-            ['route' => 'portfolio-timeline.index', 'label' => 'Portfolio Timeline'],
-            ['route' => 'monthly-reviews.index', 'label' => 'Monthly Reviews'],
-        ];
-
-        $desktopAnalysisItems = [
-            ['route' => 'analytics.costs', 'label' => 'Cost Analysis'],
-            ['route' => 'analytics.fund-expenses', 'label' => 'Fund Costs'],
-            ['route' => 'analytics.performance', 'label' => 'Performance'],
-            ['route' => 'analytics.diversification', 'label' => 'Diversification'],
-            ['route' => 'analytics.risk', 'label' => 'Risk'],
-            ['route' => 'analytics.trading-discipline', 'label' => 'Trading'],
-            ['route' => 'analytics.cash-drag', 'label' => 'Cash Drag'],
-            ['route' => 'analytics.tax-efficiency', 'label' => 'Tax Efficiency'],
-        ];
-
-        $auditActive =
-            request()->routeIs('advisor-audit.*');
-
-        $aiActive =
-            request()->routeIs('ai-insights.*');
-
-        $analyticsActive =
-            request()->routeIs('analytics.*')
-            || request()->routeIs('advisor-action-center.*')
-            || request()->routeIs('ask-helmio.*')
-            || request()->routeIs('portfolio-timeline.*')
-            || request()->routeIs('monthly-reviews.*');
-
         $hasPremiumAccess = app(
             \App\Services\Billing\SubscriptionAccessService::class
         )->hasPremiumAccess(auth()->user());
@@ -70,539 +31,372 @@
         $unreadNotificationCount =
             auth()->user()->unreadNotifications()->count();
 
-        $desktopBase =
-            'inline-flex h-20 items-center gap-2 border-b-2 px-3 text-sm font-medium transition';
+        $sidebarMain = [
+            [
+                'route' => 'dashboard',
+                'label' => 'Dashboard',
+                'icon' => 'home',
+                'active' => ['dashboard'],
+                'premium' => false,
+            ],
+            [
+                'route' => 'accounts.index',
+                'label' => $hasPremiumAccess ? 'Accounts' : 'Upgrade',
+                'icon' => $hasPremiumAccess ? 'accounts' : 'lock',
+                'active' => ['accounts.*'],
+                'premium' => true,
+            ],
+        ];
 
-        $desktopActive =
-            'border-blue-500 text-white';
+        $sidebarMonitor = [
+            [
+                'route' => 'analytics.helm-score',
+                'label' => 'Helm Score',
+                'icon' => 'score',
+                'active' => ['analytics.helm-score'],
+                'premium' => true,
+            ],
+            [
+                'route' => 'advisor-action-center.index',
+                'label' => 'Action Center',
+                'icon' => 'alert',
+                'active' => ['advisor-action-center.*'],
+                'premium' => true,
+            ],
+            [
+                'route' => 'advisor-audit.index',
+                'label' => 'Advisor Audit',
+                'icon' => 'shield',
+                'active' => ['advisor-audit.*'],
+                'premium' => true,
+            ],
+            [
+                'route' => 'ai-insights.index',
+                'label' => 'AI Insights',
+                'icon' => 'sparkles',
+                'active' => ['ai-insights.*'],
+                'premium' => true,
+            ],
+            [
+                'route' => 'ask-helmio.index',
+                'label' => 'Ask Helmio',
+                'icon' => 'chat',
+                'active' => ['ask-helmio.*'],
+                'premium' => true,
+            ],
+        ];
 
-        $desktopInactive =
-            'border-transparent text-slate-400 hover:border-slate-700 hover:text-white';
+        $sidebarAnalysis = [
+            [
+                'route' => 'analytics.costs',
+                'label' => 'Cost Analysis',
+                'icon' => 'dollar',
+                'active' => ['analytics.costs'],
+                'premium' => true,
+            ],
+            [
+                'route' => 'analytics.fund-expenses',
+                'label' => 'Fund Costs',
+                'icon' => 'receipt',
+                'active' => ['analytics.fund-expenses'],
+                'premium' => true,
+            ],
+            [
+                'route' => 'analytics.performance',
+                'label' => 'Performance',
+                'icon' => 'trend',
+                'active' => ['analytics.performance*'],
+                'premium' => true,
+            ],
+            [
+                'route' => 'analytics.diversification',
+                'label' => 'Diversification',
+                'icon' => 'pie',
+                'active' => ['analytics.diversification*'],
+                'premium' => true,
+            ],
+            [
+                'route' => 'analytics.risk',
+                'label' => 'Risk',
+                'icon' => 'risk',
+                'active' => ['analytics.risk*'],
+                'premium' => true,
+            ],
+            [
+                'route' => 'analytics.trading-discipline',
+                'label' => 'Trading',
+                'icon' => 'trade',
+                'active' => ['analytics.trading-discipline*'],
+                'premium' => true,
+            ],
+            [
+                'route' => 'analytics.cash-drag',
+                'label' => 'Cash Drag',
+                'icon' => 'cash',
+                'active' => ['analytics.cash-drag*'],
+                'premium' => true,
+            ],
+            [
+                'route' => 'analytics.tax-efficiency',
+                'label' => 'Tax Efficiency',
+                'icon' => 'tax',
+                'active' => ['analytics.tax-efficiency*'],
+                'premium' => true,
+            ],
+        ];
+
+        $sidebarHistory = [
+            [
+                'route' => 'portfolio-timeline.index',
+                'label' => 'Portfolio Timeline',
+                'icon' => 'clock',
+                'active' => ['portfolio-timeline.*'],
+                'premium' => true,
+            ],
+            [
+                'route' => 'monthly-reviews.index',
+                'label' => 'Monthly Reviews',
+                'icon' => 'calendar',
+                'active' => ['monthly-reviews.*'],
+                'premium' => true,
+            ],
+        ];
     @endphp
 
-    {{-- Desktop navigation --}}
-    <div class="hidden sm:block">
-        <div
-            class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8"
-        >
-            <div
-                class="flex h-20 items-center justify-between gap-6"
+    {{-- ============================================================= --}}
+    {{-- DESKTOP SIDEBAR --}}
+    {{-- ============================================================= --}}
+
+    <aside
+        class="fixed inset-y-0 left-0 z-50 hidden w-64 flex-col border-r border-slate-800/90 bg-slate-950 lg:flex"
+        aria-label="Primary navigation"
+    >
+        {{-- Brand --}}
+        <div class="flex h-20 shrink-0 items-center border-b border-slate-800/80 px-5">
+            <a
+                href="{{ route('dashboard') }}"
+                class="flex min-w-0 items-center gap-3"
             >
-                {{-- Brand --}}
-                <a
-                    href="{{ route('dashboard') }}"
-                    class="flex shrink-0 items-center gap-3"
+                <img
+                    src="{{ asset('icons/icon-192.png') }}"
+                    alt="Helmio"
+                    class="h-10 w-10 shrink-0 rounded-xl shadow-lg shadow-blue-950/30"
                 >
-                    <img
-                        src="{{ asset('icons/icon-192.png') }}"
-                        alt="Helmio"
-                        class="h-11 w-11 rounded-xl shadow-lg"
-                    >
 
-                    <div>
-                        <p
-                            class="text-lg font-semibold leading-5 tracking-tight text-white"
-                        >
-                            Helmio
-                        </p>
+                <div class="min-w-0">
+                    <p class="truncate text-lg font-semibold tracking-tight text-white">
+                        Helmio
+                    </p>
+                    <p class="mt-0.5 truncate text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-600">
+                        Investment oversight
+                    </p>
+                </div>
+            </a>
+        </div>
 
-                        <p
-                            class="mt-1 text-[10px] uppercase leading-none tracking-[0.18em] text-slate-500"
-                        >
-                            Investment oversight
-                        </p>
-                    </div>
-                </a>
+        {{-- Scrollable navigation --}}
+        <div class="flex-1 overflow-y-auto px-3 py-5 [scrollbar-width:thin] [scrollbar-color:#334155_transparent]">
+            @foreach ([
+                ['label' => 'Main', 'items' => $sidebarMain],
+                ['label' => 'Monitor', 'items' => $sidebarMonitor],
+                ['label' => 'Portfolio Analysis', 'items' => $sidebarAnalysis],
+                ['label' => 'History', 'items' => $sidebarHistory],
+            ] as $section)
+                <section class="mb-6 last:mb-0">
+                    <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-600">
+                        {{ $section['label'] }}
+                    </p>
 
-                {{-- Main links --}}
-                <div
-                    class="flex min-w-0 flex-1 items-center justify-end"
-                >
-                    <div
-                        class="flex h-20 items-center"
-                    >
-                        {{-- Home --}}
-                        <a
-                            href="{{ route('dashboard') }}"
-                            @class([
-                                $desktopBase,
-                                $desktopActive =>
-                                    request()->routeIs('dashboard'),
-                                $desktopInactive =>
-                                    ! request()->routeIs('dashboard'),
-                            ])
-                        >
-                            <svg
-                                class="h-5 w-5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                stroke-width="1.9"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="m3 11.25 9-7.5 9 7.5v8.25a.75.75 0 0 1-.75.75h-5.25v-6h-6v6H3.75A.75.75 0 0 1 3 19.5v-8.25Z"
-                                />
-                            </svg>
+                    <div class="space-y-1">
+                        @foreach ($section['items'] as $item)
+                            @php
+                                $itemActive = request()->routeIs(...$item['active']);
+                                $itemLocked = $item['premium'] && ! $hasPremiumAccess;
+                                $itemHref = $itemLocked
+                                    ? route('billing.pricing')
+                                    : route($item['route']);
+                            @endphp
 
-                            <span>Home</span>
-                        </a>
-
-                        {{-- Accounts / Upgrade --}}
-                        <a
-                            href="{{ $hasPremiumAccess
-                                ? route('accounts.index')
-                                : route('billing.pricing') }}"
-                            @class([
-                                $desktopBase,
-                                $desktopActive =>
-                                    $hasPremiumAccess
-                                    && request()->routeIs('accounts.*'),
-                                $desktopInactive =>
-                                    ! (
-                                        $hasPremiumAccess
-                                        && request()->routeIs('accounts.*')
-                                    ),
-                                'text-blue-400 hover:text-blue-300' =>
-                                    ! $hasPremiumAccess,
-                            ])
-                        >
-                            @if ($hasPremiumAccess)
-                                <svg
-                                    class="h-5 w-5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    stroke-width="1.9"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M3.75 6.75h16.5v10.5H3.75V6.75Zm3-3h10.5M7.5 10.5h4.5"
-                                    />
-                                </svg>
-
-                                <span>Accounts</span>
-                            @else
-                                <svg
-                                    class="h-5 w-5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    stroke-width="1.9"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M16.5 10.5V7.5a4.5 4.5 0 0 0-9 0v3m-.75 0h10.5A1.5 1.5 0 0 1 18.75 12v7.5A1.5 1.5 0 0 1 17.25 21H6.75a1.5 1.5 0 0 1-1.5-1.5V12a1.5 1.5 0 0 1 1.5-1.5Z"
-                                    />
-                                </svg>
-
-                                <span>Upgrade</span>
-                            @endif
-                        </a>
-
-                        {{-- Advisor Audit --}}
-                        <a
-                            href="{{ $hasPremiumAccess
-                                ? route('advisor-audit.index')
-                                : route('billing.pricing') }}"
-                            @class([
-                                $desktopBase,
-                                $desktopActive => $auditActive,
-                                $desktopInactive => ! $auditActive,
-                            ])
-                        >
-                            <svg
-                                class="h-5 w-5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                stroke-width="1.9"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M12 3 5.25 5.25v5.625c0 4.065 2.73 7.83 6.75 9.375 4.02-1.545 6.75-5.31 6.75-9.375V5.25L12 3Zm-2.25 9 1.5 1.5 3-3"
-                                />
-                            </svg>
-
-                            <span>Audit</span>
-                        </a>
-
-                        {{-- AI --}}
-                        <a
-                            href="{{ $hasPremiumAccess
-                                ? route('ai-insights.index')
-                                : route('billing.pricing') }}"
-                            @class([
-                                $desktopBase,
-                                $desktopActive => $aiActive,
-                                $desktopInactive => ! $aiActive,
-                            ])
-                        >
-                            <svg
-                                class="h-5 w-5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                stroke-width="1.9"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.847-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 0 0-3.09 3.09L9 18.75Z"
-                                />
-                            </svg>
-
-                            <span>AI</span>
-                        </a>
-
-                        {{-- Analytics --}}
-                        <div
-                            class="relative flex h-20 items-center"
-                        >
-                            <button
-                                type="button"
-                                x-on:click="analyticsOpen = ! analyticsOpen"
+                            <a
+                                href="{{ $itemHref }}"
                                 @class([
-                                    $desktopBase,
-                                    'gap-1.5',
-                                    $desktopActive => $analyticsActive,
-                                    $desktopInactive => ! $analyticsActive,
+                                    'group relative flex min-h-10 items-center gap-3 rounded-xl px-3 py-2 text-sm font-medium transition duration-150',
+                                    'bg-blue-500/10 text-blue-200 ring-1 ring-inset ring-blue-500/20' => $itemActive,
+                                    'text-slate-400 hover:bg-slate-900 hover:text-slate-100' => ! $itemActive,
+                                    'text-blue-400 hover:text-blue-300' => $itemLocked,
                                 ])
                             >
-                                <svg
-                                    class="h-5 w-5"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                    stroke="currentColor"
-                                    stroke-width="1.9"
-                                >
-                                    <path
-                                        stroke-linecap="round"
-                                        stroke-linejoin="round"
-                                        d="M4.5 19.5v-6m5.25 6V9m5.25 10.5V5.25m5.25 14.25H3.75"
-                                    />
-                                </svg>
+                                @if ($itemActive)
+                                    <span class="absolute inset-y-2 left-0 w-0.5 rounded-r-full bg-blue-400"></span>
+                                @endif
 
-                                <span>Analytics</span>
-
-                                <svg
-                                    class="h-4 w-4 transition"
-                                    x-bind:class="{
-                                        'rotate-180': analyticsOpen
-                                    }"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                >
-                                    <path
-                                        fill-rule="evenodd"
-                                        d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
-                                        clip-rule="evenodd"
-                                    />
-                                </svg>
-                            </button>
-
-                            {{-- Organized desktop dropdown --}}
-                            <div
-                                x-cloak
-                                x-show="analyticsOpen"
-                                x-transition
-                                x-on:click.outside="
-                                    analyticsOpen = false
-                                "
-                                class="fixed right-6 top-24 z-[90] mt-0 w-[40rem] max-w-[calc(100vw-3rem)] overflow-hidden rounded-2xl border border-slate-700 bg-slate-900 shadow-2xl"
-                            >
-                                <div
-                                    class="flex items-center justify-between border-b border-slate-800 px-5 py-4"
-                                >
-                                    <div>
-                                        <p
-                                            class="text-xs font-semibold uppercase tracking-widest text-slate-500"
-                                        >
-                                            Analytics & Oversight
-                                        </p>
-
-                                        <p
-                                            class="mt-1 text-xs text-slate-600"
-                                        >
-                                            Review the portfolio, then drill into the details.
-                                        </p>
-                                    </div>
-
-                                    @unless ($hasPremiumAccess)
-                                        <span
-                                            class="rounded-full bg-blue-500/10 px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider text-blue-300 ring-1 ring-blue-500/20"
-                                        >
-                                            Premium
-                                        </span>
-                                    @endunless
-                                </div>
-
-                                <div
-                                    class="grid max-h-[72vh] grid-cols-2 gap-6 overflow-y-auto p-5"
-                                >
-                                    <section class="min-w-0">
-                                        <p
-                                            class="px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600"
-                                        >
-                                            Oversight
-                                        </p>
-
-                                        <div class="mt-2 space-y-1">
-                                            @foreach (
-                                                $desktopOversightItems
-                                                as $item
-                                            )
-                                                <a
-                                                    href="{{ $hasPremiumAccess
-                                                        ? route($item['route'])
-                                                        : route('billing.pricing') }}"
-                                                    x-on:click="
-                                                        analyticsOpen = false
-                                                    "
-                                                    @class([
-                                                        'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition',
-
-                                                        'bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20' =>
-                                                            request()->routeIs(
-                                                                $item['route']
-                                                            ),
-
-                                                        'text-slate-300 hover:bg-slate-800 hover:text-white' =>
-                                                            ! request()->routeIs(
-                                                                $item['route']
-                                                            ),
-                                                    ])
-                                                >
-                                                    <div
-                                                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-400"
-                                                    >
-                                                        <svg
-                                                            class="h-4 w-4"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            stroke="currentColor"
-                                                            stroke-width="1.9"
-                                                        >
-                                                            <path
-                                                                stroke-linecap="round"
-                                                                stroke-linejoin="round"
-                                                                d="M12 3 5.25 5.25v5.625c0 4.065 2.73 7.83 6.75 9.375 4.02-1.545 6.75-5.31 6.75-9.375V5.25L12 3Z"
-                                                            />
-                                                        </svg>
-                                                    </div>
-
-                                                    <span class="min-w-0 flex-1 truncate">
-                                                        {{ $item['label'] }}
-                                                    </span>
-                                                </a>
-                                            @endforeach
-                                        </div>
-                                    </section>
-
-                                    <section class="min-w-0">
-                                        <p
-                                            class="px-2 text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-600"
-                                        >
-                                            Analysis
-                                        </p>
-
-                                        <div class="mt-2 space-y-1">
-                                            @foreach (
-                                                $desktopAnalysisItems
-                                                as $item
-                                            )
-                                                <a
-                                                    href="{{ $hasPremiumAccess
-                                                        ? route($item['route'])
-                                                        : route('billing.pricing') }}"
-                                                    x-on:click="
-                                                        analyticsOpen = false
-                                                    "
-                                                    @class([
-                                                        'flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition',
-
-                                                        'bg-blue-500/10 text-blue-300 ring-1 ring-blue-500/20' =>
-                                                            request()->routeIs(
-                                                                $item['route']
-                                                            ),
-
-                                                        'text-slate-300 hover:bg-slate-800 hover:text-white' =>
-                                                            ! request()->routeIs(
-                                                                $item['route']
-                                                            ),
-                                                    ])
-                                                >
-                                                    <div
-                                                        class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-800 text-slate-400"
-                                                    >
-                                                        <svg
-                                                            class="h-4 w-4"
-                                                            fill="none"
-                                                            viewBox="0 0 24 24"
-                                                            stroke="currentColor"
-                                                            stroke-width="1.9"
-                                                        >
-                                                            <path
-                                                                stroke-linecap="round"
-                                                                stroke-linejoin="round"
-                                                                d="M4.5 19.5v-6m5.25 6V9m5.25 10.5V5.25m5.25 14.25H3.75"
-                                                            />
-                                                        </svg>
-                                                    </div>
-
-                                                    <span class="min-w-0 flex-1 truncate">
-                                                        {{ $item['label'] }}
-                                                    </span>
-                                                </a>
-                                            @endforeach
-                                        </div>
-                                    </section>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- Right side --}}
-                    <div
-                        class="ml-5 flex h-20 items-center gap-4 border-l border-slate-800 pl-5"
-                    >
-                        {{-- Notifications --}}
-                        <a
-                            href="{{ route('notifications.index') }}"
-                            class="relative inline-flex h-11 w-11 items-center justify-center rounded-xl border border-slate-800 bg-slate-900 text-slate-400 transition hover:border-slate-700 hover:bg-slate-800 hover:text-white"
-                            aria-label="Notifications"
-                        >
-                            <svg
-                                class="h-6 w-6"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                stroke-width="1.8"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="M14.857 17.082A3.001 3.001 0 0 1 9.143 17.082M18 8.25a6 6 0 1 0-12 0c0 7.5-3 7.5-3 7.5h18s-3 0-3-7.5Z"
-                                />
-                            </svg>
-
-                            @if ($unreadNotificationCount > 0)
                                 <span
-                                    class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white"
+                                    @class([
+                                        'flex h-7 w-7 shrink-0 items-center justify-center rounded-lg transition',
+                                        'bg-blue-500/15 text-blue-300' => $itemActive,
+                                        'bg-slate-900/80 text-slate-500 group-hover:text-slate-300' => ! $itemActive,
+                                    ])
                                 >
-                                    {{ min(
-                                        $unreadNotificationCount,
-                                        99
-                                    ) }}
+                                    @switch($item['icon'])
+                                        @case('home')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="m3 11.25 9-7.5 9 7.5v8.25a.75.75 0 0 1-.75.75h-5.25v-6h-6v6H3.75A.75.75 0 0 1 3 19.5v-8.25Z"/></svg>
+                                            @break
+                                        @case('accounts')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5v10.5H3.75V6.75Zm3-3h10.5M7.5 10.5h4.5"/></svg>
+                                            @break
+                                        @case('lock')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V7.5a4.5 4.5 0 0 0-9 0v3m-.75 0h10.5A1.5 1.5 0 0 1 18.75 12v7.5A1.5 1.5 0 0 1 17.25 21H6.75a1.5 1.5 0 0 1-1.5-1.5V12a1.5 1.5 0 0 1 1.5-1.5Z"/></svg>
+                                            @break
+                                        @case('score')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M4.5 15.75a7.5 7.5 0 1 1 15 0M12 12l4-4M6.75 18h10.5"/></svg>
+                                            @break
+                                        @case('alert')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v4m0 4h.01M10.3 4.5 2.6 18a1 1 0 0 0 .87 1.5h17.06a1 1 0 0 0 .87-1.5L13.7 4.5a1 1 0 0 0-1.74 0Z"/></svg>
+                                            @break
+                                        @case('shield')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3 5.25 5.25v5.625c0 4.065 2.73 7.83 6.75 9.375 4.02-1.545 6.75-5.31 6.75-9.375V5.25L12 3Zm-2.25 9 1.5 1.5 3-3"/></svg>
+                                            @break
+                                        @case('sparkles')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.847-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 0 0-3.09 3.09L9 18.75Z"/></svg>
+                                            @break
+                                        @case('chat')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75h6.75m-6.75 3h4.5M21 12a8.25 8.25 0 0 1-8.25 8.25 8.4 8.4 0 0 1-3.58-.8L3 21l1.55-6.17A8.25 8.25 0 1 1 21 12Z"/></svg>
+                                            @break
+                                        @case('dollar')
+                                            <span class="text-sm font-semibold">$</span>
+                                            @break
+                                        @case('receipt')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M6 3.75h12v16.5l-3-1.5-3 1.5-3-1.5-3 1.5V3.75Zm3 4.5h6m-6 3h6m-6 3h3"/></svg>
+                                            @break
+                                        @case('trend')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="m4 16 5-5 4 3 7-8M15 6h5v5"/></svg>
+                                            @break
+                                        @case('pie')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v9h9A9 9 0 1 1 12 3Z"/></svg>
+                                            @break
+                                        @case('risk')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3 5.25 5.25v5.625c0 4.065 2.73 7.83 6.75 9.375 4.02-1.545 6.75-5.31 6.75-9.375V5.25L12 3Z"/></svg>
+                                            @break
+                                        @case('trade')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M7.5 7.5h12m0 0-3-3m3 3-3 3m0 6H4.5m0 0 3 3m-3-3 3-3"/></svg>
+                                            @break
+                                        @case('cash')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5v10.5H3.75V6.75Zm4.5 5.25h.008v.008H8.25V12Zm7.5 0h.008v.008h-.008V12ZM12 14.25a2.25 2.25 0 1 0 0-4.5 2.25 2.25 0 0 0 0 4.5Z"/></svg>
+                                            @break
+                                        @case('tax')
+                                            <span class="text-xs font-bold">%</span>
+                                            @break
+                                        @case('clock')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M12 6v6l4 2.25M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Z"/></svg>
+                                            @break
+                                        @case('calendar')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M8 3v3m8-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"/></svg>
+                                            @break
+                                    @endswitch
                                 </span>
-                            @endif
-                        </a>
 
-                        {{-- User dropdown --}}
-                        <x-dropdown
-                            align="right"
-                            width="56"
-                        >
-                            <x-slot name="trigger">
-                                <button
-                                    type="button"
-                                    class="inline-flex h-12 items-center gap-3 rounded-xl border border-slate-800 bg-slate-900 px-2.5 text-sm font-medium text-slate-300 transition hover:border-slate-700 hover:bg-slate-800 hover:text-white"
-                                >
-                                    <div
-                                        class="flex h-9 w-9 items-center justify-center rounded-full bg-blue-500/10 font-semibold text-blue-300 ring-1 ring-blue-500/20"
-                                    >
-                                        {{ strtoupper(
-                                            substr(
-                                                Auth::user()->name,
-                                                0,
-                                                1
-                                            )
-                                        ) }}
-                                    </div>
+                                <span class="min-w-0 flex-1 truncate">
+                                    {{ $item['label'] }}
+                                </span>
 
-                                    <span
-                                        class="hidden lg:inline"
-                                    >
-                                        {{ Auth::user()->name }}
-                                    </span>
-
-                                    <svg
-                                        class="hidden h-4 w-4 text-slate-500 lg:block"
-                                        viewBox="0 0 20 20"
-                                        fill="currentColor"
-                                    >
-                                        <path
-                                            fill-rule="evenodd"
-                                            d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z"
-                                            clip-rule="evenodd"
-                                        />
-                                    </svg>
-                                </button>
-                            </x-slot>
-
-                            <x-slot name="content">
-                                <div
-                                    class="border-b border-slate-200 px-4 py-3"
-                                >
-                                    <p
-                                        class="truncate text-sm font-semibold text-slate-900"
-                                    >
-                                        {{ Auth::user()->name }}
-                                    </p>
-
-                                    <p
-                                        class="mt-1 truncate text-xs text-slate-500"
-                                    >
-                                        {{ Auth::user()->email }}
-                                    </p>
-                                </div>
-
-                                <x-dropdown-link
-                                    :href="route('billing.index')"
-                                >
-                                    Billing
-                                </x-dropdown-link>
-
-                                <x-dropdown-link
-                                    :href="route('profile.edit')"
-                                >
-                                    Profile
-                                </x-dropdown-link>
-
-                                <form
-                                    method="POST"
-                                    action="{{ route('logout') }}"
-                                >
-                                    @csrf
-
-                                    <x-dropdown-link
-                                        :href="route('logout')"
-                                        onclick="
-                                            event.preventDefault();
-                                            this.closest('form').submit();
-                                        "
-                                    >
-                                        Log Out
-                                    </x-dropdown-link>
-                                </form>
-                            </x-slot>
-                        </x-dropdown>
+                                @if ($itemLocked)
+                                    <svg class="h-3.5 w-3.5 shrink-0 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V7.5a4.5 4.5 0 0 0-9 0v3"/></svg>
+                                @endif
+                            </a>
+                        @endforeach
                     </div>
+                </section>
+            @endforeach
+        </div>
+
+        {{-- Bottom utility area --}}
+        <div class="shrink-0 border-t border-slate-800/80 bg-slate-950 p-3">
+            <div class="mb-2 grid grid-cols-2 gap-2">
+                <a
+                    href="{{ route('notifications.index') }}"
+                    class="relative flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2.5 text-xs font-semibold text-slate-400 transition hover:border-slate-700 hover:bg-slate-900 hover:text-white"
+                >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082A3.001 3.001 0 0 1 9.143 17.082M18 8.25a6 6 0 1 0-12 0c0 7.5-3 7.5-3 7.5h18s-3 0-3-7.5Z"/></svg>
+                    <span>Alerts</span>
+                    @if ($unreadNotificationCount > 0)
+                        <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-slate-950">
+                            {{ min($unreadNotificationCount, 99) }}
+                        </span>
+                    @endif
+                </a>
+
+                <a
+                    href="{{ route('profile.edit') }}"
+                    class="flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2.5 text-xs font-semibold text-slate-400 transition hover:border-slate-700 hover:bg-slate-900 hover:text-white"
+                >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6.75a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0"/></svg>
+                    <span>Profile</span>
+                </a>
+            </div>
+
+            <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-2.5">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-500/10 text-sm font-bold text-blue-300 ring-1 ring-blue-500/20">
+                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                    </div>
+
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-semibold text-slate-200">
+                            {{ Auth::user()->name }}
+                        </p>
+                        <p class="truncate text-[10px] text-slate-500">
+                            {{ Auth::user()->email }}
+                        </p>
+                    </div>
+
+                    <x-dropdown align="right" width="48">
+                        <x-slot name="trigger">
+                            <button
+                                type="button"
+                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-800 hover:text-white"
+                                aria-label="Account menu"
+                            >
+                                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd"/></svg>
+                            </button>
+                        </x-slot>
+
+                        <x-slot name="content">
+                            <x-dropdown-link :href="route('billing.index')">
+                                Billing
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('investor-profile.edit')">
+                                Investor Profile
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('profile.edit')">
+                                Profile
+                            </x-dropdown-link>
+
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <x-dropdown-link
+                                    :href="route('logout')"
+                                    onclick="event.preventDefault(); this.closest('form').submit();"
+                                >
+                                    Log Out
+                                </x-dropdown-link>
+                            </form>
+                        </x-slot>
+                    </x-dropdown>
                 </div>
             </div>
         </div>
-    </div>
+    </aside>
 
+    {{-- Mobile/tablet navigation remains compact. --}}
+    <nav
+        class="relative z-40 w-full max-w-full overflow-x-clip border-b border-slate-800 bg-slate-950 lg:hidden"
+    >
     {{-- ============================================================= --}}
     {{-- MOBILE HEADER --}}
     {{-- ============================================================= --}}
 
     <div
-        class="w-full max-w-full overflow-hidden border-b border-slate-800 bg-slate-950 sm:hidden"
+        class="w-full max-w-full overflow-hidden border-b border-slate-800 bg-slate-950 lg:hidden"
     >
         <div
             class="flex h-16 min-w-0 items-center justify-between gap-3 px-4"
@@ -676,7 +470,7 @@
         x-cloak
         x-show="moreOpen"
         x-transition.opacity
-        class="fixed inset-0 z-[80] max-w-full overflow-x-hidden bg-black/60 sm:hidden"
+        class="fixed inset-0 z-[80] max-w-full overflow-x-hidden bg-black/60 lg:hidden"
         x-on:click.self="moreOpen = false"
     >
         <div
@@ -1042,7 +836,7 @@
     {{-- ============================================================= --}}
 
     <div
-        class="fixed inset-x-0 bottom-0 z-[100] w-full max-w-full border-t border-slate-800 bg-slate-950/95 pb-[env(safe-area-inset-bottom)] shadow-2xl backdrop-blur sm:hidden"
+        class="fixed inset-x-0 bottom-0 z-[100] w-full max-w-full border-t border-slate-800 bg-slate-950/95 pb-[env(safe-area-inset-bottom)] shadow-2xl backdrop-blur lg:hidden"
         style="transform: translateZ(0);"
     >
         <div
