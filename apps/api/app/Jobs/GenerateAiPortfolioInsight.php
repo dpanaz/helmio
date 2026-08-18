@@ -5,10 +5,10 @@ namespace App\Jobs;
 use App\Models\AiInsightRun;
 use App\Models\User;
 use App\Services\AI\AiPortfolioInsightService;
+use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Queue\Middleware\WithoutOverlapping;
-use Illuminate\Contracts\Queue\ShouldBeUnique;
 
 class GenerateAiPortfolioInsight implements
     ShouldQueue,
@@ -16,13 +16,8 @@ class GenerateAiPortfolioInsight implements
 {
     use Queueable;
 
-
     public int $uniqueFor = 300;
 
-    public function uniqueId(): string
-    {
-        return 'user-'.$this->userId;
-    }
     public int $tries = 3;
 
     public int $timeout = 300;
@@ -35,6 +30,11 @@ class GenerateAiPortfolioInsight implements
         $this->onQueue('ai-insights');
     }
 
+    public function uniqueId(): string
+    {
+        return 'user-'.$this->userId;
+    }
+
     /**
      * @return array<int, object>
      */
@@ -42,7 +42,7 @@ class GenerateAiPortfolioInsight implements
     {
         return [
             (new WithoutOverlapping(
-                'ai-insight-user-'.$this->userId
+                'ai-insight-user-'.$this->userId,
             ))
                 ->releaseAfter(60)
                 ->expireAfter(360),
@@ -53,7 +53,7 @@ class GenerateAiPortfolioInsight implements
         AiPortfolioInsightService $insightService,
     ): void {
         $user = User::query()->find(
-            $this->userId
+            $this->userId,
         );
 
         if ($user === null) {
@@ -61,26 +61,44 @@ class GenerateAiPortfolioInsight implements
         }
 
         $latestInsight = AiInsightRun::query()
-            ->where('user_id', $user->id)
+            ->where(
+                'user_id',
+                $user->id,
+            )
             ->latest('generated_at')
             ->first();
 
         /*
-         * Another request may already have generated a fresh insight
-         * while this delayed job was waiting.
+         * Manual requests should always generate a fresh insight.
+         *
+         * Automatic jobs can safely exit if another request already
+         * generated a current insight while this job was waiting.
          */
+        $forceGeneration = in_array(
+            $this->trigger,
+            [
+                'manual',
+                'manual_regenerate',
+            ],
+            true,
+        );
+
         if (
-            $latestInsight !== null
+            ! $forceGeneration
+            && $latestInsight !== null
             && ! $latestInsight->is_stale
         ) {
             return;
         }
 
         $insightService->generate(
-            $user
+            $user,
         );
     }
 
+    /**
+     * @return array<int, int>
+     */
     public function backoff(): array
     {
         return [

@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateAiPortfolioInsight;
 use App\Models\AiInsightRun;
-use App\Services\AI\AiPortfolioInsightService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -30,45 +30,45 @@ class AiPortfolioInsightController extends Controller
 
     public function generate(
         Request $request,
-        AiPortfolioInsightService $insightService,
     ): RedirectResponse {
-        $insight = $insightService->generate(
-            $request->user(),
+        GenerateAiPortfolioInsight::dispatch(
+            userId: $request->user()->id,
+            trigger: 'manual',
         );
 
         return redirect()
-            ->route('ai-insights.show', $insight)
+            ->route('ai-insights.index')
             ->with(
                 'success',
-                'Portfolio insight generated.',
+                'Your AI portfolio insight is being generated.',
             );
     }
 
     public function regenerate(
-    Request $request,
-    AiInsightRun $aiInsightRun,
-    AiPortfolioInsightService $insightService,
-): RedirectResponse {
-    abort_unless(
-        $aiInsightRun->user_id
-            === $request->user()->id,
-        403,
-    );
-
-    $newInsight = $insightService->generate(
-        $request->user()
-    );
-
-    return redirect()
-        ->route(
-            'ai-insights.show',
-            $newInsight
-        )
-        ->with(
-            'success',
-            'Portfolio insight regenerated using current data.'
+        Request $request,
+        AiInsightRun $aiInsightRun,
+    ): RedirectResponse {
+        abort_unless(
+            $aiInsightRun->user_id
+                === $request->user()->id,
+            403,
         );
-}
+
+        GenerateAiPortfolioInsight::dispatch(
+            userId: $request->user()->id,
+            trigger: 'manual_regenerate',
+        );
+
+        return redirect()
+            ->route(
+                'ai-insights.show',
+                $aiInsightRun,
+            )
+            ->with(
+                'success',
+                'Your updated AI portfolio insight is being generated.',
+            );
+    }
 
     public function show(
         Request $request,
