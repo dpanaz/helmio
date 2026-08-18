@@ -1,6 +1,7 @@
 @php
     $generationInProgress = request()->boolean('generating');
     $generationBaselineId = max(0, (int) request()->query('baseline_id', 0));
+    $currentLatestInsightId = (int) ($latestInsight?->id ?? 0);
 @endphp
 
 <x-app-layout>
@@ -681,6 +682,7 @@
     document.addEventListener('DOMContentLoaded', () => {
         const generationInProgress = @json($generationInProgress);
         const generationBaselineId = @json($generationBaselineId);
+        const currentLatestInsightId = @json($currentLatestInsightId);
         const statusUrl = @json(route('ai-insights.status'));
         const indexUrl = @json(route('ai-insights.index'));
 
@@ -720,6 +722,19 @@
         });
 
         if (!generationInProgress) {
+            return;
+        }
+
+        /*
+         * Recovery path:
+         * If this page was rendered after a newer insight already exists,
+         * the generation has finished even if the URL still contains
+         * ?generating=1&baseline_id=...
+         */
+        if (
+            currentLatestInsightId > generationBaselineId
+        ) {
+            window.location.replace(indexUrl);
             return;
         }
 
@@ -763,7 +778,14 @@
 
                 const data = await response.json();
 
-                if (data.finished && data.latest) {
+                const hasNewInsight =
+                    Boolean(data.latest)
+                    && Number(data.latest.id) > generationBaselineId;
+
+                if (
+                    (data.finished || hasNewInsight)
+                    && data.latest
+                ) {
                     if (data.latest.status === 'completed') {
                         setMessage(
                             'Your new insight is ready. Updating the page…'

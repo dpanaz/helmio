@@ -119,11 +119,21 @@ class AiPortfolioInsightController extends Controller
             ->orderByDesc('id')
             ->first();
 
-        $finished = $latestInsight !== null
-            && $latestInsight->id > $baselineId;
+        $latestId = (int) (
+            $latestInsight?->id
+            ?? 0
+        );
+
+        $finished = $latestId > $baselineId;
 
         return response()->json([
             'finished' => $finished,
+
+            'baseline_id' =>
+                $baselineId,
+
+            'latest_id' =>
+                $latestId,
 
             'latest' => $latestInsight
                 ? [
