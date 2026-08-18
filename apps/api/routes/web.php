@@ -939,6 +939,14 @@ Route::middleware([
     )->name('ai-insights.generate');
 
     Route::get(
+        '/ai-insights/status',
+        [
+            AiPortfolioInsightController::class,
+            'status',
+        ],
+    )->name('ai-insights.status');
+
+    Route::get(
         '/ai-insights/{aiInsightRun}',
         [
             AiPortfolioInsightController::class,
