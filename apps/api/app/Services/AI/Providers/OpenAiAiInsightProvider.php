@@ -70,7 +70,7 @@ class OpenAiAiInsightProvider implements
             'max_output_tokens' =>
                 (int) config(
                     'ai.openai.max_output_tokens',
-                    1200,
+                    3000,
                 ),
 
             'store' =>
@@ -130,20 +130,17 @@ class OpenAiAiInsightProvider implements
             );
         }
 
+        $this->assertCompleteResponse(
+            $responseData,
+        );
+
         $outputText = $this->extractOutputText(
             $responseData,
         );
 
-        $decoded = json_decode(
+        $decoded = $this->decodeStructuredOutput(
             $outputText,
-            true,
         );
-
-        if (! is_array($decoded)) {
-            throw new RuntimeException(
-                'OpenAI returned invalid structured JSON.',
-            );
-        }
 
         $result = $this->validateResult(
             $decoded,
@@ -370,6 +367,89 @@ TEXT;
                 'limitations',
             ],
         ];
+    }
+
+    /**
+     * @param array<string, mixed> $response
+     */
+    private function assertCompleteResponse(
+        array $response,
+    ): void {
+        $status = Arr::get(
+            $response,
+            'status',
+        );
+
+        if ($status !== 'incomplete') {
+            return;
+        }
+
+        $reason = (string) (
+            Arr::get(
+                $response,
+                'incomplete_details.reason',
+            )
+            ?? 'unknown'
+        );
+
+        if ($reason === 'max_output_tokens') {
+            throw new RuntimeException(
+                'OpenAI response was truncated because the output token limit was reached. Increase AI_OPENAI_MAX_OUTPUT_TOKENS.',
+            );
+        }
+
+        throw new RuntimeException(
+            'OpenAI returned an incomplete response. Reason: '.$reason,
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function decodeStructuredOutput(
+        string $outputText,
+    ): array {
+        $normalized = trim(
+            $outputText,
+        );
+
+        /*
+         * Strict Structured Outputs should already be raw JSON.
+         * This fallback tolerates an unexpected Markdown JSON fence
+         * without weakening the response validation.
+         */
+        if (
+            str_starts_with(
+                $normalized,
+                '```',
+            )
+        ) {
+            $normalized = preg_replace(
+                '/^```(?:json)?\s*|\s*```$/i',
+                '',
+                $normalized,
+            ) ?? $normalized;
+
+            $normalized = trim(
+                $normalized,
+            );
+        }
+
+        $decoded = json_decode(
+            $normalized,
+            true,
+        );
+
+        if (! is_array($decoded)) {
+            throw new RuntimeException(
+                sprintf(
+                    'OpenAI returned invalid structured JSON: %s',
+                    json_last_error_msg(),
+                ),
+            );
+        }
+
+        return $decoded;
     }
 
     /**
