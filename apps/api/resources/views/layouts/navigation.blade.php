@@ -194,6 +194,83 @@
             </a>
         </div>
 
+        {{-- Account / utility area --}}
+        <div class="shrink-0 border-b border-slate-800/80 bg-slate-950 p-3">
+            <div class="mb-2 grid grid-cols-2 gap-2">
+                <a
+                    href="{{ route('notifications.index') }}"
+                    class="relative flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2.5 text-xs font-semibold text-slate-400 transition hover:border-slate-700 hover:bg-slate-900 hover:text-white"
+                >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082A3.001 3.001 0 0 1 9.143 17.082M18 8.25a6 6 0 1 0-12 0c0 7.5-3 7.5-3 7.5h18s-3 0-3-7.5Z"/></svg>
+                    <span>Alerts</span>
+                    @if ($unreadNotificationCount > 0)
+                        <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-slate-950">
+                            {{ min($unreadNotificationCount, 99) }}
+                        </span>
+                    @endif
+                </a>
+
+                <a
+                    href="{{ route('profile.edit') }}"
+                    class="flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2.5 text-xs font-semibold text-slate-400 transition hover:border-slate-700 hover:bg-slate-900 hover:text-white"
+                >
+                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6.75a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0"/></svg>
+                    <span>Profile</span>
+                </a>
+            </div>
+
+            <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-2.5">
+                <div class="flex items-center gap-3">
+                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-500/10 text-sm font-bold text-blue-300 ring-1 ring-blue-500/20">
+                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
+                    </div>
+
+                    <div class="min-w-0 flex-1">
+                        <p class="truncate text-sm font-semibold text-slate-200">
+                            {{ Auth::user()->name }}
+                        </p>
+                        <p class="truncate text-[10px] text-slate-500">
+                            {{ Auth::user()->email }}
+                        </p>
+                    </div>
+
+                    <x-dropdown align="right" width="48">
+                        <x-slot name="trigger">
+                            <button
+                                type="button"
+                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-800 hover:text-white"
+                                aria-label="Account menu"
+                            >
+                                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd"/></svg>
+                            </button>
+                        </x-slot>
+
+                        <x-slot name="content">
+                            <x-dropdown-link :href="route('billing.index')">
+                                Billing
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('investor-profile.edit')">
+                                Investor Profile
+                            </x-dropdown-link>
+                            <x-dropdown-link :href="route('profile.edit')">
+                                Profile
+                            </x-dropdown-link>
+
+                            <form method="POST" action="{{ route('logout') }}">
+                                @csrf
+                                <x-dropdown-link
+                                    :href="route('logout')"
+                                    onclick="event.preventDefault(); this.closest('form').submit();"
+                                >
+                                    Log Out
+                                </x-dropdown-link>
+                            </form>
+                        </x-slot>
+                    </x-dropdown>
+                </div>
+            </div>
+        </div>
+
         {{-- Scrollable navigation --}}
         <div class="flex-1 overflow-y-auto px-3 py-5 [scrollbar-width:thin] [scrollbar-color:#334155_transparent]">
             @foreach ([
@@ -309,82 +386,6 @@
             @endforeach
         </div>
 
-        {{-- Bottom utility area --}}
-        <div class="shrink-0 border-t border-slate-800/80 bg-slate-950 p-3">
-            <div class="mb-2 grid grid-cols-2 gap-2">
-                <a
-                    href="{{ route('notifications.index') }}"
-                    class="relative flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2.5 text-xs font-semibold text-slate-400 transition hover:border-slate-700 hover:bg-slate-900 hover:text-white"
-                >
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082A3.001 3.001 0 0 1 9.143 17.082M18 8.25a6 6 0 1 0-12 0c0 7.5-3 7.5-3 7.5h18s-3 0-3-7.5Z"/></svg>
-                    <span>Alerts</span>
-                    @if ($unreadNotificationCount > 0)
-                        <span class="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white ring-2 ring-slate-950">
-                            {{ min($unreadNotificationCount, 99) }}
-                        </span>
-                    @endif
-                </a>
-
-                <a
-                    href="{{ route('profile.edit') }}"
-                    class="flex items-center justify-center gap-2 rounded-xl border border-slate-800 bg-slate-900/70 px-3 py-2.5 text-xs font-semibold text-slate-400 transition hover:border-slate-700 hover:bg-slate-900 hover:text-white"
-                >
-                    <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6.75a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.5 20.25a7.5 7.5 0 0 1 15 0"/></svg>
-                    <span>Profile</span>
-                </a>
-            </div>
-
-            <div class="rounded-2xl border border-slate-800 bg-slate-900/70 p-2.5">
-                <div class="flex items-center gap-3">
-                    <div class="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-500/10 text-sm font-bold text-blue-300 ring-1 ring-blue-500/20">
-                        {{ strtoupper(substr(Auth::user()->name, 0, 1)) }}
-                    </div>
-
-                    <div class="min-w-0 flex-1">
-                        <p class="truncate text-sm font-semibold text-slate-200">
-                            {{ Auth::user()->name }}
-                        </p>
-                        <p class="truncate text-[10px] text-slate-500">
-                            {{ Auth::user()->email }}
-                        </p>
-                    </div>
-
-                    <x-dropdown align="right" width="48">
-                        <x-slot name="trigger">
-                            <button
-                                type="button"
-                                class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-slate-500 transition hover:bg-slate-800 hover:text-white"
-                                aria-label="Account menu"
-                            >
-                                <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 0 1 1.06.02L10 11.17l3.71-3.94a.75.75 0 1 1 1.08 1.04l-4.25 4.5a.75.75 0 0 1-1.08 0l-4.25-4.5a.75.75 0 0 1 .02-1.06Z" clip-rule="evenodd"/></svg>
-                            </button>
-                        </x-slot>
-
-                        <x-slot name="content">
-                            <x-dropdown-link :href="route('billing.index')">
-                                Billing
-                            </x-dropdown-link>
-                            <x-dropdown-link :href="route('investor-profile.edit')">
-                                Investor Profile
-                            </x-dropdown-link>
-                            <x-dropdown-link :href="route('profile.edit')">
-                                Profile
-                            </x-dropdown-link>
-
-                            <form method="POST" action="{{ route('logout') }}">
-                                @csrf
-                                <x-dropdown-link
-                                    :href="route('logout')"
-                                    onclick="event.preventDefault(); this.closest('form').submit();"
-                                >
-                                    Log Out
-                                </x-dropdown-link>
-                            </form>
-                        </x-slot>
-                    </x-dropdown>
-                </div>
-            </div>
-        </div>
     </aside>
 
     {{-- Mobile/tablet navigation remains compact. --}}
