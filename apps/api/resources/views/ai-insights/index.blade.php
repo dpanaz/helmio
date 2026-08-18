@@ -1,3 +1,8 @@
+@php
+    $generationInProgress = request()->boolean('generating');
+    $generationBaselineId = max(0, (int) request()->query('baseline_id', 0));
+@endphp
+
 <x-app-layout>
     <x-slot name="header">
         <div
@@ -34,7 +39,8 @@
                 <button
                     type="submit"
                     data-ai-insight-button
-                    class="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:hover:bg-violet-600"
+                    @disabled($generationInProgress)
+                    class="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-violet-600"
                 >
                     <span
                         data-ai-insight-idle
@@ -83,7 +89,34 @@
         <div
             class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8"
         >
-            @if (session('success'))
+            @if ($generationInProgress)
+                <div
+                    data-ai-generation-banner
+                    class="rounded-2xl border border-violet-500/25 bg-violet-500/[0.08] px-5 py-4"
+                >
+                    <div class="flex items-start gap-3">
+                        <div class="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
+                            <svg class="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path>
+                            </svg>
+                        </div>
+
+                        <div>
+                            <p class="text-sm font-semibold text-violet-200">
+                                Generating your AI portfolio insight…
+                            </p>
+
+                            <p
+                                data-ai-generation-message
+                                class="mt-1 text-sm leading-6 text-slate-400"
+                            >
+                                Helmio is analyzing your current portfolio context. This page will update automatically when the insight is ready.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            @elseif (session('success'))
                 <div
                     class="rounded-2xl border border-emerald-500/20 bg-emerald-500/[0.07] px-5 py-4 text-sm font-medium text-emerald-300"
                 >
@@ -181,7 +214,17 @@
                                     Latest insight status
                                 </p>
 
-                                @if ($latestInsight)
+                                @if ($generationInProgress)
+                                    <p
+                                        class="mt-2 flex items-center gap-3 text-2xl font-semibold text-white"
+                                    >
+                                        <span class="relative flex h-3 w-3">
+                                            <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-violet-400 opacity-75"></span>
+                                            <span class="relative inline-flex h-3 w-3 rounded-full bg-violet-400"></span>
+                                        </span>
+                                        Generating…
+                                    </p>
+                                @elseif ($latestInsight)
                                     <p
                                         class="mt-2 text-2xl font-semibold text-white"
                                     >
@@ -218,6 +261,14 @@
                         </div>
 
                         @if ($latestInsight)
+                            @if ($generationInProgress)
+                                <p
+                                    class="mt-3 text-sm leading-6 text-violet-300"
+                                >
+                                    A new insight is in progress. The insight below is your previous result until generation finishes.
+                                </p>
+                            @endif
+
                             <p
                                 class="mt-3 text-sm text-slate-500"
                             >
@@ -371,7 +422,8 @@
                         <button
                             type="submit"
                             data-ai-insight-button
-                            class="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:hover:bg-violet-600"
+                            @disabled($generationInProgress)
+                            class="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-violet-600"
                         >
                             <span data-ai-insight-idle>
                                 Generate first insight
@@ -524,7 +576,8 @@
                                                 <button
                                                     type="submit"
                                                     data-ai-insight-button
-                                                    class="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-300 disabled:hover:bg-amber-400"
+                                                    @disabled($generationInProgress)
+                                                    class="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 transition hover:bg-amber-300 disabled:cursor-not-allowed disabled:opacity-70 disabled:hover:bg-amber-400"
                                                 >
                                                     <span data-ai-insight-idle>
                                                         Regenerate
@@ -626,27 +679,158 @@
 
 <script>
     document.addEventListener('DOMContentLoaded', () => {
+        const generationInProgress = @json($generationInProgress);
+        const generationBaselineId = @json($generationBaselineId);
+        const statusUrl = @json(route('ai-insights.status'));
+        const indexUrl = @json(route('ai-insights.index'));
+
+        const setFormLoading = (form) => {
+            const button = form.querySelector('[data-ai-insight-button]');
+            const idle = form.querySelector('[data-ai-insight-idle]');
+            const loading = form.querySelector('[data-ai-insight-loading]');
+            const status = form.querySelector('[data-ai-insight-status]');
+
+            if (!button) {
+                return;
+            }
+
+            button.disabled = true;
+            button.setAttribute('aria-busy', 'true');
+            button.classList.add('cursor-not-allowed', 'opacity-70');
+
+            idle?.classList.add('hidden');
+            loading?.classList.remove('hidden');
+            loading?.classList.add('inline-flex');
+            status?.classList.remove('hidden');
+        };
+
         document.querySelectorAll('[data-ai-insight-form]').forEach((form) => {
             form.addEventListener('submit', () => {
-                const button = form.querySelector('[data-ai-insight-button]');
-                const idle = form.querySelector('[data-ai-insight-idle]');
-                const loading = form.querySelector('[data-ai-insight-loading]');
-                const status = form.querySelector('[data-ai-insight-status]');
+                setFormLoading(form);
+            });
 
-                if (!button || button.disabled) {
+            if (generationInProgress) {
+                const button = form.querySelector('[data-ai-insight-button]');
+
+                if (button) {
+                    button.disabled = true;
+                    button.classList.add('cursor-not-allowed', 'opacity-70');
+                }
+            }
+        });
+
+        if (!generationInProgress) {
+            return;
+        }
+
+        const bannerMessage = document.querySelector(
+            '[data-ai-generation-message]'
+        );
+
+        const startedAt = Date.now();
+        const pollEveryMs = 3000;
+        const maxMonitorMs = 6 * 60 * 1000;
+
+        const setMessage = (message) => {
+            if (bannerMessage) {
+                bannerMessage.textContent = message;
+            }
+        };
+
+        const poll = async () => {
+            try {
+                const url = new URL(statusUrl, window.location.origin);
+                url.searchParams.set(
+                    'baseline_id',
+                    String(generationBaselineId)
+                );
+
+                const response = await fetch(url.toString(), {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    credentials: 'same-origin',
+                    cache: 'no-store',
+                });
+
+                if (!response.ok) {
+                    throw new Error(
+                        `Status request failed with ${response.status}`
+                    );
+                }
+
+                const data = await response.json();
+
+                if (data.finished && data.latest) {
+                    if (data.latest.status === 'completed') {
+                        setMessage(
+                            'Your new insight is ready. Updating the page…'
+                        );
+                    } else if (data.latest.status === 'failed') {
+                        setMessage(
+                            'Insight generation finished with an error. Updating the page…'
+                        );
+                    } else if (data.latest.status === 'blocked') {
+                        setMessage(
+                            'Insight generation was blocked. Updating the page…'
+                        );
+                    } else {
+                        setMessage(
+                            'Insight generation finished. Updating the page…'
+                        );
+                    }
+
+                    window.setTimeout(() => {
+                        window.location.replace(indexUrl);
+                    }, 500);
+
                     return;
                 }
 
-                button.disabled = true;
-                button.setAttribute('aria-busy', 'true');
-                button.classList.add('cursor-not-allowed', 'opacity-70');
+                const elapsedSeconds = Math.floor(
+                    (Date.now() - startedAt) / 1000
+                );
 
-                idle?.classList.add('hidden');
-                loading?.classList.remove('hidden');
-                loading?.classList.add('inline-flex');
-                status?.classList.remove('hidden');
-            });
-        });
+                if (elapsedSeconds >= 20) {
+                    setMessage(
+                        `Still working… ${elapsedSeconds}s elapsed. You can leave this page and return later; generation will continue in the background.`
+                    );
+                }
+
+                if (Date.now() - startedAt >= maxMonitorMs) {
+                    setMessage(
+                        'Generation is taking longer than expected, but it may still be running in the background. Refresh this page in a few minutes to check the result.'
+                    );
+
+                    return;
+                }
+
+                window.setTimeout(poll, pollEveryMs);
+            } catch (error) {
+                console.error(
+                    'Unable to check AI insight generation status.',
+                    error
+                );
+
+                if (Date.now() - startedAt >= maxMonitorMs) {
+                    setMessage(
+                        'Helmio could not confirm the current generation status. The job may still be running in the background.'
+                    );
+
+                    return;
+                }
+
+                setMessage(
+                    'Your insight is still being generated. Helmio will keep checking automatically.'
+                );
+
+                window.setTimeout(poll, pollEveryMs);
+            }
+        };
+
+        window.setTimeout(poll, 1200);
     });
 </script>
 

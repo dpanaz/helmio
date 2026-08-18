@@ -38,6 +38,7 @@ use App\Http\Controllers\Onboarding\PortfolioRevealController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Onboarding\TopFindingsRevealController;
 use App\Http\Controllers\Onboarding\ExecutiveSummaryRevealController;
+use App\Http\Controllers\MarketingPageController;
 
 /*
 |--------------------------------------------------------------------------
@@ -45,6 +46,50 @@ use App\Http\Controllers\Onboarding\ExecutiveSummaryRevealController;
 |--------------------------------------------------------------------------
 */
 
+Route::get(
+    '/check-my-financial-advisor',
+    [MarketingPageController::class, 'advisorCheck']
+)->name('marketing.advisor-check');
+
+Route::get(
+    '/financial-advisor-fees',
+    [MarketingPageController::class, 'advisorFees']
+)->name('marketing.advisor-fees');
+
+Route::get(
+    '/financial-advisor-performance',
+    [MarketingPageController::class, 'advisorPerformance']
+)->name('marketing.advisor-performance');
+
+Route::get(
+    '/portfolio-churning',
+    [MarketingPageController::class, 'portfolioChurning']
+)->name('marketing.portfolio-churning');
+
+Route::get(
+    '/portfolio-diversification',
+    [MarketingPageController::class, 'portfolioDiversification']
+)->name('marketing.portfolio-diversification');
+
+Route::get(
+    '/portfolio-risk',
+    [MarketingPageController::class, 'portfolioRisk']
+)->name('marketing.portfolio-risk');
+
+Route::get(
+    '/investment-tax-efficiency',
+    [MarketingPageController::class, 'taxEfficiency']
+)->name('marketing.tax-efficiency');
+
+Route::get(
+    '/how-it-works',
+    [MarketingPageController::class, 'howItWorks']
+)->name('marketing.how-it-works');
+
+Route::get(
+    '/security',
+    [MarketingPageController::class, 'security']
+)->name('marketing.security');
 Route::view(
     '/contact',
     'legal.contact',
