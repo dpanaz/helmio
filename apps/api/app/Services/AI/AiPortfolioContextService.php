@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\Analytics\HelmScoreService;
 use App\Services\Audit\AdvisorAuditService;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 class AiPortfolioContextService
 {
@@ -50,7 +51,26 @@ class AiPortfolioContextService
             $accounts,
         );
 
+        /*
+         * Force the optimized composite index here.
+         *
+         * MySQL was selecting the older
+         * audit_runs_user_id_calculated_for_date_formula_version_unique
+         * index and performing a filesort, which could exhaust the
+         * production sort buffer.
+         *
+         * audit_runs_user_date_id_index matches:
+         *
+         * WHERE user_id = ?
+         * ORDER BY calculated_for_date DESC, id DESC
+         * LIMIT 1
+         */
         $latestAuditRun = AuditRun::query()
+            ->from(
+                DB::raw(
+                    'audit_runs FORCE INDEX (audit_runs_user_date_id_index)'
+                )
+            )
             ->where('user_id', $user->id)
             ->with('findings')
             ->orderByDesc('calculated_for_date')
@@ -58,6 +78,11 @@ class AiPortfolioContextService
             ->first();
 
         $previousAuditRun = AuditRun::query()
+            ->from(
+                DB::raw(
+                    'audit_runs FORCE INDEX (audit_runs_user_date_id_index)'
+                )
+            )
             ->where('user_id', $user->id)
             ->when(
                 $latestAuditRun !== null,
