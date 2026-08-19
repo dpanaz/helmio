@@ -2,6 +2,8 @@
 
 namespace App\Services\Timeline;
 
+use Illuminate\Support\Facades\DB;
+
 use App\Enums\TimelineEventType;
 use App\Models\AuditRun;
 use App\Models\TimelineEvent;
@@ -18,6 +20,11 @@ class TimelineComparisonService
     public function compare(User $user): Collection
     {
         $runs = AuditRun::query()
+            ->from(
+                DB::raw(
+                    'audit_runs FORCE INDEX (audit_runs_user_date_id_index)'
+                )
+            )
             ->where('user_id', $user->id)
             ->orderBy('calculated_for_date')
             ->orderBy('id')
