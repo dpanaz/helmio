@@ -1,6 +1,6 @@
 <x-app-layout>
     <x-slot name="header">
-        <div class="flex flex-wrap items-center justify-between gap-4">
+        <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
             <div>
                 <p class="text-xs font-semibold uppercase tracking-[0.16em] text-violet-400">
                     Portfolio assistant
@@ -18,7 +18,7 @@
 
             <a
                 href="{{ route('ask-helmio.create') }}"
-                class="inline-flex items-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500"
+                class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-violet-500 sm:w-auto"
             >
                 <svg
                     class="h-5 w-5"
@@ -96,8 +96,8 @@
         };
     @endphp
 
-    <div class="bg-slate-950 py-8">
-        <div class="mx-auto max-w-[96rem] px-4 sm:px-6 lg:px-8">
+    <div class="min-h-screen bg-slate-950 py-3 sm:py-6 lg:py-8">
+        <div class="mx-auto max-w-[96rem] px-2 sm:px-4 md:px-6 lg:px-8">
 
             @if (session('success'))
                 <div
@@ -108,12 +108,12 @@
             @endif
 
             <div
-                class="grid min-h-[calc(100vh-12rem)] overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-xl lg:grid-cols-[17rem_minmax(0,1fr)]"
+                class="grid overflow-hidden border-y border-slate-800 bg-slate-900 shadow-xl sm:rounded-2xl sm:border lg:min-h-[calc(100vh-12rem)] lg:grid-cols-[17rem_minmax(0,1fr)]"
             >
                 <aside
                     class="border-b border-slate-800 bg-slate-950/80 lg:border-b-0 lg:border-r"
                 >
-                    <div class="border-b border-slate-800 p-4">
+                    <div class="hidden border-b border-slate-800 p-4 lg:block">
                         <a
                             href="{{ route('ask-helmio.create') }}"
                             class="flex w-full items-center justify-center gap-2 rounded-xl bg-violet-600 px-4 py-3 text-sm font-semibold text-white transition hover:bg-violet-500"
@@ -137,15 +137,15 @@
                     </div>
 
                     <div
-                        class="max-h-72 overflow-y-auto p-3 lg:max-h-[calc(100vh-18rem)]"
+                        class="overflow-x-auto p-2.5 lg:max-h-[calc(100vh-18rem)] lg:overflow-y-auto lg:overflow-x-hidden lg:p-3"
                     >
                         <p
-                            class="px-3 pb-2 text-xs font-semibold uppercase tracking-[0.14em] text-slate-600"
+                            class="px-2 pb-2 text-[10px] font-semibold uppercase tracking-[0.14em] text-slate-600 lg:px-3 lg:text-xs"
                         >
                             Conversations
                         </p>
 
-                        <div class="space-y-1">
+                        <div class="flex min-w-max gap-2 lg:block lg:min-w-0 lg:space-y-1">
                             @forelse ($conversations as $item)
                                 <a
                                     href="{{ route(
@@ -153,7 +153,7 @@
                                         $item
                                     ) }}"
                                     @class([
-                                        'block rounded-lg px-3 py-2.5 transition',
+                                        'block w-[13rem] shrink-0 rounded-lg px-3 py-2.5 transition lg:w-auto',
 
                                         'border border-violet-500/20 bg-violet-500/[0.08]' =>
                                             $conversation?->id === $item->id,
@@ -199,7 +199,7 @@
                     class="flex min-w-0 flex-col bg-slate-900"
                 >
                     <div
-                        class="flex items-center justify-between gap-4 border-b border-slate-800 bg-slate-900/95 px-5 py-4 sm:px-7"
+                        class="flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/95 px-3 py-3 sm:px-5 sm:py-4 lg:px-7"
                     >
                         <div class="min-w-0">
                             <p class="truncate font-semibold text-white">
@@ -225,7 +225,7 @@
 
                                 <button
                                     type="submit"
-                                    class="rounded-xl border border-slate-700 bg-slate-950 px-3 py-2 text-xs font-semibold text-slate-400 transition hover:border-slate-600 hover:text-white"
+                                    class="shrink-0 rounded-lg border border-slate-700 bg-slate-950 px-2.5 py-2 text-[11px] font-semibold text-slate-400 transition hover:border-slate-600 hover:text-white sm:rounded-xl sm:px-3 sm:text-xs"
                                 >
                                     Archive
                                 </button>
@@ -235,7 +235,7 @@
 
                     <div
                         id="ask-helmio-messages"
-                        class="flex-1 overflow-y-auto px-5 py-8 sm:px-8"
+                        class="min-h-[52vh] flex-1 overflow-y-auto px-3 py-5 sm:min-h-0 sm:px-6 sm:py-7 lg:px-8"
                     >
                         @if ($generationInProgress && $conversation)
                             <div
@@ -260,8 +260,8 @@
                             $conversation === null
                             || $conversation->messages->isEmpty()
                         )
-                            <div class="mx-auto flex min-h-[32rem] max-w-4xl flex-col justify-center">
-                                <div class="mx-auto max-w-2xl text-center">
+                            <div class="mx-auto flex min-h-[48vh] max-w-4xl flex-col justify-center py-4 sm:min-h-[32rem] sm:py-0">
+                                <div class="mx-auto max-w-2xl px-2 text-center">
                                     <div
                                         class="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl border border-violet-500/20 bg-violet-500/10 text-violet-300"
                                     >
@@ -280,7 +280,7 @@
                                         </svg>
                                     </div>
 
-                                    <h3 class="mt-5 text-2xl font-semibold tracking-tight text-white">
+                                    <h3 class="mt-4 text-xl font-semibold tracking-tight text-white sm:mt-5 sm:text-2xl">
                                         What would you like to understand?
                                     </h3>
 
@@ -295,7 +295,7 @@
                                         Try asking
                                     </p>
 
-                                    <div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                                    <div class="grid gap-2.5 sm:grid-cols-2 lg:grid-cols-3">
                                         @foreach ($suggestedQuestions as $suggestion)
                                             <form
                                                 method="POST"
@@ -319,7 +319,7 @@
 
                                                 <button
                                                     type="submit"
-                                                    class="group flex h-full min-h-[6.5rem] w-full flex-col justify-between rounded-xl border border-slate-800 bg-slate-950/70 p-4 text-left transition hover:border-violet-500/35 hover:bg-violet-500/[0.04]"
+                                                    class="group flex h-full min-h-[5.25rem] w-full flex-col justify-between rounded-xl border border-slate-800 bg-slate-950/70 p-3.5 text-left transition hover:border-violet-500/35 hover:bg-violet-500/[0.04] sm:min-h-[6.5rem] sm:p-4"
                                                 >
                                                     <span class="text-sm font-medium leading-5 text-slate-300 group-hover:text-white">
                                                         {{ $suggestion }}
@@ -356,13 +356,13 @@
                             </div>
                             </div>
                         @else
-                            <div class="mx-auto max-w-5xl space-y-7">
+                            <div class="mx-auto max-w-5xl space-y-5 sm:space-y-7">
                                 @foreach ($conversation->messages as $message)
 
                                     @if ($message->role === 'user')
                                         <div class="flex justify-end">
                                             <div
-                                                class="max-w-2xl rounded-2xl rounded-br-md bg-blue-600 px-4 py-3 text-sm leading-6 text-white shadow-sm"
+                                                class="max-w-[88%] rounded-2xl rounded-br-md bg-blue-600 px-3.5 py-2.5 text-sm leading-6 text-white shadow-sm sm:max-w-2xl sm:px-4 sm:py-3"
                                             >
                                                 {{ $message->content }}
                                             </div>
@@ -387,9 +387,9 @@
                                             };
                                         @endphp
 
-                                        <div class="flex items-start gap-3">
+                                        <div class="flex items-start gap-2.5 sm:gap-3">
                                             <div
-                                                class="mt-1 flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-violet-500/20 bg-violet-500/10 text-violet-300"
+                                                class="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-500/10 text-violet-300 sm:h-9 sm:w-9 sm:rounded-xl"
                                             >
                                                 <svg
                                                     class="h-5 w-5"
@@ -406,7 +406,7 @@
                                                 </svg>
                                             </div>
 
-                                            <div class="min-w-0 flex-1 rounded-2xl border border-slate-800 bg-slate-950/45 p-5">
+                                            <div class="min-w-0 flex-1 rounded-2xl border border-slate-800 bg-slate-950/45 p-3.5 sm:p-5">
                                                 <div class="flex flex-wrap items-center gap-3">
                                                     <p class="font-semibold text-white">
                                                         Helmio
@@ -431,14 +431,14 @@
                                                 </div>
 
                                                 <div
-                                                    class="mt-3 whitespace-pre-line text-sm leading-7 text-slate-300"
+                                                    class="mt-3 whitespace-pre-line break-words text-sm leading-6 text-slate-300 sm:leading-7"
                                                 >
                                                     {{ $message->content }}
                                                 </div>
 
                                                 @if (! empty($message->citations))
                                                     <div
-                                                        class="mt-5 rounded-xl border border-slate-800 bg-slate-950/80 p-4"
+                                                        class="mt-4 rounded-xl border border-slate-800 bg-slate-950/80 p-3 sm:mt-5 sm:p-4"
                                                     >
                                                         <p
                                                             class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-600"
@@ -446,7 +446,7 @@
                                                             Supporting Helmio records
                                                         </p>
 
-                                                        <div class="mt-3 flex flex-wrap gap-2">
+                                                        <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
                                                             @foreach ($message->citations as $citation)
                                                                 @php
                                                                     $url = $citationUrl(
@@ -457,7 +457,7 @@
                                                                 @if ($url)
                                                                     <a
                                                                         href="{{ $url }}"
-                                                                        class="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-blue-400 transition hover:border-blue-500 hover:text-blue-300"
+                                                                        class="inline-flex w-full items-center justify-between gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-blue-400 transition hover:border-blue-500 hover:text-blue-300 sm:w-auto sm:justify-start"
                                                                     >
                                                                         {{ $citation['label']
                                                                             ?? 'Supporting record' }}
@@ -508,7 +508,7 @@
                     </div>
 
                     <div
-                        class="sticky bottom-0 border-t border-slate-800 bg-slate-950/95 p-4 backdrop-blur sm:p-5"
+                        class="sticky bottom-0 z-20 border-t border-slate-800 bg-slate-950/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur sm:p-5"
                     >
                         <form
                             method="POST"
@@ -526,7 +526,7 @@
                             @endif
 
                             <div
-                                class="flex items-end gap-3 rounded-xl border border-slate-700 bg-slate-900 p-2.5 shadow-lg focus-within:border-violet-500 focus-within:ring-2 focus-within:ring-violet-500/10"
+                                class="flex items-end gap-2 rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-lg focus-within:border-violet-500 focus-within:ring-2 focus-within:ring-violet-500/10 sm:gap-3 sm:p-2.5"
                             >
                                 <textarea
                                     name="question"
@@ -534,12 +534,12 @@
                                     maxlength="2000"
                                     required
                                     placeholder="Ask Helmio about your portfolio..."
-                                    class="max-h-40 min-h-11 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm leading-6 text-white placeholder-slate-600 shadow-none focus:ring-0"
+                                    class="max-h-32 min-h-10 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 text-[16px] leading-6 text-white placeholder-slate-600 shadow-none focus:ring-0 sm:max-h-40 sm:min-h-11 sm:py-2 sm:text-sm"
                                 >{{ old('question') }}</textarea>
 
                                 <button
                                     type="submit"
-                                    class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white transition hover:bg-violet-500"
+                                    class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-white transition hover:bg-violet-500 sm:h-11 sm:w-11 sm:rounded-xl"
                                     aria-label="Send question"
                                 >
                                     <svg
@@ -565,7 +565,7 @@
                             @enderror
 
                             <p
-                                class="mt-3 text-center text-xs leading-5 text-slate-600"
+                                class="mt-2 hidden text-center text-xs leading-5 text-slate-600 sm:block"
                             >
                                 Answers are grounded in your stored Helmio data and are for portfolio oversight,
                                 not trade execution.
@@ -576,6 +576,24 @@
             </div>
         </div>
     </div>
+
+
+    <style>
+        #ask-helmio-messages {
+            -webkit-overflow-scrolling: touch;
+            overscroll-behavior: contain;
+        }
+
+        @media (max-width: 1023px) {
+            aside .overflow-x-auto {
+                scrollbar-width: none;
+            }
+
+            aside .overflow-x-auto::-webkit-scrollbar {
+                display: none;
+            }
+        }
+    </style>
 
     <script>
         document.addEventListener(
