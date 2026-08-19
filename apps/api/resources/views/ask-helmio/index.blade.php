@@ -96,8 +96,8 @@
         };
     @endphp
 
-    <div class="min-h-screen bg-slate-950 py-3 sm:py-6 lg:py-8">
-        <div class="mx-auto max-w-[96rem] px-2 sm:px-4 md:px-6 lg:px-8">
+    <div id="ask-helmio-page" class="min-h-screen overflow-x-hidden bg-slate-950 py-0 sm:py-6 lg:py-8">
+        <div class="mx-auto w-full max-w-[96rem] px-0 sm:px-4 md:px-6 lg:px-8">
 
             @if (session('success'))
                 <div
@@ -108,7 +108,7 @@
             @endif
 
             <div
-                class="grid overflow-hidden border-y border-slate-800 bg-slate-900 shadow-xl sm:rounded-2xl sm:border lg:min-h-[calc(100vh-12rem)] lg:grid-cols-[17rem_minmax(0,1fr)]"
+                class="grid w-full min-w-0 overflow-hidden bg-slate-900 sm:rounded-2xl sm:border sm:border-slate-800 sm:shadow-xl lg:min-h-[calc(100vh-12rem)] lg:grid-cols-[17rem_minmax(0,1fr)]"
             >
                 <aside
                     class="border-b border-slate-800 bg-slate-950/80 lg:border-b-0 lg:border-r"
@@ -199,7 +199,7 @@
                     class="flex min-w-0 flex-col bg-slate-900"
                 >
                     <div
-                        class="flex items-center justify-between gap-3 border-b border-slate-800 bg-slate-900/95 px-3 py-3 sm:px-5 sm:py-4 lg:px-7"
+                        class="flex min-w-0 items-center justify-between gap-2 border-b border-slate-800 bg-slate-900/95 px-3 py-2.5 sm:px-5 sm:py-4 lg:px-7"
                     >
                         <div class="min-w-0">
                             <p class="truncate font-semibold text-white">
@@ -235,7 +235,7 @@
 
                     <div
                         id="ask-helmio-messages"
-                        class="min-h-[52vh] flex-1 overflow-y-auto px-3 py-5 sm:min-h-0 sm:px-6 sm:py-7 lg:px-8"
+                        class="min-h-[58vh] min-w-0 flex-1 overflow-x-hidden overflow-y-auto px-2.5 py-4 sm:min-h-0 sm:px-6 sm:py-7 lg:px-8"
                     >
                         @if ($generationInProgress && $conversation)
                             <div
@@ -362,7 +362,7 @@
                                     @if ($message->role === 'user')
                                         <div class="flex justify-end">
                                             <div
-                                                class="max-w-[88%] rounded-2xl rounded-br-md bg-blue-600 px-3.5 py-2.5 text-sm leading-6 text-white shadow-sm sm:max-w-2xl sm:px-4 sm:py-3"
+                                                class="max-w-[92%] break-words [overflow-wrap:anywhere] rounded-2xl rounded-br-md bg-blue-600 px-3.5 py-2.5 text-sm leading-6 text-white shadow-sm sm:max-w-2xl sm:px-4 sm:py-3"
                                             >
                                                 {{ $message->content }}
                                             </div>
@@ -387,9 +387,9 @@
                                             };
                                         @endphp
 
-                                        <div class="flex items-start gap-2.5 sm:gap-3">
+                                        <div class="flex min-w-0 flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
                                             <div
-                                                class="mt-1 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-500/10 text-violet-300 sm:h-9 sm:w-9 sm:rounded-xl"
+                                                class="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg border border-violet-500/20 bg-violet-500/10 text-violet-300 sm:mt-1 sm:h-9 sm:w-9 sm:rounded-xl"
                                             >
                                                 <svg
                                                     class="h-5 w-5"
@@ -406,8 +406,8 @@
                                                 </svg>
                                             </div>
 
-                                            <div class="min-w-0 flex-1 rounded-2xl border border-slate-800 bg-slate-950/45 p-3.5 sm:p-5">
-                                                <div class="flex flex-wrap items-center gap-3">
+                                            <div class="w-full min-w-0 max-w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-950/45 p-3 sm:flex-1 sm:rounded-2xl sm:p-5">
+                                                <div class="flex min-w-0 flex-wrap items-center gap-2 sm:gap-3">
                                                     <p class="font-semibold text-white">
                                                         Helmio
                                                     </p>
@@ -431,14 +431,14 @@
                                                 </div>
 
                                                 <div
-                                                    class="mt-3 whitespace-pre-line break-words text-sm leading-6 text-slate-300 sm:leading-7"
+                                                    class="mt-3 max-w-full whitespace-pre-line break-words [overflow-wrap:anywhere] text-sm leading-6 text-slate-300 sm:leading-7"
                                                 >
                                                     {{ $message->content }}
                                                 </div>
 
                                                 @if (! empty($message->citations))
                                                     <div
-                                                        class="mt-4 rounded-xl border border-slate-800 bg-slate-950/80 p-3 sm:mt-5 sm:p-4"
+                                                        class="mt-4 min-w-0 max-w-full overflow-hidden rounded-xl border border-slate-800 bg-slate-950/80 p-2.5 sm:mt-5 sm:p-4"
                                                     >
                                                         <p
                                                             class="text-xs font-semibold uppercase tracking-[0.12em] text-slate-600"
@@ -446,7 +446,7 @@
                                                             Supporting Helmio records
                                                         </p>
 
-                                                        <div class="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+                                                        <div class="mt-3 grid min-w-0 grid-cols-1 gap-2 sm:flex sm:flex-wrap">
                                                             @foreach ($message->citations as $citation)
                                                                 @php
                                                                     $url = $citationUrl(
@@ -457,14 +457,14 @@
                                                                 @if ($url)
                                                                     <a
                                                                         href="{{ $url }}"
-                                                                        class="inline-flex w-full items-center justify-between gap-2 rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-blue-400 transition hover:border-blue-500 hover:text-blue-300 sm:w-auto sm:justify-start"
+                                                                        class="flex w-full min-w-0 items-center rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-left text-xs font-semibold leading-5 text-blue-400 transition hover:border-blue-500 hover:text-blue-300 sm:w-auto sm:rounded-xl"
                                                                     >
                                                                         {{ $citation['label']
                                                                             ?? 'Supporting record' }}
                                                                     </a>
                                                                 @else
                                                                     <span
-                                                                        class="rounded-xl border border-slate-700 bg-slate-900 px-3 py-2 text-xs font-semibold text-slate-400"
+                                                                        class="block w-full min-w-0 break-words rounded-lg border border-slate-700 bg-slate-900 px-3 py-2.5 text-xs font-semibold leading-5 text-slate-400 sm:w-auto sm:rounded-xl"
                                                                     >
                                                                         {{ $citation['label']
                                                                             ?? 'Supporting record' }}
@@ -508,7 +508,7 @@
                     </div>
 
                     <div
-                        class="sticky bottom-0 z-20 border-t border-slate-800 bg-slate-950/95 px-3 pb-[calc(env(safe-area-inset-bottom)+0.75rem)] pt-3 backdrop-blur sm:p-5"
+                        id="ask-helmio-composer" class="sticky z-30 border-t border-slate-800 bg-slate-950/95 px-2.5 pb-2.5 pt-2.5 backdrop-blur sm:bottom-0 sm:p-5"
                     >
                         <form
                             method="POST"
@@ -579,14 +579,72 @@
 
 
     <style>
+        #ask-helmio-page,
+        #ask-helmio-page * {
+            box-sizing: border-box;
+        }
+
         #ask-helmio-messages {
             -webkit-overflow-scrolling: touch;
             overscroll-behavior: contain;
         }
 
+        #ask-helmio-messages a,
+        #ask-helmio-messages span,
+        #ask-helmio-messages p,
+        #ask-helmio-messages div {
+            max-width: 100%;
+        }
+
+        @media (max-width: 639px) {
+            html,
+            body {
+                overflow-x: hidden;
+            }
+
+            #ask-helmio-page {
+                width: 100%;
+                max-width: 100vw;
+                overflow-x: hidden;
+            }
+
+            /*
+             * Helmio's persistent mobile nav occupies the bottom of the
+             * viewport. Keep the Ask Helmio composer above it.
+             */
+            #ask-helmio-composer {
+                bottom: calc(3.65rem + env(safe-area-inset-bottom));
+            }
+
+            /*
+             * When the PWA install card is visible we mark it with
+             * data-helmio-install-prompt from the script below and place it
+             * above the mobile nav. This fixes the card being hidden behind
+             * Home / Accounts / Audit / AI / More.
+             */
+            [data-helmio-install-prompt="true"] {
+                position: fixed !important;
+                left: 0.75rem !important;
+                right: 0.75rem !important;
+                bottom: calc(4.35rem + env(safe-area-inset-bottom)) !important;
+                width: auto !important;
+                max-width: none !important;
+                max-height: min(13rem, 38vh) !important;
+                overflow-y: auto !important;
+                z-index: 80 !important;
+                margin: 0 !important;
+            }
+
+            body.helmio-install-prompt-visible #ask-helmio-composer {
+                bottom: calc(3.65rem + env(safe-area-inset-bottom));
+                padding-bottom: 0.65rem;
+            }
+        }
+
         @media (max-width: 1023px) {
             aside .overflow-x-auto {
                 scrollbar-width: none;
+                -webkit-overflow-scrolling: touch;
             }
 
             aside .overflow-x-auto::-webkit-scrollbar {
@@ -688,6 +746,102 @@
                     container.scrollTop =
                         container.scrollHeight;
                 }
+
+
+                /*
+                 * The PWA install prompt is rendered by the application
+                 * layout rather than this Blade. Detect it by its visible
+                 * heading so the Ask Helmio mobile screen can keep it above
+                 * the persistent bottom navigation without depending on the
+                 * component's internal selector.
+                 */
+                const markInstallPrompt = () => {
+                    if (window.innerWidth > 639) {
+                        return;
+                    }
+
+                    const candidates = [
+                        ...document.querySelectorAll(
+                            'body div, body section, body aside'
+                        ),
+                    ];
+
+                    const installPrompt =
+                        candidates.find((element) => {
+                            const text =
+                                element.textContent
+                                    ?.replace(/\s+/g, ' ')
+                                    .trim()
+                                ?? '';
+
+                            if (
+                                ! text.startsWith('Install Helmio')
+                                || text.length > 420
+                            ) {
+                                return false;
+                            }
+
+                            const style =
+                                window.getComputedStyle(element);
+
+                            return (
+                                style.position === 'fixed'
+                                || style.position === 'absolute'
+                                || element.closest('[class*="fixed"]')
+                            );
+                        });
+
+                    document
+                        .querySelectorAll(
+                            '[data-helmio-install-prompt="true"]'
+                        )
+                        .forEach((element) => {
+                            if (element !== installPrompt) {
+                                element.removeAttribute(
+                                    'data-helmio-install-prompt'
+                                );
+                            }
+                        });
+
+                    if (installPrompt) {
+                        installPrompt.setAttribute(
+                            'data-helmio-install-prompt',
+                            'true'
+                        );
+
+                        document.body.classList.add(
+                            'helmio-install-prompt-visible'
+                        );
+                    } else {
+                        document.body.classList.remove(
+                            'helmio-install-prompt-visible'
+                        );
+                    }
+                };
+
+                markInstallPrompt();
+
+                const installPromptObserver =
+                    new MutationObserver(markInstallPrompt);
+
+                installPromptObserver.observe(
+                    document.body,
+                    {
+                        childList: true,
+                        subtree: true,
+                        attributes: true,
+                        attributeFilter: [
+                            'class',
+                            'style',
+                            'x-show',
+                        ],
+                    }
+                );
+
+                window.addEventListener(
+                    'resize',
+                    markInstallPrompt
+                );
             }
         );
     </script>
