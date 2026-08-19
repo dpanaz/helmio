@@ -10,6 +10,7 @@ use App\Models\MonthlyPortfolioReview;
 use App\Models\PortfolioStateSnapshot;
 use App\Models\TimelineEvent;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 
 class AskHelmioContextService
 {
@@ -31,6 +32,11 @@ class AskHelmioContextService
             ->first();
 
         $latestAudit = AuditRun::query()
+            ->from(
+                DB::raw(
+                    'audit_runs FORCE INDEX (audit_runs_user_date_id_index)'
+                )
+            )
             ->where('user_id', $user->id)
             ->orderByDesc('calculated_for_date')
             ->orderByDesc('id')
