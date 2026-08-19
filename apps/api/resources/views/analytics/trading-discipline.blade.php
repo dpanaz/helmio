@@ -459,7 +459,7 @@
 
                     row.innerHTML = `
                         <td class="whitespace-nowrap px-4 py-4 text-slate-200">
-                            Security #${roundTrip.security_id}
+                            ${roundTrip.security_symbol ?? roundTrip.symbol ?? roundTrip.ticker ?? `Security #${roundTrip.security_id}`}
                         </td>
 
                         <td class="whitespace-nowrap px-4 py-4 text-slate-500">

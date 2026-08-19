@@ -3,6 +3,7 @@
 namespace App\Services\Analytics\Tax;
 
 use App\Models\InvestmentTransaction;
+use App\Models\Security;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -54,6 +55,18 @@ class WashSaleDetector
                     $this->isPurchase($transaction)
             )
             ->values();
+
+        $securitySymbols = Security::query()
+            ->whereIn(
+                'id',
+                $transactions
+                    ->pluck('security_id')
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all()
+            )
+            ->pluck('symbol', 'id');
 
         $washSales = [];
 
@@ -142,6 +155,11 @@ class WashSaleDetector
                 $washSales[] = [
                     'security_id' =>
                         $lossSale->security_id,
+
+                    'security_symbol' =>
+                        $securitySymbols->get(
+                            $lossSale->security_id
+                        ),
 
                     'investment_account_id' =>
                         $lossSale->investment_account_id,

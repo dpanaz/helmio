@@ -4,6 +4,7 @@ namespace App\Services\Analytics\Tax;
 
 use App\Models\Holding;
 use App\Models\InvestmentTransaction;
+use App\Models\Security;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
@@ -29,6 +30,18 @@ class TaxLossHarvestingService
                 'No open holdings were found.'
             );
         }
+
+        $securitySymbols = Security::query()
+            ->whereIn(
+                'id',
+                $holdings
+                    ->pluck('security_id')
+                    ->filter()
+                    ->unique()
+                    ->values()
+                    ->all()
+            )
+            ->pluck('symbol', 'id');
 
         $opportunities = [];
 
@@ -100,6 +113,11 @@ class TaxLossHarvestingService
 
                 'security_id' =>
                     $holding->security_id,
+
+                'security_symbol' =>
+                    $securitySymbols->get(
+                        $holding->security_id
+                    ),
 
                 'quantity' =>
                     round($quantity, 8),
