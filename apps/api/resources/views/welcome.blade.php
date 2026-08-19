@@ -251,7 +251,7 @@
                             class="inline-block transition-all duration-500 ease-out"
                             data-hero-rotator-text
                         >
-                            isn’t telling you.
+                            a second set of eyes.
                         </span>
                     </span>
                 </h1>
