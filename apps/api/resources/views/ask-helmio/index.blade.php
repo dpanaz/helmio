@@ -87,10 +87,6 @@
     @endphp
 
     <div id="ask-helmio-page" class="min-h-screen overflow-x-hidden bg-slate-950">
-
-        {-- ============================================================= --}
-        {-- MOBILE / TABLET                                               --}
-        {-- ============================================================= --}
         <div class="lg:hidden">
             <div class="border-b border-slate-800 bg-slate-950/95 px-3 py-2.5">
                 <div class="flex items-center justify-between gap-3">
@@ -384,9 +380,7 @@
             </div>
         </div>
 
-        {-- ============================================================= --}
-        {-- DESKTOP                                                       --}
-        {-- ============================================================= --}
+
         <div class="hidden py-8 lg:block">
             <div class="mx-auto max-w-[96rem] px-8">
                 @if (session('success'))
