@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateAskHelmioResponse;
 use App\Models\AskHelmioConversation;
+use App\Models\AskHelmioMessage;
 use App\Services\AI\AskHelmioService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -90,17 +93,98 @@ class AskHelmioController extends Controller
                     );
         }
 
-        $message = $askHelmioService->ask(
-            $request->user(),
-            $validated['question'],
-            $conversation,
+        $userMessage =
+            $askHelmioService->submitQuestion(
+                $request->user(),
+                $validated['question'],
+                $conversation,
+            );
+
+        $conversation =
+            $userMessage->conversation;
+
+        GenerateAskHelmioResponse::dispatch(
+            userId: $request->user()->id,
+            conversationId: $conversation->id,
+            userMessageId: $userMessage->id,
         );
 
         return redirect()
             ->route(
                 'ask-helmio.show',
-                $message->conversation,
+                [
+                    'askHelmioConversation' =>
+                        $conversation,
+
+                    'generating' => 1,
+
+                    'question_message_id' =>
+                        $userMessage->id,
+                ],
             );
+    }
+
+    public function status(
+        Request $request,
+        AskHelmioConversation $askHelmioConversation,
+    ): JsonResponse {
+        $this->authorizeConversation(
+            $request,
+            $askHelmioConversation,
+        );
+
+        $questionMessageId = max(
+            0,
+            (int) $request->query(
+                'question_message_id',
+                0,
+            ),
+        );
+
+        $assistantMessage =
+            AskHelmioMessage::query()
+                ->where(
+                    'ask_helmio_conversation_id',
+                    $askHelmioConversation->id,
+                )
+                ->where(
+                    'role',
+                    AskHelmioMessage::ROLE_ASSISTANT,
+                )
+                ->where(
+                    'id',
+                    '>',
+                    $questionMessageId,
+                )
+                ->orderBy('id')
+                ->first();
+
+        return response()->json([
+            'finished' =>
+                $assistantMessage !== null,
+
+            'assistant_message' =>
+                $assistantMessage
+                    ? [
+                        'id' =>
+                            $assistantMessage->id,
+
+                        'status' =>
+                            $assistantMessage->status,
+
+                        'generated_at' =>
+                            $assistantMessage
+                                ->generated_at
+                                ?->toIso8601String(),
+
+                        'show_url' =>
+                            route(
+                                'ask-helmio.show',
+                                $askHelmioConversation,
+                            ),
+                    ]
+                    : null,
+        ]);
     }
 
     public function create(

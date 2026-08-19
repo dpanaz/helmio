@@ -1029,6 +1029,11 @@ Route::middleware([
     )->name('ask-helmio.index');
 
     Route::get(
+        '/ask-helmio/{askHelmioConversation}/status',
+        [AskHelmioController::class, 'status'],
+    )->name('ask-helmio.status');
+
+    Route::get(
         '/ask-helmio/new',
         [
             AskHelmioController::class,

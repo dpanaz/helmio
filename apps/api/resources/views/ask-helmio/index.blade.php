@@ -40,6 +40,12 @@
     </x-slot>
 
     @php
+        $generationInProgress = request()->boolean('generating');
+        $questionMessageId = max(
+            0,
+            (int) request()->query('question_message_id', 0),
+        );
+
         $suggestedQuestions = [
             'What changed this month?',
             'What should I review first?',
@@ -231,6 +237,25 @@
                         id="ask-helmio-messages"
                         class="flex-1 overflow-y-auto px-5 py-8 sm:px-8"
                     >
+                        @if ($generationInProgress && $conversation)
+                            <div
+                                id="ask-helmio-thinking"
+                                class="mx-auto mb-5 flex max-w-5xl items-center gap-3 rounded-xl border border-violet-500/20 bg-violet-500/[0.06] px-4 py-3"
+                            >
+                                <div
+                                    class="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-violet-300/25 border-t-violet-300"
+                                ></div>
+
+                                <div>
+                                    <p class="text-sm font-semibold text-violet-200">
+                                        Helmio is thinking…
+                                    </p>
+                                    <p class="mt-0.5 text-xs text-slate-500">
+                                        Your question was saved. You can leave this page while the answer is generated.
+                                    </p>
+                                </div>
+                            </div>
+                        @endif
                         @if (
                             $conversation === null
                             || $conversation->messages->isEmpty()
@@ -556,6 +581,86 @@
         document.addEventListener(
             'DOMContentLoaded',
             () => {
+                const generationInProgress =
+                    @json($generationInProgress);
+
+                const questionMessageId =
+                    @json($questionMessageId);
+
+                const conversationId =
+                    @json($conversation?->id);
+
+                if (
+                    generationInProgress
+                    && conversationId
+                    && questionMessageId > 0
+                ) {
+                    const statusUrl =
+                        @json(
+                            $conversation
+                                ? route(
+                                    'ask-helmio.status',
+                                    $conversation,
+                                )
+                                : null
+                        );
+
+                    const cleanUrl =
+                        @json(
+                            $conversation
+                                ? route(
+                                    'ask-helmio.show',
+                                    $conversation,
+                                )
+                                : route('ask-helmio.index')
+                        );
+
+                    let attempts = 0;
+                    const maxAttempts = 120;
+
+                    const poll = async () => {
+                        attempts += 1;
+
+                        try {
+                            const response = await fetch(
+                                `${statusUrl}?question_message_id=${questionMessageId}`,
+                                {
+                                    headers: {
+                                        Accept: 'application/json',
+                                    },
+                                }
+                            );
+
+                            if (response.ok) {
+                                const data =
+                                    await response.json();
+
+                                if (data.finished) {
+                                    window.location.replace(
+                                        cleanUrl
+                                    );
+                                    return;
+                                }
+                            }
+                        } catch (error) {
+                            // Keep polling. A temporary request failure
+                            // should not break the conversation page.
+                        }
+
+                        if (attempts < maxAttempts) {
+                            window.setTimeout(
+                                poll,
+                                2000,
+                            );
+                        }
+                    };
+
+                    window.setTimeout(
+                        poll,
+                        1200,
+                    );
+                }
+
                 const container =
                     document.getElementById(
                         'ask-helmio-messages'

@@ -18,7 +18,11 @@ class AskHelmioService
     ) {
     }
 
-    public function ask(
+    /**
+     * Save the user's question quickly so the web request can return
+     * immediately. AI generation happens later in the queue.
+     */
+    public function submitQuestion(
         User $user,
         string $question,
         ?AskHelmioConversation $conversation = null,
@@ -59,6 +63,58 @@ class AskHelmioService
             'generated_at' => now(),
         ]);
 
+        $conversation->update([
+            'last_message_at' => now(),
+        ]);
+
+        return $userMessage->load('conversation');
+    }
+
+    /**
+     * Generate the assistant response for a previously saved user message.
+     * This method is intended to run inside a queue worker.
+     */
+    public function generateResponse(
+        User $user,
+        AskHelmioMessage $userMessage,
+        AskHelmioConversation $conversation,
+    ): AskHelmioMessage {
+        abort_unless(
+            $conversation->user_id === $user->id
+            && $userMessage->user_id === $user->id
+            && $userMessage->ask_helmio_conversation_id
+                === $conversation->id
+            && $userMessage->role
+                === AskHelmioMessage::ROLE_USER,
+            403,
+        );
+
+        /*
+         * Idempotency guard:
+         * if an assistant response already exists after this question,
+         * do not create a duplicate when a queued job is retried.
+         */
+        $existingResponse = AskHelmioMessage::query()
+            ->where(
+                'ask_helmio_conversation_id',
+                $conversation->id,
+            )
+            ->where(
+                'role',
+                AskHelmioMessage::ROLE_ASSISTANT,
+            )
+            ->where('id', '>', $userMessage->id)
+            ->orderBy('id')
+            ->first();
+
+        if ($existingResponse !== null) {
+            return $existingResponse->load('conversation');
+        }
+
+        $question = trim(
+            (string) $userMessage->content,
+        );
+
         $context = $this->contextService->build(
             $user,
             $question,
@@ -66,11 +122,7 @@ class AskHelmioService
 
         $history = $conversation
             ->messages()
-            ->where(
-                'id',
-                '!=',
-                $userMessage->id,
-            )
+            ->where('id', '<', $userMessage->id)
             ->orderByDesc('id')
             ->limit(10)
             ->get()
@@ -208,5 +260,28 @@ class AskHelmioService
         ]);
 
         return $assistantMessage->load('conversation');
+    }
+
+    /**
+     * Backward-compatible synchronous entry point.
+     * Existing callers can keep using ask(), while the controller uses
+     * submitQuestion() + a queued GenerateAskHelmioResponse job.
+     */
+    public function ask(
+        User $user,
+        string $question,
+        ?AskHelmioConversation $conversation = null,
+    ): AskHelmioMessage {
+        $userMessage = $this->submitQuestion(
+            $user,
+            $question,
+            $conversation,
+        );
+
+        return $this->generateResponse(
+            $user,
+            $userMessage,
+            $userMessage->conversation,
+        );
     }
 }
