@@ -1014,12 +1014,38 @@
                                     </span>
                                 </div>
 
-                                <span
-                                    class="inline-flex items-center gap-1.5 rounded-full border border-red-500/20 bg-red-500/[0.06] px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-red-400"
-                                >
-                                    <span class="h-1.5 w-1.5 rounded-full bg-red-400"></span>
-                                    {{ $helmOverallLabel }}
-                                </span>
+                                @php
+                            $helmStatusClasses = match (true) {
+                                $helmOverallScore >= 70 =>
+                                    'border-emerald-500/25 bg-emerald-500/[0.08] text-emerald-400',
+
+                                $helmOverallScore >= 60 =>
+                                    'border-amber-500/25 bg-amber-500/[0.08] text-amber-400',
+
+                                $helmOverallScore >= 40 =>
+                                    'border-orange-500/25 bg-orange-500/[0.08] text-orange-400',
+
+                                default =>
+                                    'border-red-500/25 bg-red-500/[0.08] text-red-400',
+                            };
+
+                            $helmStatusDotClasses = match (true) {
+                                $helmOverallScore >= 70 => 'bg-emerald-400',
+                                $helmOverallScore >= 60 => 'bg-amber-400',
+                                $helmOverallScore >= 40 => 'bg-orange-400',
+                                default => 'bg-red-400',
+                            };
+                        @endphp
+
+                        <span
+                            class="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-semibold uppercase tracking-[0.12em] {{ $helmStatusClasses }}"
+                        >
+                            <span
+                                class="h-1.5 w-1.5 rounded-full {{ $helmStatusDotClasses }}"
+                            ></span>
+
+                            {{ $helmOverallLabel }}
+                        </span>
 
                             </div>
 
