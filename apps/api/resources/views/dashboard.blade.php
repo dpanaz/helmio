@@ -728,11 +728,28 @@
                         </p>
                     </div>
 
-                    <div
-                        class="inline-flex w-fit items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs font-medium text-slate-400"
+                    <a
+                        href="{{ route('ask-helmio.create') }}"
+                        class="group inline-flex w-fit items-center gap-2 rounded-lg border border-violet-500/25 bg-violet-500/[0.08] px-3.5 py-2 text-xs font-semibold text-violet-300 shadow-sm transition hover:border-violet-500/40 hover:bg-violet-500/[0.12] hover:text-violet-200"
                     >
                         <svg
-                            class="h-4 w-4 text-slate-500"
+                            class="h-4 w-4 shrink-0"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="1.9"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.847-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.847a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.847.813a4.5 4.5 0 0 0-3.09 3.09L9 18.75Z"
+                            />
+                        </svg>
+
+                        Ask Helmio
+
+                        <svg
+                            class="h-3.5 w-3.5 transition group-hover:translate-x-0.5"
                             fill="none"
                             viewBox="0 0 24 24"
                             stroke="currentColor"
@@ -741,12 +758,10 @@
                             <path
                                 stroke-linecap="round"
                                 stroke-linejoin="round"
-                                d="M8 3v3m8-3v3M4 9h16M5 5h14a1 1 0 0 1 1 1v14H4V6a1 1 0 0 1 1-1Z"
+                                d="m9 18 6-6-6-6"
                             />
                         </svg>
-
-                        Updated {{ now()->format('M j, Y') }}
-                    </div>
+                    </a>
                 </div>
 
 
