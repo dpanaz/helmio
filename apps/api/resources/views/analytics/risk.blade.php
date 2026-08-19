@@ -6,12 +6,12 @@
             </p>
 
             <h2 class="mt-2 text-2xl font-semibold tracking-tight text-white">
-                Risk Analytics
+                Understand your portfolio risk
             </h2>
 
-            <p class="mt-2 text-sm text-slate-400">
-                Measure volatility, drawdowns, risk-adjusted returns,
-                and benchmark sensitivity.
+            <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
+                See how much your portfolio moves, how severe declines have been,
+                and whether the returns you are earning are reasonable for the risk taken.
             </p>
         </div>
     </x-slot>
@@ -20,8 +20,8 @@
         <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
 
             <x-analytics.filter-panel
-                title="Risk analysis controls"
-                subtitle="Choose the analysis period, benchmark, and annual risk-free rate."
+                title="Analysis settings"
+                subtitle="Adjust these only if you want to change the period or benchmark used in the risk analysis."
             >
                 <form
                     id="risk-form"
@@ -93,7 +93,7 @@
                             for="annual_risk_free_rate"
                             class="block text-sm font-medium text-slate-400"
                         >
-                            Risk-free rate
+                            Risk-free rate (advanced)
                         </label>
 
                         <div class="mt-2 flex">
@@ -123,7 +123,7 @@
                             type="submit"
                             class="inline-flex items-center justify-center rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
                         >
-                            Analyze Risk
+                            Update Analysis
                         </button>
                     </div>
                 </form>
@@ -161,146 +161,461 @@
 
             <div id="results" class="hidden space-y-6">
 
-                <x-analytics.panel>
-                    <div
-                        class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                        <div>
-                            <p class="text-sm font-medium text-slate-500">
-                                Overall risk level
+                {{-- ===================================================== --}}
+                {{-- RISK SUMMARY --}}
+                {{-- ===================================================== --}}
+
+                <section
+                    class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-lg"
+                >
+                    <div class="border-b border-slate-800 px-5 py-4 sm:px-6">
+                        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-400">
+                                    Risk summary
+                                </p>
+
+                                <h3 class="mt-1 text-lg font-semibold text-white">
+                                    What Helmio sees
+                                </h3>
+
+                                <p class="mt-1 text-sm text-slate-500">
+                                    A plain-English view of the portfolio's current risk profile.
+                                </p>
+                            </div>
+
+                            <span
+                                id="risk-level-badge"
+                                class="inline-flex w-fit rounded-full border px-3 py-1 text-sm font-semibold"
+                            >
+                                —
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
+                        <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                Compared with
                             </p>
 
-                            <div class="mt-3 flex flex-wrap items-center gap-3">
-                                <span
-                                    id="risk-level-badge"
-                                    class="inline-flex rounded-full border px-3 py-1 text-sm font-semibold"
-                                >
-                                    —
-                                </span>
+                            <p
+                                id="benchmark-name"
+                                class="mt-2 text-sm font-semibold text-slate-200"
+                            >
+                                —
+                            </p>
 
-                                <span
-                                    id="benchmark-name"
-                                    class="text-sm text-slate-400"
-                                >
-                                    —
-                                </span>
-                            </div>
+                            <p class="mt-1 text-xs leading-5 text-slate-500">
+                                The benchmark gives Helmio a reference point for evaluating market sensitivity.
+                            </p>
                         </div>
 
-                        <div
-                            class="rounded-xl border border-slate-800 bg-slate-950 px-4 py-3 text-right"
-                        >
-                            <p class="text-xs text-slate-600">
-                                Return periods
+                        <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                Return periods analyzed
                             </p>
 
                             <p
                                 id="return-period-count"
-                                class="mt-1 text-xl font-semibold text-white"
+                                class="mt-2 text-2xl font-semibold text-white"
                             >
                                 —
                             </p>
+
+                            <p class="mt-1 text-xs leading-5 text-slate-500">
+                                More return history generally makes the risk analysis more reliable.
+                            </p>
+                        </div>
+
+                        <div class="rounded-xl border border-blue-500/20 bg-blue-500/[0.05] p-4 sm:col-span-2 lg:col-span-1">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-400">
+                                How to read this page
+                            </p>
+
+                            <p class="mt-2 text-sm leading-6 text-slate-300">
+                                Lower risk is not always better. The goal is to understand whether the risk taken is appropriate for your objectives and the return being earned.
+                            </p>
                         </div>
                     </div>
-                </x-analytics.panel>
+                </section>
 
-                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                    <x-analytics.metric-card
-                        label="Annualized volatility"
-                        description="Variation in portfolio returns."
-                    >
-                        <span id="annualized-volatility">—</span>
-                    </x-analytics.metric-card>
 
-                    <x-analytics.metric-card
-                        label="Maximum drawdown"
-                        description="Largest peak-to-trough decline."
-                    >
-                        <span id="maximum-drawdown">—</span>
-                    </x-analytics.metric-card>
+                {{-- ===================================================== --}}
+                {{-- CORE RISK METRICS --}}
+                {{-- ===================================================== --}}
 
-                    <x-analytics.metric-card
-                        label="Downside deviation"
-                        description="Harmful volatility below the target return."
-                    >
-                        <span id="downside-deviation">—</span>
-                    </x-analytics.metric-card>
+                <section>
+                    <div class="mb-3">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Core risk measures
+                        </p>
 
-                    <x-analytics.metric-card
-                        label="Sharpe ratio"
-                        description="Return earned per unit of total risk."
-                    >
-                        <span id="sharpe-ratio">—</span>
-                    </x-analytics.metric-card>
+                        <h3 class="mt-1 text-lg font-semibold text-white">
+                            The six numbers that matter
+                        </h3>
 
-                    <x-analytics.metric-card
-                        label="Sortino ratio"
-                        description="Return earned per unit of downside risk."
-                    >
-                        <span id="sortino-ratio">—</span>
-                    </x-analytics.metric-card>
-
-                    <x-analytics.metric-card
-                        label="Beta"
-                        description="Sensitivity relative to the benchmark."
-                    >
-                        <span id="beta">—</span>
-                    </x-analytics.metric-card>
-                </div>
-
-                <x-analytics.panel
-                    title="Daily Return Comparison"
-                    subtitle="Portfolio and benchmark returns by period."
-                >
-                    <div class="h-80">
-                        <canvas id="risk-chart"></canvas>
+                        <p class="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
+                            Each measure answers a different question about how the portfolio behaves.
+                        </p>
                     </div>
-                </x-analytics.panel>
 
-                <div class="grid gap-6 lg:grid-cols-2">
-                    <x-analytics.panel title="Risk Findings">
+                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
+
+                        <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-sm font-semibold text-white">
+                                        Annualized volatility
+                                    </p>
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        How much does the portfolio move?
+                                    </p>
+                                </div>
+
+                                <span
+                                    id="annualized-volatility"
+                                    class="text-xl font-semibold tabular-nums text-blue-300"
+                                >
+                                    —
+                                </span>
+                            </div>
+
+                            <p class="mt-4 text-xs leading-5 text-slate-400">
+                                Measures how widely returns fluctuate over time. Higher volatility means larger swings in value.
+                            </p>
+
+                            <div class="mt-4 rounded-xl bg-slate-950/60 px-3 py-2.5">
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                                    In plain English
+                                </p>
+                                <p class="mt-1 text-xs leading-5 text-slate-500">
+                                    Higher number = bumpier ride.
+                                </p>
+                            </div>
+                        </article>
+
+                        <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-sm font-semibold text-white">
+                                        Maximum drawdown
+                                    </p>
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        What was the worst decline?
+                                    </p>
+                                </div>
+
+                                <span
+                                    id="maximum-drawdown"
+                                    class="text-xl font-semibold tabular-nums text-blue-300"
+                                >
+                                    —
+                                </span>
+                            </div>
+
+                            <p class="mt-4 text-xs leading-5 text-slate-400">
+                                The largest peak-to-trough drop during the selected period.
+                            </p>
+
+                            <div class="mt-4 rounded-xl bg-slate-950/60 px-3 py-2.5">
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                                    In plain English
+                                </p>
+                                <p class="mt-1 text-xs leading-5 text-slate-500">
+                                    Shows the worst loss an investor would have experienced before recovery.
+                                </p>
+                            </div>
+                        </article>
+
+                        <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-sm font-semibold text-white">
+                                        Downside deviation
+                                    </p>
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        How volatile are the bad periods?
+                                    </p>
+                                </div>
+
+                                <span
+                                    id="downside-deviation"
+                                    class="text-xl font-semibold tabular-nums text-blue-300"
+                                >
+                                    —
+                                </span>
+                            </div>
+
+                            <p class="mt-4 text-xs leading-5 text-slate-400">
+                                Focuses only on returns that fall below the target return instead of counting upside movement as risk.
+                            </p>
+
+                            <div class="mt-4 rounded-xl bg-slate-950/60 px-3 py-2.5">
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                                    In plain English
+                                </p>
+                                <p class="mt-1 text-xs leading-5 text-slate-500">
+                                    Lower means fewer or smaller harmful swings.
+                                </p>
+                            </div>
+                        </article>
+
+                        <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-sm font-semibold text-white">
+                                        Sharpe ratio
+                                    </p>
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        Are returns worth the total risk?
+                                    </p>
+                                </div>
+
+                                <span
+                                    id="sharpe-ratio"
+                                    class="text-xl font-semibold tabular-nums text-blue-300"
+                                >
+                                    —
+                                </span>
+                            </div>
+
+                            <p class="mt-4 text-xs leading-5 text-slate-400">
+                                Compares excess return with total volatility. A higher value generally indicates better risk-adjusted performance.
+                            </p>
+
+                            <div class="mt-4 rounded-xl bg-slate-950/60 px-3 py-2.5">
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                                    In plain English
+                                </p>
+                                <p class="mt-1 text-xs leading-5 text-slate-500">
+                                    Higher is generally better.
+                                </p>
+                            </div>
+                        </article>
+
+                        <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-sm font-semibold text-white">
+                                        Sortino ratio
+                                    </p>
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        Are returns worth the downside risk?
+                                    </p>
+                                </div>
+
+                                <span
+                                    id="sortino-ratio"
+                                    class="text-xl font-semibold tabular-nums text-blue-300"
+                                >
+                                    —
+                                </span>
+                            </div>
+
+                            <p class="mt-4 text-xs leading-5 text-slate-400">
+                                Similar to Sharpe, but penalizes harmful downside volatility rather than all volatility.
+                            </p>
+
+                            <div class="mt-4 rounded-xl bg-slate-950/60 px-3 py-2.5">
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                                    In plain English
+                                </p>
+                                <p class="mt-1 text-xs leading-5 text-slate-500">
+                                    Higher means more return for each unit of downside risk.
+                                </p>
+                            </div>
+                        </article>
+
+                        <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+                            <div class="flex items-start justify-between gap-4">
+                                <div>
+                                    <p class="text-sm font-semibold text-white">
+                                        Beta
+                                    </p>
+                                    <p class="mt-1 text-xs text-slate-500">
+                                        How sensitive is the portfolio to the market?
+                                    </p>
+                                </div>
+
+                                <span
+                                    id="beta"
+                                    class="text-xl font-semibold tabular-nums text-blue-300"
+                                >
+                                    —
+                                </span>
+                            </div>
+
+                            <p class="mt-4 text-xs leading-5 text-slate-400">
+                                Measures how strongly the portfolio tends to move relative to the selected benchmark.
+                            </p>
+
+                            <div class="mt-4 rounded-xl bg-slate-950/60 px-3 py-2.5">
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                                    In plain English
+                                </p>
+                                <p class="mt-1 text-xs leading-5 text-slate-500">
+                                    Around 1 means market-like sensitivity; above 1 means larger benchmark-related swings.
+                                </p>
+                            </div>
+                        </article>
+                    </div>
+                </section>
+
+
+                {{-- ===================================================== --}}
+                {{-- FINDINGS --}}
+                {{-- ===================================================== --}}
+
+                <section
+                    class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-lg"
+                >
+                    <div class="border-b border-slate-800 px-5 py-4 sm:px-6">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            What deserves attention
+                        </p>
+
+                        <h3 class="mt-1 text-lg font-semibold text-white">
+                            Risk findings
+                        </h3>
+
+                        <p class="mt-1 text-xs leading-5 text-slate-500">
+                            Helmio highlights specific patterns that may warrant a closer look.
+                        </p>
+                    </div>
+
+                    <div class="p-5 sm:p-6">
                         <div
                             id="risk-flags"
                             class="space-y-3"
                         ></div>
-                    </x-analytics.panel>
+                    </div>
+                </section>
 
-                    <x-analytics.panel title="Data Quality">
-                        <div
-                            id="risk-warnings"
-                            class="space-y-3"
-                        ></div>
-                    </x-analytics.panel>
-                </div>
 
-                <x-analytics.panel
-                    title="Observation Summary"
-                    subtitle="Distribution of analyzed portfolio return periods."
+                {{-- ===================================================== --}}
+                {{-- RETURN COMPARISON --}}
+                {{-- ===================================================== --}}
+
+                <section
+                    class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-lg"
                 >
-                    <dl class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                        @foreach ([
-                            ['Positive days', 'positive-days'],
-                            ['Negative days', 'negative-days'],
-                            ['Flat days', 'flat-days'],
-                            ['Benchmark matches', 'aligned-return-count'],
-                        ] as [$label, $id])
-                            <div
-                                class="rounded-xl border border-slate-800 bg-slate-950 p-4"
-                            >
-                                <dt class="text-sm text-slate-500">
-                                    {{ $label }}
-                                </dt>
+                    <div class="border-b border-slate-800 px-5 py-4 sm:px-6">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Return behavior
+                        </p>
 
-                                <dd
-                                    id="{{ $id }}"
-                                    class="mt-2 text-2xl font-semibold text-white"
-                                >
-                                    —
-                                </dd>
+                        <h3 class="mt-1 text-lg font-semibold text-white">
+                            Portfolio vs. benchmark
+                        </h3>
+
+                        <p class="mt-1 text-xs leading-5 text-slate-500">
+                            Daily portfolio returns compared with the selected benchmark. This helps show whether your portfolio tends to move more or less than the market.
+                        </p>
+                    </div>
+
+                    <div class="p-5 sm:p-6">
+                        <div class="h-80">
+                            <canvas id="risk-chart"></canvas>
+                        </div>
+                    </div>
+                </section>
+
+
+                {{-- ===================================================== --}}
+                {{-- SUPPORTING DATA --}}
+                {{-- ===================================================== --}}
+
+                <details
+                    class="group overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-lg"
+                >
+                    <summary
+                        class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 sm:px-6"
+                    >
+                        <div>
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                Supporting information
+                            </p>
+
+                            <h3 class="mt-1 text-base font-semibold text-white">
+                                Data quality and observation details
+                            </h3>
+
+                            <p class="mt-1 text-xs text-slate-500">
+                                Expand this section if you want to inspect the underlying return-history coverage.
+                            </p>
+                        </div>
+
+                        <svg
+                            class="h-5 w-5 shrink-0 text-slate-500 transition group-open:rotate-180"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="2"
+                        >
+                            <path
+                                stroke-linecap="round"
+                                stroke-linejoin="round"
+                                d="m6 9 6 6 6-6"
+                            />
+                        </svg>
+                    </summary>
+
+                    <div class="border-t border-slate-800 p-5 sm:p-6">
+                        <div class="grid gap-6 lg:grid-cols-2">
+                            <div>
+                                <h4 class="text-sm font-semibold text-white">
+                                    Data quality
+                                </h4>
+
+                                <p class="mt-1 text-xs leading-5 text-slate-500">
+                                    Warnings here explain missing or limited data that may affect the analysis.
+                                </p>
+
+                                <div
+                                    id="risk-warnings"
+                                    class="mt-4 space-y-3"
+                                ></div>
                             </div>
-                        @endforeach
-                    </dl>
-                </x-analytics.panel>
+
+                            <div>
+                                <h4 class="text-sm font-semibold text-white">
+                                    Return observations
+                                </h4>
+
+                                <p class="mt-1 text-xs leading-5 text-slate-500">
+                                    A quick count of the return periods used in the calculation.
+                                </p>
+
+                                <dl class="mt-4 grid gap-3 sm:grid-cols-2">
+                                    @foreach ([
+                                        ['Positive days', 'positive-days'],
+                                        ['Negative days', 'negative-days'],
+                                        ['Flat days', 'flat-days'],
+                                        ['Benchmark matches', 'aligned-return-count'],
+                                    ] as [$label, $id])
+                                        <div
+                                            class="rounded-xl border border-slate-800 bg-slate-950 p-4"
+                                        >
+                                            <dt class="text-xs text-slate-500">
+                                                {{ $label }}
+                                            </dt>
+
+                                            <dd
+                                                id="{{ $id }}"
+                                                class="mt-2 text-xl font-semibold text-white"
+                                            >
+                                                —
+                                            </dd>
+                                        </div>
+                                    @endforeach
+                                </dl>
+                            </div>
+                        </div>
+                    </div>
+                </details>
+
+            </div>
             </div>
         </div>
     </div>
