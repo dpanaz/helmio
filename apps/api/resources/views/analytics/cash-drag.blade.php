@@ -6,12 +6,12 @@
             </p>
 
             <h2 class="mt-2 text-2xl font-semibold tracking-tight text-white">
-                Cash Drag Analytics
+                Understand your portfolio cash
             </h2>
 
             <p class="mt-2 text-sm text-slate-400">
-                Measure idle cash, excess allocation, and estimated missed
-                benchmark growth.
+                See how much cash is sitting in the portfolio, whether it is above your target,
+                and what excess cash may have cost in missed market growth.
             </p>
         </div>
     </x-slot>
@@ -19,7 +19,10 @@
     <div class="bg-slate-950 py-8">
         <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
 
-            <x-analytics.filter-panel title="Cash analysis controls">
+            <x-analytics.filter-panel
+                title="Analysis settings"
+                subtitle="Choose the period, benchmark, and cash target Helmio should use."
+            >
                 <form
                     id="cash-drag-form"
                     class="grid gap-5 md:grid-cols-4"
@@ -90,7 +93,7 @@
                             for="target_cash_percent"
                             class="block text-sm font-medium text-slate-400"
                         >
-                            Target cash allocation
+                            Target cash allocation (advanced)
                         </label>
 
                         <input
@@ -114,7 +117,7 @@
                             type="submit"
                             class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white transition hover:bg-blue-500"
                         >
-                            Analyze Cash Drag
+                            Update Analysis
                         </button>
                     </div>
                 </form>
@@ -142,114 +145,198 @@
             </div>
 
             <div id="results" class="hidden space-y-6">
-                <x-analytics.panel>
-                    <div
-                        class="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between"
-                    >
-                        <div>
-                            <p class="text-sm text-slate-500">
-                                Cash drag score
-                            </p>
 
-                            <div class="mt-2 flex items-center gap-3">
-                                <span
-                                    id="cash-score"
-                                    class="text-4xl font-semibold text-white"
-                                >
-                                    —
-                                </span>
+                {{-- CASH SUMMARY --}}
+                <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-lg">
+                    <div class="border-b border-slate-800 px-5 py-4 sm:px-6">
+                        <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                            <div>
+                                <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-blue-400">
+                                    Cash summary
+                                </p>
+                                <h3 class="mt-1 text-lg font-semibold text-white">
+                                    What Helmio sees
+                                </h3>
+                                <p class="mt-1 max-w-2xl text-sm leading-6 text-slate-500">
+                                    Cash can provide flexibility and stability, but too much idle cash may reduce long-term growth.
+                                </p>
+                            </div>
 
-                                <span
-                                    id="cash-rating"
-                                    class="inline-flex rounded-full border px-3 py-1 text-sm font-semibold"
-                                >
-                                    —
-                                </span>
+                            <div class="flex items-center gap-3">
+                                <span id="cash-score" class="text-3xl font-semibold tabular-nums text-white">—</span>
+                                <span id="cash-rating" class="inline-flex rounded-full border px-3 py-1 text-sm font-semibold">—</span>
                             </div>
                         </div>
+                    </div>
 
-                        <div class="text-right">
-                            <p class="text-xs text-slate-600">
-                                Benchmark
+                    <div class="grid gap-4 p-5 sm:grid-cols-2 sm:p-6 lg:grid-cols-3">
+                        <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                Compared with
                             </p>
+                            <p id="benchmark-name" class="mt-2 text-sm font-semibold text-slate-200">—</p>
+                            <p class="mt-1 text-xs leading-5 text-slate-500">
+                                Helmio uses this benchmark to estimate what excess cash might have earned if invested.
+                            </p>
+                        </div>
 
-                            <p
-                                id="benchmark-name"
-                                class="mt-1 font-semibold text-slate-200"
-                            >
-                                —
+                        <div class="rounded-xl border border-slate-800 bg-slate-950/60 p-4">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-500">
+                                Why cash matters
+                            </p>
+                            <p class="mt-2 text-sm font-semibold text-slate-200">
+                                Useful reserve vs. idle money
+                            </p>
+                            <p class="mt-1 text-xs leading-5 text-slate-500">
+                                The goal is not zero cash. It is to identify cash that appears higher than the portfolio's intended allocation.
+                            </p>
+                        </div>
+
+                        <div class="rounded-xl border border-blue-500/20 bg-blue-500/[0.05] p-4 sm:col-span-2 lg:col-span-1">
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-blue-400">
+                                How to read this page
+                            </p>
+                            <p class="mt-2 text-sm leading-6 text-slate-300">
+                                Focus first on cash percentage and estimated cash drag. The dollar cash balance alone does not tell you whether cash is excessive.
                             </p>
                         </div>
                     </div>
-                </x-analytics.panel>
+                </section>
 
-                <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-                    @foreach ([
-                        ['Current cash', 'current-cash'],
-                        ['Current cash %', 'current-cash-percent'],
-                        ['Average cash %', 'average-cash-percent'],
-                        ['Estimated cash drag', 'opportunity-cost'],
-                    ] as [$label, $id])
-                        <x-analytics.metric-card :label="$label">
-                            <span id="{{ $id }}">—</span>
-                        </x-analytics.metric-card>
-                    @endforeach
-                </div>
-
-                <x-analytics.panel
-                    title="Cash Allocation History"
-                    subtitle="Cash as a percentage of total portfolio value."
-                >
-                    <div class="h-80">
-                        <canvas id="cash-chart"></canvas>
+                {{-- CORE CASH METRICS --}}
+                <section>
+                    <div class="mb-3">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Core cash measures
+                        </p>
+                        <h3 class="mt-1 text-lg font-semibold text-white">
+                            The four numbers that matter
+                        </h3>
+                        <p class="mt-1 max-w-3xl text-xs leading-5 text-slate-500">
+                            These measures show how much cash you hold and whether it may be reducing portfolio growth.
+                        </p>
                     </div>
-                </x-analytics.panel>
 
-                <div class="grid gap-6 lg:grid-cols-2">
-                    <x-analytics.panel title="Opportunity Cost">
-                        <dl class="space-y-4 text-sm">
-                            @foreach ([
-                                ['Average cash', 'average-cash'],
-                                ['Target cash amount', 'target-cash-amount'],
-                                ['Excess cash', 'excess-cash'],
-                                ['Benchmark return', 'benchmark-return'],
-                            ] as [$label, $id])
-                                <div
-                                    class="flex justify-between border-b border-slate-800 pb-4 last:border-0 last:pb-0"
-                                >
-                                    <dt class="text-slate-500">
-                                        {{ $label }}
-                                    </dt>
+                    <div class="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                        @foreach ([
+                            ['Current cash','current-cash','How many dollars are in cash?','The portfolio’s current cash balance. Dollar value matters, but percentage is usually more useful for judging whether it is excessive.'],
+                            ['Current cash %','current-cash-percent','How much of the portfolio is cash today?','Shows cash as a share of total portfolio value. Compare this with the intended cash target.'],
+                            ['Average cash %','average-cash-percent','How much cash was typically held?','The average cash allocation over the selected period, which helps distinguish a temporary balance from a persistent pattern.'],
+                            ['Estimated cash drag','opportunity-cost','What might excess cash have cost?','An estimate of benchmark growth that may have been missed because cash remained above the target allocation.'],
+                        ] as [$label,$id,$question,$definition])
+                            <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5">
+                                <p class="text-sm font-semibold text-white">{{ $label }}</p>
+                                <p class="mt-1 min-h-[2rem] text-xs leading-4 text-slate-500">{{ $question }}</p>
+                                <p id="{{ $id }}" class="mt-4 text-2xl font-semibold tabular-nums text-blue-300">—</p>
 
-                                    <dd
-                                        id="{{ $id }}"
-                                        class="font-semibold text-slate-200"
-                                    >
-                                        —
-                                    </dd>
+                                <div class="mt-4 rounded-xl bg-slate-950/60 px-3 py-2.5">
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-600">
+                                        In plain English
+                                    </p>
+                                    <p class="mt-1 text-xs leading-5 text-slate-500">
+                                        {{ $definition }}
+                                    </p>
                                 </div>
-                            @endforeach
-                        </dl>
-                    </x-analytics.panel>
+                            </article>
+                        @endforeach
+                    </div>
+                </section>
 
-                    <x-analytics.panel title="Findings & Data Quality">
-                        <div
-                            id="cash-flags"
-                            class="space-y-3"
-                        ></div>
+                {{-- FINDINGS --}}
+                <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-lg">
+                    <div class="border-b border-slate-800 px-5 py-4 sm:px-6">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            What deserves attention
+                        </p>
+                        <h3 class="mt-1 text-lg font-semibold text-white">
+                            Cash findings
+                        </h3>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">
+                            Helmio highlights cash patterns that may be reducing portfolio efficiency.
+                        </p>
+                    </div>
+                    <div class="p-5 sm:p-6">
+                        <div id="cash-flags" class="space-y-3"></div>
+                    </div>
+                </section>
 
-                        <h4
-                            class="mt-7 border-t border-slate-800 pt-6 text-sm font-semibold text-white"
-                        >
-                            Data Quality
-                        </h4>
+                {{-- CASH HISTORY --}}
+                <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-lg">
+                    <div class="border-b border-slate-800 px-5 py-4 sm:px-6">
+                        <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                            Cash over time
+                        </p>
+                        <h3 class="mt-1 text-lg font-semibold text-white">
+                            Cash allocation history
+                        </h3>
+                        <p class="mt-1 text-xs leading-5 text-slate-500">
+                            Cash as a percentage of the total portfolio. Persistent levels above the intended target can create cash drag.
+                        </p>
+                    </div>
+                    <div class="p-5 sm:p-6">
+                        <div class="h-80">
+                            <canvas id="cash-chart"></canvas>
+                        </div>
+                    </div>
+                </section>
 
-                        <div
-                            id="cash-warnings"
-                            class="mt-4 space-y-3"
-                        ></div>
-                    </x-analytics.panel>
-                </div>
+                {{-- SUPPORTING DETAILS --}}
+                <details class="group overflow-hidden rounded-2xl border border-slate-800 bg-slate-900 shadow-lg">
+                    <summary class="flex cursor-pointer list-none items-center justify-between gap-4 px-5 py-4 sm:px-6">
+                        <div>
+                            <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
+                                Supporting information
+                            </p>
+                            <h3 class="mt-1 text-base font-semibold text-white">
+                                Opportunity cost and data quality
+                            </h3>
+                            <p class="mt-1 text-xs text-slate-500">
+                                Expand to see how Helmio estimated excess cash and whether the underlying data has limitations.
+                            </p>
+                        </div>
+
+                        <svg class="h-5 w-5 shrink-0 text-slate-500 transition group-open:rotate-180"
+                             fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="m6 9 6 6 6-6"/>
+                        </svg>
+                    </summary>
+
+                    <div class="grid gap-6 border-t border-slate-800 p-5 sm:p-6 lg:grid-cols-2">
+                        <div>
+                            <h4 class="text-sm font-semibold text-white">
+                                Opportunity cost details
+                            </h4>
+                            <p class="mt-1 text-xs leading-5 text-slate-500">
+                                These are the inputs behind the estimated cash-drag figure.
+                            </p>
+
+                            <dl class="mt-4 space-y-3">
+                                @foreach ([
+                                    ['Average cash','average-cash'],
+                                    ['Target cash amount','target-cash-amount'],
+                                    ['Excess cash','excess-cash'],
+                                    ['Benchmark return','benchmark-return'],
+                                ] as [$label,$id])
+                                    <div class="flex justify-between gap-4 rounded-xl border border-slate-800 bg-slate-950/60 px-4 py-3">
+                                        <dt class="text-xs text-slate-500">{{ $label }}</dt>
+                                        <dd id="{{ $id }}" class="text-sm font-semibold text-slate-200">—</dd>
+                                    </div>
+                                @endforeach
+                            </dl>
+                        </div>
+
+                        <div>
+                            <h4 class="text-sm font-semibold text-white">
+                                Data quality
+                            </h4>
+                            <p class="mt-1 text-xs leading-5 text-slate-500">
+                                Warnings here explain missing or limited data that may affect the analysis.
+                            </p>
+                            <div id="cash-warnings" class="mt-4 space-y-3"></div>
+                        </div>
+                    </div>
+                </details>
+            </div>
             </div>
         </div>
     </div>
