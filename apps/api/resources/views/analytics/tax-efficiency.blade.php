@@ -459,7 +459,7 @@
 
                     row.innerHTML = `
                         <td class="whitespace-nowrap px-4 py-4 text-slate-200">
-                            Security #${washSale.security_id}
+                            ${washSale.security_symbol ?? washSale.symbol ?? washSale.ticker ?? `Security #${washSale.security_id}`}
                         </td>
 
                         <td class="whitespace-nowrap px-4 py-4 text-slate-500">
@@ -534,7 +534,7 @@
 
                         row.innerHTML = `
                             <td class="whitespace-nowrap px-4 py-4 text-slate-200">
-                                Security #${opportunity.security_id}
+                                ${opportunity.security_symbol ?? opportunity.symbol ?? opportunity.ticker ?? `Security #${opportunity.security_id}`}
                             </td>
 
                             <td class="whitespace-nowrap px-4 py-4 text-right text-slate-300">
