@@ -240,7 +240,7 @@
                            sm:mt-9 sm:text-6xl
                            lg:text-7xl"
                 >
-                    See what your financial advisor
+                    Your portfolio deserves
 
                     <span
                         class="block min-h-[2.15em] text-blue-400 sm:min-h-[1.15em]"
@@ -1545,10 +1545,11 @@
         }
 
         const messages = [
-            'isn’t telling you.',
-            'is really costing you.',
-            'is doing with your money.',
-            'isn’t showing you.',
+            'a second set of eyes.',
+            'more clarity.',
+            'ongoing oversight.',
+            'independent insight.',
+            'your full attention.',
         ];
 
         const reducedMotion =
