@@ -229,17 +229,50 @@
             );
         };
 
+        /*
+         * Health colors communicate outcome. Helmio blue remains the brand color;
+         * green / amber / orange / red are reserved for portfolio health.
+         */
+        $healthColor = function (?int $score): string {
+            if ($score === null) {
+                return '#94a3b8';
+            }
+
+            return match (true) {
+                $score >= 80 => '#22c55e',
+                $score >= 70 => '#3b82f6',
+                $score >= 60 => '#f59e0b',
+                $score >= 40 => '#f97316',
+                default => '#ef4444',
+            };
+        };
+
+        $healthBarColor = function (?int $score): string {
+            if ($score === null) {
+                return '#475569';
+            }
+
+            return match (true) {
+                $score >= 90 => '#22c55e',
+                $score >= 80 => '#4ade80',
+                $score >= 70 => '#3b82f6',
+                $score >= 60 => '#f59e0b',
+                $score >= 40 => '#f97316',
+                default => '#ef4444',
+            };
+        };
+
         $helmScoreColor =
-            $scoreBlue($helmOverallScore);
+            $healthColor($helmOverallScore);
 
         $helmScoreLabelColor =
             $helmScoreColor;
 
         $helmScoreBadgeClasses = match (true) {
             $helmOverallScore >= 80 =>
-                'border-emerald-500/30 bg-emerald-500/10 text-emerald-300',
+                'border-emerald-500/25 bg-emerald-500/[0.08] text-emerald-400',
             $helmOverallScore >= 70 =>
-                'border-blue-500/30 bg-blue-500/10 text-blue-300',
+                'border-blue-500/25 bg-blue-500/[0.08] text-blue-300',
             $helmOverallScore >= 60 =>
                 'border-amber-500/30 bg-amber-500/10 text-amber-300',
             $helmOverallScore >= 40 =>
@@ -478,26 +511,14 @@
             $criticalCount > 0;
 
         $auditScoreColor =
-            $scoreBlue(
+            $healthColor(
                 $auditScore !== null
                     ? (int) $auditScore
                     : null
             );
 
-        $auditCardClasses = match (true) {
-            $auditScore === null =>
-                'border-slate-800 bg-slate-900',
-            $auditScore >= 80 =>
-                'border-emerald-500/20 bg-emerald-500/[0.035]',
-            $auditScore >= 70 =>
-                'border-blue-500/20 bg-blue-500/[0.035]',
-            $auditScore >= 60 =>
-                'border-amber-500/20 bg-amber-500/[0.035]',
-            $auditScore >= 40 =>
-                'border-orange-500/25 bg-orange-500/[0.04]',
-            default =>
-                'border-red-500/30 bg-red-500/[0.05]',
-        };
+        $auditCardClasses =
+            'border-slate-800/90 bg-slate-900';
 
         $topConcernSeverity =
             data_get(
@@ -582,7 +603,7 @@
     </style>
 
 
-    <div class="min-h-screen bg-slate-950">
+    <div class="min-h-screen bg-[#080d18]">
 
         @if (! $hasPremiumAccess)
 
@@ -730,7 +751,7 @@
 
                     <a
                         href="{{ route('ask-helmio.create') }}"
-                        class="group inline-flex w-fit items-center gap-2 rounded-lg border border-violet-500/25 bg-violet-500/[0.08] px-3.5 py-2 text-xs font-semibold text-violet-300 shadow-sm transition hover:border-violet-500/40 hover:bg-violet-500/[0.12] hover:text-violet-200"
+                        class="group inline-flex w-fit items-center gap-2 rounded-lg border border-slate-700 bg-slate-900 px-3.5 py-2 text-xs font-semibold text-slate-200 shadow-sm transition hover:border-violet-500/40 hover:bg-slate-800 hover:text-white [&>svg:first-child]:text-violet-400"
                     >
                         <svg
                             class="h-4 w-4 shrink-0"
@@ -1016,21 +1037,25 @@
 
                                 @php
                             $helmStatusClasses = match (true) {
-                                $helmOverallScore >= 70 =>
+                                $helmOverallScore >= 80 =>
                                     'border-emerald-500/25 bg-emerald-500/[0.08] text-emerald-400',
 
+                                $helmOverallScore >= 70 =>
+                                    'border-blue-500/25 bg-blue-500/[0.08] text-blue-300',
+
                                 $helmOverallScore >= 60 =>
-                                    'border-amber-500/25 bg-amber-500/[0.08] text-amber-400',
+                                    'border-amber-500/25 bg-amber-500/[0.08] text-amber-300',
 
                                 $helmOverallScore >= 40 =>
-                                    'border-orange-500/25 bg-orange-500/[0.08] text-orange-400',
+                                    'border-orange-500/25 bg-orange-500/[0.08] text-orange-300',
 
                                 default =>
                                     'border-red-500/25 bg-red-500/[0.08] text-red-400',
                             };
 
                             $helmStatusDotClasses = match (true) {
-                                $helmOverallScore >= 70 => 'bg-emerald-400',
+                                $helmOverallScore >= 80 => 'bg-emerald-400',
+                                $helmOverallScore >= 70 => 'bg-blue-400',
                                 $helmOverallScore >= 60 => 'bg-amber-400',
                                 $helmOverallScore >= 40 => 'bg-orange-400',
                                 default => 'bg-red-400',
@@ -1093,7 +1118,7 @@
                                                 width="140%"
                                                 height="140%"
                                             >
-                                                <feGaussianBlur stdDeviation="2.5" result="blur" />
+                                                <feGaussianBlur stdDeviation="1.6" result="blur" />
                                                 <feMerge>
                                                     <feMergeNode in="blur" />
                                                     <feMergeNode in="SourceGraphic" />
@@ -1126,7 +1151,7 @@
                                             data-helm-score-ring
                                             d="M 42 150 A 118 118 0 0 1 278 150"
                                             fill="none"
-                                            stroke="url(#helmScoreGradient)"
+                                            stroke="#3b82f6"
                                             stroke-width="18"
                                             stroke-linecap="round"
                                             pathLength="100"
@@ -1142,7 +1167,7 @@
                                             cy="150"
                                             r="5.5"
                                             fill="#f8fafc"
-                                            stroke="#2563eb"
+                                            stroke="#3b82f6"
                                             stroke-width="3"
                                             opacity="0"
                                         />
@@ -1365,46 +1390,17 @@
                                         };
 
                                         /*
-                                         * Category score presentation.
-                                         *
-                                         * Bars and score numbers always use Helmio's
-                                         * continuous blue visual language.
-                                         *
-                                         * Status text carries the health/urgency signal:
-                                         *
-                                         * 90–100  Excellent           Blue
-                                         * 80–89   Strong              Blue
-                                         * 70–79   Good                Blue
-                                         * 60–69   Needs review        Amber
-                                         * 40–59   Needs attention     Orange
-                                         * 0–39    Action recommended  Red
+                                         * Health colors carry the meaning of the score.
+                                         * Helmio blue is reserved for brand/navigation.
                                          */
-                                        $categoryStatusColor = match (true) {
-                                            $categoryScore === null =>
-                                                '#94a3b8',
+                                        $categoryStatusColor =
+                                            $healthColor($categoryScore);
 
-                                            $categoryScore >= 70 =>
-                                                '#93c5fd',
-
-                                            $categoryScore >= 60 =>
-                                                '#fcd34d',
-
-                                            $categoryScore >= 40 =>
-                                                '#fdba74',
-
-                                            default =>
-                                                '#ef4444',
-                                        };
-
-                                        /*
-                                         * Continuous Helmio blue score color.
-                                         * Lower scores are lighter blue and higher
-                                         * scores become progressively deeper blue.
-                                         */
                                         $categoryScoreColor =
-                                            $scoreBlue(
-                                                $categoryScore
-                                            );
+                                            $healthColor($categoryScore);
+
+                                        $categoryBarColor =
+                                            $healthBarColor($categoryScore);
 
                                         /*
                                          * Category icons remain consistently Helmio blue.
@@ -1595,21 +1591,8 @@
                                                             class="h-full rounded-full transition-all duration-500"
                                                             style="
                                                                 width: {{ $categoryScoreCapped }}%;
-                                                                background:
-                                                                    linear-gradient(
-                                                                        90deg,
-                                                                        #dbeafe 0%,
-                                                                        #bfdbfe 18%,
-                                                                        #93c5fd 38%,
-                                                                        #60a5fa 58%,
-                                                                        #3b82f6 76%,
-                                                                        #2563eb 90%,
-                                                                        #1e3a8a 100%
-                                                                    );
-                                                                box-shadow:
-                                                                    0 0 10px
-                                                                    rgba(59, 130, 246, 0.20);
-                                                                background-repeat: no-repeat;
+                                                                background-color: {{ $categoryBarColor }};
+                                                                box-shadow: 0 0 8px rgba(15, 23, 42, 0.35);
                                                             "
                                                         ></div>
 
@@ -1647,13 +1630,13 @@
                 {{-- ===================================================== --}}
 
                 <section
-                    class="mt-4 overflow-hidden rounded-2xl border border-violet-500/20 bg-slate-900 shadow-lg"
+                    class="mt-4 overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-900 shadow-lg"
                 >
                     <div class="border-b border-slate-800/80 px-5 py-4 sm:px-6">
                         <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                             <div class="flex items-center gap-3">
                                 <div
-                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-violet-500/25 bg-violet-500/10 text-violet-300"
+                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-slate-700 bg-slate-950 text-violet-400"
                                 >
                                     <svg
                                         class="h-5 w-5"
@@ -1671,7 +1654,7 @@
                                 </div>
 
                                 <div>
-                                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-violet-400">
+                                    <p class="text-[10px] font-semibold uppercase tracking-[0.16em] text-slate-400">
                                         AI Portfolio Insight
                                     </p>
 
@@ -1683,7 +1666,7 @@
 
                             <a
                                 href="{{ route('ai-insights.index') }}"
-                                class="inline-flex w-fit items-center gap-2 text-xs font-semibold text-violet-300 transition hover:text-violet-200"
+                                class="inline-flex w-fit items-center gap-2 text-xs font-semibold text-slate-300 transition hover:text-violet-300"
                             >
                                 All AI Insights
 
@@ -1762,7 +1745,7 @@
                                         @if (data_get($latestAiInsight, 'id'))
                                             <a
                                                 href="{{ route('ai-insights.show', $latestAiInsight) }}"
-                                                class="inline-flex items-center gap-2 rounded-lg bg-violet-600 px-3.5 py-2.5 text-xs font-semibold text-white transition hover:bg-violet-500"
+                                                class="inline-flex items-center gap-2 rounded-lg bg-blue-600 px-3.5 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-500"
                                             >
                                                 Read Full Insight
 
@@ -1791,7 +1774,7 @@
 
                                                 <button
                                                     type="submit"
-                                                    class="rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-semibold text-slate-300 transition hover:border-violet-500/50 hover:text-white"
+                                                    class="rounded-lg border border-slate-700 bg-slate-950 px-3.5 py-2.5 text-xs font-semibold text-slate-300 transition hover:border-blue-500/50 hover:text-white"
                                                 >
                                                     Refresh Insight
                                                 </button>
@@ -1904,7 +1887,7 @@
 
                                 <a
                                     href="{{ route('ai-insights.index') }}"
-                                    class="inline-flex w-fit shrink-0 rounded-lg bg-violet-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-violet-500"
+                                    class="inline-flex w-fit shrink-0 rounded-lg bg-blue-600 px-4 py-2.5 text-xs font-semibold text-white transition hover:bg-blue-500"
                                 >
                                     Generate Insight
                                 </a>
@@ -1961,7 +1944,8 @@
                             $helmScore,
                             $findingsCollection,
                             $dashboardCategoryAliases,
-                            $scoreBlue,
+                            $healthColor,
+                            $healthBarColor,
                             $allInCostDollars,
                             $formatDashboardPercent
                         ) {
@@ -1992,6 +1976,8 @@
                             $categoryStatusClasses = match (true) {
                                 $categoryScore === null =>
                                     'border-slate-700 bg-slate-800/50 text-slate-400',
+                                $categoryScore >= 80 =>
+                                    'border-emerald-500/20 bg-emerald-500/[0.07] text-emerald-300',
                                 $categoryScore >= 70 =>
                                     'border-blue-500/20 bg-blue-500/[0.07] text-blue-300',
                                 $categoryScore >= 60 =>
@@ -2071,36 +2057,16 @@
                                     && $categoryScore < 70 =>
                                     'bg-amber-500',
 
+                                $categoryScore !== null
+                                    && $categoryScore >= 80 =>
+                                    'bg-emerald-500',
+
                                 default =>
                                     'bg-blue-500',
                             };
 
-                            $categoryCardClasses = match (true) {
-                                in_array(
-                                    $categorySeverity,
-                                    ['critical', 'high'],
-                                    true
-                                ) =>
-                                    'border-red-500/25 bg-red-500/[0.025]',
-
-                                $categoryScore !== null
-                                    && $categoryScore < 40 =>
-                                    'border-red-500/20 bg-red-500/[0.018]',
-
-                                in_array(
-                                    $categorySeverity,
-                                    ['important', 'moderate', 'medium'],
-                                    true
-                                ) =>
-                                    'border-orange-500/20 bg-orange-500/[0.018]',
-
-                                $categoryScore !== null
-                                    && $categoryScore < 60 =>
-                                    'border-orange-500/15 bg-slate-900',
-
-                                default =>
-                                    'border-slate-800/90 bg-slate-900',
-                            };
+                            $categoryCardClasses =
+                                'border-slate-800/90 bg-slate-900';
 
                             $categoryRiskTitle =
                                 data_get($categoryFinding, 'title');
@@ -2298,7 +2264,10 @@
                                 'key' => $categoryKey,
                                 'label' => $item['label'],
                                 'score' => $categoryScore,
-                                'score_color' => $scoreBlue(
+                                'score_color' => $healthColor(
+                                    $categoryScore
+                                ),
+                                'bar_color' => $healthBarColor(
                                     $categoryScore
                                 ),
                                 'status' => $categoryStatus,
@@ -2374,7 +2343,7 @@
                                 <div class="flex items-start justify-between gap-4">
                                     <div class="flex min-w-0 items-center gap-3">
                                         <div
-                                            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-blue-500/10 text-blue-300"
+                                            class="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-slate-800 bg-slate-950 text-blue-400"
                                         >
                                             @switch($card['key'])
                                                 @case('cost')
@@ -2516,14 +2485,7 @@
                                             class="h-full rounded-full"
                                             style="
                                                 width: {{ $card['score'] }}%;
-                                                background: linear-gradient(
-                                                    90deg,
-                                                    #dbeafe 0%,
-                                                    #93c5fd 38%,
-                                                    #60a5fa 58%,
-                                                    #2563eb 90%,
-                                                    #1e3a8a 100%
-                                                );
+                                                background-color: {{ $card['bar_color'] }};
                                             "
                                         ></div>
                                     @endif
