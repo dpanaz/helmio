@@ -49,6 +49,55 @@ class PerformanceAnalyticsService
             )
             ->values();
 
+        /*
+         * Hard data-quality guard:
+         *
+         * Never calculate investment performance from a valuation series
+         * that contains missing historical security prices.
+         *
+         * A missing historical price can make a holding disappear from a
+         * historical valuation and then reappear at today's live value,
+         * creating a fake gain or loss. Treat that as insufficient data
+         * instead of publishing a misleading return.
+         */
+        $missingHistoricalPriceCount =
+            $valuations->sum(
+                function (
+                    PortfolioValuation $valuation
+                ): int {
+                    return (int) data_get(
+                        $valuation->metadata,
+                        'missing_historical_price_count',
+                        0,
+                    );
+                },
+            );
+
+        if ($missingHistoricalPriceCount > 0) {
+            return $this->insufficientDataResult(
+                sprintf(
+                    'Performance cannot be calculated because %d holding valuation%s %s missing historical security prices. Backfill the missing price history and regenerate portfolio valuations.',
+                    $missingHistoricalPriceCount,
+                    $missingHistoricalPriceCount === 1 ? '' : 's',
+                    $missingHistoricalPriceCount === 1 ? 'is' : 'are',
+                ),
+                warnings: [
+                    [
+                        'code' =>
+                            'missing_security_prices',
+
+                        'message' =>
+                            sprintf(
+                                '%d holding valuation%s %s missing historical security prices.',
+                                $missingHistoricalPriceCount,
+                                $missingHistoricalPriceCount === 1 ? '' : 's',
+                                $missingHistoricalPriceCount === 1 ? 'is' : 'are',
+                            ),
+                    ],
+                ],
+            );
+        }
+
         if ($valuations->count() < 2) {
             return $this->insufficientDataResult(
                 'At least two invested portfolio valuations are required.'
@@ -286,7 +335,7 @@ class PerformanceAnalyticsService
             ],
 
             'formula_version' =>
-                'performance-0.2.1',
+                'performance-0.2.2',
         ];
     }
 
@@ -503,7 +552,8 @@ class PerformanceAnalyticsService
     }
 
     private function insufficientDataResult(
-        string $message
+        string $message,
+        array $warnings = [],
     ): array {
         return [
             'status' =>
@@ -525,19 +575,22 @@ class PerformanceAnalyticsService
                 'has_benchmark_data' =>
                     false,
 
-                'warnings' => [
-                    [
-                        'code' =>
-                            'insufficient_portfolio_history',
+                'warnings' =>
+                    $warnings !== []
+                        ? $warnings
+                        : [
+                            [
+                                'code' =>
+                                    'insufficient_portfolio_history',
 
-                        'message' =>
-                            $message,
-                    ],
-                ],
+                                'message' =>
+                                    $message,
+                            ],
+                        ],
             ],
 
             'formula_version' =>
-                'performance-0.2.1',
+                'performance-0.2.2',
         ];
     }
 
