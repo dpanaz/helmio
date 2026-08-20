@@ -13,7 +13,8 @@ class PerformanceAnalyticsService
     public function __construct(
         private readonly ReturnCalculator $returnCalculator,
         private readonly TimeWeightedReturnService $timeWeightedReturnService,
-        private readonly BenchmarkSeriesService $benchmarkSeriesService
+        private readonly BenchmarkSeriesService $benchmarkSeriesService,
+        private readonly PortfolioCashFlowService $portfolioCashFlowService,
     ) {
     }
 
@@ -103,6 +104,46 @@ class PerformanceAnalyticsService
                 'At least two invested portfolio valuations are required.'
             );
         }
+
+        /*
+         * Rebuild each valuation's external cash flow directly from the
+         * transaction ledger for that exact valuation date.
+         *
+         * Older/generated PortfolioValuation rows can contain stale cash-flow
+         * values. TWR should never trust a persisted duplicate when the
+         * authoritative transaction ledger is available.
+         *
+         * This modifies only the in-memory models used for this calculation;
+         * it does not write to the database.
+         */
+        $valuations = $valuations
+            ->map(
+                function (
+                    PortfolioValuation $valuation
+                ) use ($user): PortfolioValuation {
+                    $cashFlow =
+                        $this->portfolioCashFlowService
+                            ->forUserOnDate(
+                                user: $user,
+                                date:
+                                    $valuation
+                                        ->valuation_date,
+                            );
+
+                    $valuation->setAttribute(
+                        'net_cash_flow',
+                        (float) (
+                            $cashFlow[
+                                'net_external_cash_flow'
+                            ]
+                            ?? 0
+                        ),
+                    );
+
+                    return $valuation;
+                },
+            )
+            ->values();
 
         /** @var PortfolioValuation $firstValuation */
         $firstValuation = $valuations->first();
@@ -335,7 +376,7 @@ class PerformanceAnalyticsService
             ],
 
             'formula_version' =>
-                'performance-0.2.2',
+                'performance-0.3.0',
         ];
     }
 
@@ -590,7 +631,7 @@ class PerformanceAnalyticsService
             ],
 
             'formula_version' =>
-                'performance-0.2.2',
+                'performance-0.3.0',
         ];
     }
 

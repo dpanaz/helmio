@@ -16,6 +16,7 @@ class PortfolioValuationGenerator
         private readonly PortfolioCashFlowService $cashFlowService,
         private readonly HistoricalPriceService $historicalPriceService,
         private readonly HistoricalQuantityService $historicalQuantityService,
+        private readonly HistoricalCashBalanceService $historicalCashBalanceService,
     ) {
     }
 
@@ -272,8 +273,20 @@ class PortfolioValuationGenerator
                 )
         );
 
+        /*
+         * Reconstruct non-security cash for the requested valuation date.
+         *
+         * Using today's account cash balance for every historical date causes
+         * future deposits, withdrawals, buys, sells, dividends, and fees to
+         * leak backward into historical portfolio values. That can make TWR
+         * double-count external flows and create artificial gains/losses.
+         */
         $cashValue =
-            $this->accountCashValue($account)
+            $this->historicalCashBalanceService
+                ->balanceOnDate(
+                    account: $account,
+                    date: $valuationDate,
+                )
             + $cashEquivalentValue;
 
         $cashFlow = $this->cashFlowService
@@ -801,26 +814,4 @@ class PortfolioValuationGenerator
         );
     }
 
-    /**
-     * Determine the cash balance for an account.
-     */
-    private function accountCashValue(
-        InvestmentAccount $account
-    ): float {
-        foreach (
-            [
-                'cash_balance',
-                'cash_value',
-                'available_cash',
-            ] as $attribute
-        ) {
-            $value = $account->getAttribute($attribute);
-
-            if ($value !== null) {
-                return (float) $value;
-            }
-        }
-
-        return 0.0;
-    }
 }
