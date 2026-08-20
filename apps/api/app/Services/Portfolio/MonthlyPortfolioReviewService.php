@@ -4,6 +4,7 @@ namespace App\Services\Portfolio;
 
 use App\Models\AiInsightRun;
 use App\Models\AuditRun;
+use App\Models\HelmScoreSnapshot;
 use App\Models\MonthlyPortfolioReview;
 use App\Models\PortfolioStateSnapshot;
 use App\Models\TimelineEvent;
@@ -52,11 +53,27 @@ class MonthlyPortfolioReviewService
             ->orderBy('id')
             ->get();
 
+        $helmScoreSnapshots = HelmScoreSnapshot::query()
+            ->where('user_id', $user->id)
+            ->whereBetween('calculated_for_date', [
+                $periodStart->toDateString(),
+                $periodEnd->toDateString(),
+            ])
+            ->orderBy('calculated_for_date')
+            ->orderBy('id')
+            ->get();
+
         $startingSnapshot = $snapshots->first();
         $endingSnapshot = $snapshots->last();
 
         $startingAudit = $auditRuns->first();
         $endingAudit = $auditRuns->last();
+
+        $startingHelmScoreSnapshot =
+            $helmScoreSnapshots->first();
+
+        $endingHelmScoreSnapshot =
+            $helmScoreSnapshots->last();
 
         $startingValue = $startingSnapshot !== null
             ? (float) $startingSnapshot->portfolio_value
@@ -76,8 +93,15 @@ class MonthlyPortfolioReviewService
                 ? $valueChange / $startingValue
                 : null;
 
-        $startingScore = $startingAudit?->audit_score;
-        $endingScore = $endingAudit?->audit_score;
+        $startingScore =
+            $startingHelmScoreSnapshot !== null
+                ? (int) $startingHelmScoreSnapshot->overall_score
+                : null;
+
+        $endingScore =
+            $endingHelmScoreSnapshot !== null
+                ? (int) $endingHelmScoreSnapshot->overall_score
+                : null;
 
         $scoreChange = $startingScore !== null
             && $endingScore !== null
@@ -121,6 +145,7 @@ class MonthlyPortfolioReviewService
         $limitations = $this->limitations(
             $snapshots,
             $auditRuns,
+            $helmScoreSnapshots,
             $events,
         );
 
@@ -152,6 +177,7 @@ class MonthlyPortfolioReviewService
 
         $status = $snapshots->isEmpty()
             && $auditRuns->isEmpty()
+            && $helmScoreSnapshots->isEmpty()
             && $events->isEmpty()
                 ? MonthlyPortfolioReview::STATUS_BLOCKED
                 : MonthlyPortfolioReview::STATUS_COMPLETED;
@@ -214,6 +240,17 @@ class MonthlyPortfolioReviewService
                 'audit_run_ids' => $auditRuns
                     ->pluck('id')
                     ->all(),
+
+                'helm_score_snapshot_ids' =>
+                    $helmScoreSnapshots
+                        ->pluck('id')
+                        ->all(),
+
+                'starting_helm_score_snapshot_id' =>
+                    $startingHelmScoreSnapshot?->id,
+
+                'ending_helm_score_snapshot_id' =>
+                    $endingHelmScoreSnapshot?->id,
 
                 'timeline_event_ids' => $events
                     ->pluck('id')
@@ -308,6 +345,7 @@ class MonthlyPortfolioReviewService
     private function limitations(
         Collection $snapshots,
         Collection $auditRuns,
+        Collection $helmScoreSnapshots,
         Collection $events,
     ): array {
         $limitations = collect();
@@ -321,6 +359,12 @@ class MonthlyPortfolioReviewService
         if ($auditRuns->count() < 2) {
             $limitations->push(
                 'Fewer than two Advisor Audit runs were recorded during this month.',
+            );
+        }
+
+        if ($helmScoreSnapshots->count() < 2) {
+            $limitations->push(
+                'Fewer than two Helm Score snapshots were recorded during this month.',
             );
         }
 
@@ -421,7 +465,7 @@ class MonthlyPortfolioReviewService
         if ($scoreChange !== null) {
             $parts->push(
                 sprintf(
-                    'The Advisor Audit score changed by %s%d point%s.',
+                    'The Helm Score changed by %s%d point%s.',
                     $scoreChange > 0 ? '+' : '',
                     $scoreChange,
                     abs($scoreChange) === 1
