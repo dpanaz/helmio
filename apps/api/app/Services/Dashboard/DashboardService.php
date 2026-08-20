@@ -610,21 +610,30 @@ class DashboardService
             )
             ->values();
 
+        /*
+         * AuditRun.audit_score is the canonical Advisor Audit score.
+         * audit_details is a historical supporting payload and must never
+         * override the persisted score column.
+         */
         $auditScore =
-            data_get(
-                $auditDetails,
-                'overall_score',
-                data_get(
-                    $currentAuditRun,
-                    'audit_score',
-                ),
-            );
-
-        $auditScore =
-            $auditScore !== null
-            && is_numeric($auditScore)
-                ? (int) $auditScore
-                : null;
+            $currentAuditRun->audit_score !== null
+            && is_numeric(
+                $currentAuditRun->audit_score
+            )
+                ? (int) $currentAuditRun->audit_score
+                : (
+                    is_numeric(
+                        data_get(
+                            $auditDetails,
+                            'overall_score',
+                        )
+                    )
+                        ? (int) data_get(
+                            $auditDetails,
+                            'overall_score',
+                        )
+                        : null
+                );
 
         $status =
             (string) data_get(
