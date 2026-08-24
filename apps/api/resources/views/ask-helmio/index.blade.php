@@ -161,9 +161,56 @@
                 </div>
             @endif
 
+            <div
+                id="ask-helmio-mobile-composer"
+                class="border-b border-slate-800 bg-slate-950/95 px-3 py-3 backdrop-blur"
+            >
+                <form
+                    method="POST"
+                    action="{{ route('ask-helmio.store') }}"
+                >
+                    @csrf
+
+                    @if ($conversation)
+                        <input
+                            type="hidden"
+                            name="conversation_id"
+                            value="{{ $conversation->id }}"
+                        >
+                    @endif
+
+                    <div class="flex items-end gap-2 rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-lg focus-within:border-violet-500">
+                        <textarea
+                            name="question"
+                            rows="1"
+                            maxlength="2000"
+                            required
+                            placeholder="Ask Helmio..."
+                            class="max-h-28 min-h-10 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 text-[16px] leading-6 text-white placeholder-slate-600 shadow-none focus:ring-0"
+                        >{{ old('question') }}</textarea>
+
+                        <button
+                            type="submit"
+                            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-white"
+                            aria-label="Send question"
+                        >
+                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12 15-7.5-4.5 15-3-6-7.5-1.5Zm7.5 1.5 7.5-9"/>
+                            </svg>
+                        </button>
+                    </div>
+
+                    @error('question')
+                        <p class="mt-2 text-sm text-red-300">
+                            {{ $message }}
+                        </p>
+                    @enderror
+                </form>
+
+
             <main
                 id="ask-helmio-mobile-messages"
-                class="min-h-[calc(100dvh-13rem)] overflow-x-hidden overflow-y-auto pb-32"
+                class="min-h-[calc(100dvh-13rem)] overflow-x-hidden overflow-y-auto pb-8"
             >
 
                     @if ($conversation === null || $conversation->messages->isEmpty())
@@ -332,51 +379,6 @@
 
             </main>
 
-            <div
-                id="ask-helmio-mobile-composer"
-                class="fixed left-0 right-0 z-40 border-t border-slate-800 bg-slate-950/95 px-3 py-2.5 backdrop-blur"
-            >
-                <form
-                    method="POST"
-                    action="{{ route('ask-helmio.store') }}"
-                >
-                    @csrf
-
-                    @if ($conversation)
-                        <input
-                            type="hidden"
-                            name="conversation_id"
-                            value="{{ $conversation->id }}"
-                        >
-                    @endif
-
-                    <div class="flex items-end gap-2 rounded-xl border border-slate-700 bg-slate-900 p-2 shadow-lg focus-within:border-violet-500">
-                        <textarea
-                            name="question"
-                            rows="1"
-                            maxlength="2000"
-                            required
-                            placeholder="Ask Helmio..."
-                            class="max-h-28 min-h-10 flex-1 resize-none border-0 bg-transparent px-2 py-1.5 text-[16px] leading-6 text-white placeholder-slate-600 shadow-none focus:ring-0"
-                        >{{ old('question') }}</textarea>
-
-                        <button
-                            type="submit"
-                            class="inline-flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-violet-600 text-white"
-                            aria-label="Send question"
-                        >
-                            <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12 15-7.5-4.5 15-3-6-7.5-1.5Zm7.5 1.5 7.5-9"/>
-                            </svg>
-                        </button>
-                    </div>
-
-                    @error('question')
-                        <p class="mt-2 text-sm text-red-300">
-                            {{ $message }}
-                        </p>
-                    @enderror
-                </form>
             </div>
         </div>
 
@@ -492,6 +494,57 @@
                                 </div>
                             </div>
                         @endif
+
+                        <div class="border-b border-slate-800 bg-slate-950/95 p-5 backdrop-blur">
+                            <form
+                                method="POST"
+                                action="{{ route('ask-helmio.store') }}"
+                                class="mx-auto max-w-4xl"
+                            >
+                                @csrf
+
+                                @if ($conversation)
+                                    <input
+                                        type="hidden"
+                                        name="conversation_id"
+                                        value="{{ $conversation->id }}"
+                                    >
+                                @endif
+
+                                <div class="flex items-end gap-3 rounded-xl border border-slate-700 bg-slate-900 p-2.5 shadow-lg focus-within:border-violet-500 focus-within:ring-2 focus-within:ring-violet-500/10">
+                                    <textarea
+                                        name="question"
+                                        rows="1"
+                                        maxlength="2000"
+                                        required
+                                        placeholder="Ask Helmio about your portfolio..."
+                                        class="max-h-40 min-h-11 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm leading-6 text-white placeholder-slate-600 shadow-none focus:ring-0"
+                                    >{{ old('question') }}</textarea>
+
+                                    <button
+                                        type="submit"
+                                        class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white transition hover:bg-violet-500"
+                                        aria-label="Send question"
+                                    >
+                                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                                            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12 15-7.5-4.5 15-3-6-7.5-1.5Zm7.5 1.5 7.5-9"/>
+                                        </svg>
+                                    </button>
+                                </div>
+
+                                @error('question')
+                                    <p class="mt-2 text-sm text-red-300">
+                                        {{ $message }}
+                                    </p>
+                                @enderror
+
+                                <p class="mt-3 text-center text-xs leading-5 text-slate-600">
+                                    Answers are grounded in your stored Helmio data and are for portfolio oversight,
+                                    not trade execution.
+                                </p>
+                            </form>
+                        </div>
+
 
                         <div
                             id="ask-helmio-desktop-messages"
@@ -664,55 +717,6 @@
 
                         </div>
 
-                        <div class="border-t border-slate-800 bg-slate-950/95 p-5 backdrop-blur">
-                            <form
-                                method="POST"
-                                action="{{ route('ask-helmio.store') }}"
-                                class="mx-auto max-w-4xl"
-                            >
-                                @csrf
-
-                                @if ($conversation)
-                                    <input
-                                        type="hidden"
-                                        name="conversation_id"
-                                        value="{{ $conversation->id }}"
-                                    >
-                                @endif
-
-                                <div class="flex items-end gap-3 rounded-xl border border-slate-700 bg-slate-900 p-2.5 shadow-lg focus-within:border-violet-500 focus-within:ring-2 focus-within:ring-violet-500/10">
-                                    <textarea
-                                        name="question"
-                                        rows="1"
-                                        maxlength="2000"
-                                        required
-                                        placeholder="Ask Helmio about your portfolio..."
-                                        class="max-h-40 min-h-11 flex-1 resize-none border-0 bg-transparent px-2 py-2 text-sm leading-6 text-white placeholder-slate-600 shadow-none focus:ring-0"
-                                    >{{ old('question') }}</textarea>
-
-                                    <button
-                                        type="submit"
-                                        class="inline-flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-violet-600 text-white transition hover:bg-violet-500"
-                                        aria-label="Send question"
-                                    >
-                                        <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                                            <path stroke-linecap="round" stroke-linejoin="round" d="m4.5 12 15-7.5-4.5 15-3-6-7.5-1.5Zm7.5 1.5 7.5-9"/>
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                @error('question')
-                                    <p class="mt-2 text-sm text-red-300">
-                                        {{ $message }}
-                                    </p>
-                                @enderror
-
-                                <p class="mt-3 text-center text-xs leading-5 text-slate-600">
-                                    Answers are grounded in your stored Helmio data and are for portfolio oversight,
-                                    not trade execution.
-                                </p>
-                            </form>
-                        </div>
                     </main>
                 </div>
             </div>
@@ -741,14 +745,6 @@
             #ask-helmio-page {
                 width: 100%;
                 max-width: 100vw;
-            }
-
-            /*
-             * Helmio mobile nav is about 58px tall.
-             * Keep the chat composer directly above it.
-             */
-            #ask-helmio-mobile-composer {
-                bottom: calc(3.65rem + env(safe-area-inset-bottom));
             }
 
             /*
