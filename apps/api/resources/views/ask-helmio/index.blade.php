@@ -84,6 +84,49 @@
 
             return route($routeName);
         };
+        /*
+         * Show newest question/answer pairs first, while keeping the
+         * question immediately above its matching Helmio response.
+         */
+        $displayMessages = collect();
+
+        if ($conversation) {
+            $pairs = collect();
+            $currentPair = null;
+
+            foreach ($conversation->messages->sortBy('id') as $message) {
+                if ($message->role === 'user') {
+                    if ($currentPair !== null) {
+                        $pairs->push($currentPair);
+                    }
+
+                    $currentPair = [
+                        'sort_id' => $message->id,
+                        'messages' => collect([$message]),
+                    ];
+                } elseif ($message->role === 'assistant') {
+                    if ($currentPair === null) {
+                        $currentPair = [
+                            'sort_id' => $message->id,
+                            'messages' => collect(),
+                        ];
+                    }
+
+                    $currentPair['messages']->push($message);
+                }
+            }
+
+            if ($currentPair !== null) {
+                $pairs->push($currentPair);
+            }
+
+            $displayMessages = $pairs
+                ->sortByDesc('sort_id')
+                ->flatMap(
+                    fn (array $pair) => $pair['messages']
+                )
+                ->values();
+        }
     @endphp
 
     <div id="ask-helmio-page" class="min-h-screen overflow-x-hidden bg-slate-950">
@@ -269,7 +312,7 @@
                         </div>
                     @else
                         <div class="space-y-5 px-3 py-5">
-                            @foreach ($conversation->messages as $message)
+                            @foreach ($displayMessages as $message)
                                 @if ($message->role === 'user')
                                     <div class="flex justify-end">
                                         <div class="max-w-[90%] break-words rounded-2xl rounded-br-md bg-blue-600 px-4 py-3 text-sm leading-6 text-white [overflow-wrap:anywhere]">
@@ -607,7 +650,7 @@
                         </div>
                     @else
                         <div class="space-y-5 mx-auto max-w-5xl space-y-7 px-6 py-8">
-                            @foreach ($conversation->messages as $message)
+                            @foreach ($displayMessages as $message)
                                 @if ($message->role === 'user')
                                     <div class="flex justify-end">
                                         <div class="max-w-[90%] break-words rounded-2xl rounded-br-md bg-blue-600 px-4 py-3 text-sm leading-6 text-white [overflow-wrap:anywhere]">
