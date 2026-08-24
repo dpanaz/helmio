@@ -3,9 +3,8 @@
 namespace App\Http\Controllers\Onboarding;
 
 use App\Http\Controllers\Controller;
-use App\Models\Benchmark;
-use App\Services\AdvisorAudit\AdvisorAuditService;
-use Carbon\Carbon;
+use App\Models\InvestmentAccount;
+use App\Services\Audit\AdvisorAuditService;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
 
@@ -15,63 +14,55 @@ class TopFindingsRevealController extends Controller
         Request $request,
         AdvisorAuditService $advisorAuditService,
     ): View {
-        $benchmark = Benchmark::query()
-            ->where('is_active', true)
-            ->where('symbol', 'SPY')
-            ->first();
+        $accounts = InvestmentAccount::query()
+            ->where('user_id', $request->user()->id)
+            ->with([
+                'holdings.security',
+                'transactions.security',
+                'institution',
+            ])
+            ->orderBy('name')
+            ->get();
 
-        $audit = $advisorAuditService->analyze(
-            user: $request->user(),
-            startDate: Carbon::now()
-                ->subYear()
-                ->startOfDay(),
-            endDate: Carbon::now()
-                ->endOfDay(),
-            benchmark: $benchmark,
+        $audit = $advisorAuditService->build(
+            $accounts,
         );
 
-        $critical = collect(
+        $reviewFindings = collect(
             data_get(
                 $audit,
-                'findings.critical',
+                'review_findings',
                 [],
             ),
         );
 
-        $important = collect(
+        $positiveFindings = collect(
             data_get(
                 $audit,
-                'findings.important',
+                'positive_findings',
                 [],
             ),
         );
 
-        $opportunities = collect(
-            data_get(
-                $audit,
-                'findings.opportunities',
-                [],
-            ),
-        );
-
-        $topConcern = $critical
-            ->concat($important)
-            ->sortByDesc(
+        $topConcern = $reviewFindings
+            ->sortBy(
                 fn (array $finding): int =>
-                    (int) data_get(
-                        $finding,
-                        'priority',
-                        0,
+                    $this->severityRank(
+                        (string) data_get(
+                            $finding,
+                            'severity',
+                            '',
+                        ),
                     ),
             )
             ->first();
 
-        $topOpportunity = $opportunities
+        $topOpportunity = $positiveFindings
             ->sortByDesc(
                 fn (array $finding): int =>
                     (int) data_get(
                         $finding,
-                        'priority',
+                        'score',
                         0,
                     ),
             )
@@ -80,7 +71,7 @@ class TopFindingsRevealController extends Controller
         $strongestCategory = collect(
             data_get(
                 $audit,
-                'categories',
+                'category_scores',
                 [],
             ),
         )
@@ -107,20 +98,25 @@ class TopFindingsRevealController extends Controller
                     string $key,
                 ): array => [
                     'key' => $key,
+
                     'label' => str($key)
                         ->replace('_', ' ')
                         ->title()
                         ->toString(),
+
                     'score' => (int) data_get(
                         $category,
                         'score',
                         0,
                     ),
-                    'category_label' => data_get(
-                        $category,
-                        'label',
-                        'Strong',
-                    ),
+
+                    'category_label' =>
+                        data_get(
+                            $category,
+                            'label',
+                            'Strong',
+                        ),
+
                     'reason' => collect(
                         data_get(
                             $category,
@@ -141,5 +137,19 @@ class TopFindingsRevealController extends Controller
                 'strongestCategory' => $strongestCategory,
             ],
         );
+    }
+
+    private function severityRank(
+        string $severity,
+    ): int {
+        return match ($severity) {
+            'critical' => 1,
+            'high' => 2,
+            'medium' => 3,
+            'low' => 4,
+            'information' => 5,
+            'positive' => 6,
+            default => 7,
+        };
     }
 }
