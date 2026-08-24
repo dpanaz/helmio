@@ -115,6 +115,13 @@ class AskHelmioService
             (string) $userMessage->content,
         );
 
+        /*
+         * Build the context before calling the provider.
+         *
+         * The context service is now intentionally resilient: an unavailable
+         * analytics category should be represented in data_availability rather
+         * than causing the entire Ask Helmio request to fail.
+         */
         $context = $this->contextService->build(
             $user,
             $question,
@@ -165,6 +172,12 @@ class AskHelmioService
                     'model' =>
                         $this->provider->modelName(),
 
+                    /*
+                     * IMPORTANT:
+                     *
+                     * Low confidence is still a completed response.
+                     * It is not a technical failure.
+                     */
                     'status' =>
                         AskHelmioMessage::STATUS_COMPLETED,
 
@@ -196,6 +209,8 @@ class AskHelmioService
                         'total_tokens' =>
                             $response['total_tokens']
                             ?? null,
+
+                        'fallback' => false,
                     ],
 
                     'input_tokens' =>
@@ -211,6 +226,18 @@ class AskHelmioService
         } catch (Throwable $exception) {
             report($exception);
 
+            /*
+             * A provider/API failure should not leave the user with a useless
+             * "Helmio could not answer that question" message when Helmio
+             * already has deterministic analytics in the context.
+             *
+             * Build a conservative, context-grounded fallback answer instead.
+             */
+            $fallback = $this->buildFallbackResponse(
+                $question,
+                $context,
+            );
+
             $assistantMessage =
                 AskHelmioMessage::query()->create([
                     'ask_helmio_conversation_id' =>
@@ -222,7 +249,7 @@ class AskHelmioService
                         AskHelmioMessage::ROLE_ASSISTANT,
 
                     'content' =>
-                        'Helmio could not answer that question.',
+                        $fallback['answer'],
 
                     'provider' =>
                         $this->provider->providerName(),
@@ -230,22 +257,35 @@ class AskHelmioService
                     'model' =>
                         $this->provider->modelName(),
 
+                    /*
+                     * The AI provider failed, but Helmio still returned a
+                     * grounded answer from its own analytics. Treat the user
+                     * response as completed while preserving the technical
+                     * failure details in response_payload/error_message.
+                     */
                     'status' =>
-                        AskHelmioMessage::STATUS_FAILED,
+                        AskHelmioMessage::STATUS_COMPLETED,
 
-                    'confidence' => 'low',
+                    'confidence' =>
+                        $fallback['confidence'],
 
-                    'citations' => [],
+                    'citations' =>
+                        $fallback['citations'],
 
                     'limitations' =>
-                        $context['limitations'] ?? [],
+                        $fallback['limitations'],
 
                     'context_snapshot' =>
                         $context,
 
                     'response_payload' => [
+                        'fallback' => true,
+
                         'exception_class' =>
                             $exception::class,
+
+                        'provider_error' =>
+                            $exception->getMessage(),
                     ],
 
                     'generated_at' => now(),
@@ -260,6 +300,279 @@ class AskHelmioService
         ]);
 
         return $assistantMessage->load('conversation');
+    }
+
+    /**
+     * Build a deterministic response from Helmio's own analytics when the AI
+     * provider is unavailable or returns an invalid response.
+     *
+     * This is intentionally conservative. It never invents portfolio facts and
+     * only summarizes data already present in the context snapshot.
+     *
+     * @param array<string, mixed> $context
+     * @return array{
+     *     answer: string,
+     *     confidence: string,
+     *     citations: array<int, array<string, mixed>>,
+     *     limitations: array<int, string>
+     * }
+     */
+    private function buildFallbackResponse(
+        string $question,
+        array $context,
+    ): array {
+        $helmScore = is_array(
+            $context['helm_score'] ?? null
+        )
+            ? $context['helm_score']
+            : [];
+
+        $categories = is_array(
+            $helmScore['categories'] ?? null
+        )
+            ? $helmScore['categories']
+            : [];
+
+        $availability = is_array(
+            $context['data_availability'] ?? null
+        )
+            ? $context['data_availability']
+            : [];
+
+        $findings = collect(
+            $context['open_findings'] ?? [],
+        )
+            ->filter(
+                fn (mixed $finding): bool =>
+                    is_array($finding)
+            )
+            ->values();
+
+        $overallScore =
+            $helmScore['overall_score'] ?? null;
+
+        $overallLabel =
+            $helmScore['overall_label'] ?? null;
+
+        $categoryLabels = [
+            'cost' => 'costs',
+            'diversification' => 'diversification',
+            'performance' => 'performance',
+            'risk' => 'risk',
+            'trading' => 'trading activity',
+            'cash' => 'cash allocation',
+            'tax' => 'tax efficiency',
+        ];
+
+        $scoredCategories = collect(
+            $categoryLabels,
+        )
+            ->map(
+                function (
+                    string $label,
+                    string $key,
+                ) use ($categories): ?array {
+                    $category =
+                        $categories[$key] ?? null;
+
+                    if (! is_array($category)) {
+                        return null;
+                    }
+
+                    $score = $category['score']
+                        ?? null;
+
+                    if (! is_numeric($score)) {
+                        return null;
+                    }
+
+                    return [
+                        'key' => $key,
+                        'label' => $label,
+                        'score' => (int) round(
+                            (float) $score
+                        ),
+                        'category' => $category,
+                    ];
+                }
+            )
+            ->filter()
+            ->sortBy('score')
+            ->values();
+
+        $concerns = $scoredCategories
+            ->filter(
+                fn (array $category): bool =>
+                    $category['score'] < 70
+            )
+            ->take(3);
+
+        $strengths = $scoredCategories
+            ->filter(
+                fn (array $category): bool =>
+                    $category['score'] >= 80
+            )
+            ->sortByDesc('score')
+            ->take(2);
+
+        $parts = [];
+
+        if (
+            is_numeric($overallScore)
+        ) {
+            $scoreText =
+                'Your current Helm Score is '
+                .(int) round((float) $overallScore);
+
+            if (
+                is_string($overallLabel)
+                && trim($overallLabel) !== ''
+            ) {
+                $scoreText .=
+                    ' ('.$overallLabel.')';
+            }
+
+            $parts[] = $scoreText.'.';
+        }
+
+        if ($concerns->isNotEmpty()) {
+            $concernText = $concerns
+                ->map(
+                    fn (array $category): string =>
+                        ucfirst($category['label'])
+                        .' is currently one of the weaker areas'
+                        .' (score '.$category['score'].')'
+                )
+                ->implode('; ');
+
+            $parts[] =
+                'The areas that most deserve attention are: '
+                .$concernText.'.';
+        } elseif ($findings->isNotEmpty()) {
+            $findingTitles = $findings
+                ->take(3)
+                ->pluck('title')
+                ->filter()
+                ->implode('; ');
+
+            if ($findingTitles !== '') {
+                $parts[] =
+                    'Helmio currently has these items flagged for review: '
+                    .$findingTitles.'.';
+            }
+        } elseif ($scoredCategories->isNotEmpty()) {
+            $parts[] =
+                'Helmio does not currently show a major weakness among the available scored categories.';
+        }
+
+        if ($strengths->isNotEmpty()) {
+            $strengthText = $strengths
+                ->map(
+                    fn (array $category): string =>
+                        $category['label']
+                        .' ('.$category['score'].')'
+                )
+                ->implode(' and ');
+
+            $parts[] =
+                'Stronger areas include '
+                .$strengthText.'.';
+        }
+
+        $unavailable = collect(
+            $availability,
+        )
+            ->only([
+                'cost',
+                'diversification',
+                'performance',
+                'risk',
+                'trading',
+                'cash',
+                'tax',
+                'suitability',
+            ])
+            ->filter(
+                fn (mixed $available): bool =>
+                    $available === false
+            )
+            ->keys()
+            ->values();
+
+        if ($unavailable->isNotEmpty()) {
+            $parts[] =
+                'Some areas could not be evaluated completely: '
+                .$unavailable->implode(', ')
+                .'.';
+        }
+
+        if ($parts === []) {
+            $parts[] =
+                'Helmio has portfolio data available, but it does not currently contain enough scored analytics to summarize the main concerns reliably.';
+        }
+
+        $parts[] =
+            'This response was generated from Helmio\'s stored analytics because the AI explanation service was temporarily unavailable.';
+
+        $citations = $findings
+            ->take(3)
+            ->map(
+                function (array $finding): ?array {
+                    $id = $finding['id'] ?? null;
+
+                    if (! is_numeric($id)) {
+                        return null;
+                    }
+
+                    return [
+                        'type' => 'audit_finding',
+                        'id' => (int) $id,
+                        'label' =>
+                            (string) (
+                                $finding['title']
+                                ?? 'Advisor Audit finding'
+                            ),
+                        'route_name' =>
+                            $finding['route_name']
+                            ?? null,
+                        'route_parameter' => null,
+                    ];
+                }
+            )
+            ->filter()
+            ->values()
+            ->all();
+
+        $limitations = collect(
+            $context['limitations'] ?? [],
+        )
+            ->filter(
+                fn (mixed $value): bool =>
+                    is_string($value)
+                    && trim($value) !== ''
+            )
+            ->unique()
+            ->take(10)
+            ->values()
+            ->all();
+
+        $confidence = $scoredCategories->count() >= 4
+            ? 'medium'
+            : 'low';
+
+        return [
+            'answer' =>
+                implode(' ', $parts),
+
+            'confidence' =>
+                $confidence,
+
+            'citations' =>
+                $citations,
+
+            'limitations' =>
+                $limitations,
+        ];
     }
 
     /**
