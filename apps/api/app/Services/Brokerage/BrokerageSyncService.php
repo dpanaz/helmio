@@ -5,6 +5,7 @@ namespace App\Services\Brokerage;
 use App\Data\Brokerage\BrokerageAccountData;
 use App\Data\Brokerage\BrokeragePositionData;
 use App\Data\Brokerage\BrokerageTransactionData;
+use App\Models\AiInsightRun;
 use App\Models\BrokerageConnection;
 use App\Models\BrokerageSyncRun;
 use App\Models\Holding;
@@ -226,23 +227,40 @@ class BrokerageSyncService
                 );
 
             $staleInsightCount =
-    $this->insightStalenessService
-        ->markIfPortfolioChanged(
-            $connection->user_id,
-            'Portfolio values changed after brokerage synchronization.'
-        );
+                $this->insightStalenessService
+                    ->markIfPortfolioChanged(
+                        $connection->user_id,
+                        'Portfolio values changed after brokerage synchronization.'
+                    );
 
-if ($staleInsightCount > 0) {
-    GenerateAiPortfolioInsight::dispatch(
-        userId:
-            $connection->user_id,
+            $hasCompletedInsight = AiInsightRun::query()
+                ->where(
+                    'user_id',
+                    $connection->user_id,
+                )
+                ->where(
+                    'status',
+                    'completed',
+                )
+                ->exists();
 
-        trigger:
-            'brokerage_sync',
-    )->delay(
-        now()->addMinutes(2)
-    );
-}
+            $shouldGenerateInsight =
+                $staleInsightCount > 0
+                || ! $hasCompletedInsight;
+
+            if ($shouldGenerateInsight) {
+                GenerateAiPortfolioInsight::dispatch(
+                    userId:
+                        $connection->user_id,
+
+                    trigger:
+                        $hasCompletedInsight
+                            ? 'brokerage_sync'
+                            : 'onboarding_initial_analysis',
+                )->delay(
+                    now()->addSeconds(15)
+                );
+            }
 
 return $stats;
         } catch (Throwable $exception) {
