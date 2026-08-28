@@ -2604,3 +2604,4 @@
             };
         }
     </script>
+</x-app-layout>
