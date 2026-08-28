@@ -32,14 +32,14 @@
     <div
         x-data="whatIfSimulator()"
         x-init="init()"
-        class="min-h-screen bg-slate-950"
+        class="min-h-screen bg-slate-950 bg-[radial-gradient(circle_at_top_right,rgba(37,99,235,0.10),transparent_28%),radial-gradient(circle_at_top_left,rgba(15,23,42,0.7),transparent_24%)]"
     >
         <div
-            class="mx-auto w-full max-w-[1600px] px-4 py-5 sm:px-6 lg:px-8"
+            class="mx-auto w-full max-w-[1500px] px-4 py-6 sm:px-6 lg:px-8"
         >
             {{-- Header --}}
             <div
-                class="mb-5 flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between"
+                class="mb-6 flex flex-col gap-5 border-b border-slate-800/80 pb-5 xl:flex-row xl:items-end xl:justify-between"
             >
                 <div class="min-w-0">
                     <div
@@ -155,7 +155,7 @@
             >
                 {{-- Current --}}
                 <div
-                    class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5"
+                    class="rounded-2xl border border-slate-800/90 bg-slate-900/80 p-5 shadow-sm shadow-black/10"
                 >
                     <div
                         class="flex items-start justify-between gap-4"
@@ -196,7 +196,7 @@
 
                 {{-- What if --}}
                 <div
-                    class="rounded-2xl border border-blue-500/20 bg-blue-500/5 p-5"
+                    class="relative overflow-hidden rounded-2xl border border-blue-500/25 bg-gradient-to-br from-blue-500/10 via-slate-900/90 to-slate-900 p-5 shadow-sm shadow-blue-950/20"
                 >
                     <div
                         class="flex items-start justify-between gap-4"
@@ -251,7 +251,7 @@
 
                 {{-- Cash --}}
                 <div
-                    class="rounded-2xl border border-slate-800 bg-slate-900/70 p-5"
+                    class="rounded-2xl border border-slate-800/90 bg-slate-900/80 p-5 shadow-sm shadow-black/10"
                 >
                     <div
                         class="flex items-start justify-between gap-4"
@@ -293,7 +293,7 @@
             <div
                 x-show="activeScenarioId || scenarioMessage"
                 x-cloak
-                class="mb-5 flex flex-col gap-2 rounded-2xl border border-slate-800 bg-slate-900/60 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
+                class="mb-5 flex flex-col gap-2 rounded-xl border border-slate-800/80 bg-slate-900/50 px-4 py-3 sm:flex-row sm:items-center sm:justify-between"
             >
                 <div class="min-w-0">
                     <p class="text-[10px] font-bold uppercase tracking-[0.14em] text-slate-500">
@@ -313,14 +313,14 @@
                 ></p>
             </div>
 
-            <div
-                class="grid grid-cols-1 gap-5 xl:grid-cols-[360px_minmax(0,1fr)]"
-            >
+
+            {{-- Simulator workspace --}}
+            <div class="grid grid-cols-1 items-start gap-5 xl:grid-cols-[360px_minmax(0,1fr)]">
                 {{-- Left column --}}
-                <div class="space-y-4">
+                <div class="space-y-4 xl:sticky xl:top-5">
                     {{-- Scenario builder --}}
                     <div
-                        class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70"
+                        class="overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-900/85 shadow-sm shadow-black/10"
                     >
                         <div
                             class="border-b border-slate-800 px-5 py-4"
@@ -362,7 +362,7 @@
                             </div>
                         </div>
 
-                        <div class="space-y-4 p-5">
+                        <div class="space-y-4 p-4 sm:p-5">
                             <div>
                                 <label
                                     for="what-if-action"
@@ -586,7 +586,7 @@
 
                     {{-- Scenario changes --}}
                     <div
-                        class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70"
+                        class="overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-900/85 shadow-sm shadow-black/10"
                     >
                         <div
                             class="flex items-center justify-between border-b border-slate-800 px-5 py-4"
@@ -708,7 +708,7 @@
 
                     {{-- Saved scenarios --}}
                     <div
-                        class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70"
+                        class="overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-900/85 shadow-sm shadow-black/10"
                     >
                         <div
                             class="flex items-center justify-between border-b border-slate-800 px-5 py-4"
@@ -838,16 +838,17 @@
                             </div>
                         </div>
                     </div>
-                </div>
 
+                {{-- Results workspace --}}
+                <div class="min-w-0 space-y-5">
                 {{-- Scenario impact --}}
                 <div
                     x-show="changes.length > 0 && impact.largestPosition"
                     x-cloak
-                    class="xl:col-span-2"
+                    class="min-w-0"
                 >
                     <div
-                        class="mb-5 rounded-2xl border border-slate-800 bg-slate-900/70 p-5"
+                        class="rounded-2xl border border-slate-800/90 bg-slate-900/80 p-5 shadow-sm shadow-black/10"
                     >
                         <div class="mb-4">
                             <h2 class="text-sm font-semibold text-white">
@@ -1015,7 +1016,7 @@
 
                 {{-- Main comparison --}}
                 <div
-                    class="min-w-0 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70"
+                    class="min-w-0 overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-900/80 shadow-sm shadow-black/10"
                 >
                     <div
                         class="flex flex-col gap-3 border-b border-slate-800 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
@@ -1237,7 +1238,7 @@
             <div
                 x-show="changes.length > 0 && analytics.current && analytics.simulated"
                 x-cloak
-                class="mb-5 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900/70"
+                class="overflow-hidden rounded-2xl border border-slate-800/90 bg-slate-900/80 shadow-sm shadow-black/10"
             >
                 <div
                     class="flex flex-col gap-3 border-b border-slate-800 px-5 py-4 sm:flex-row sm:items-center sm:justify-between"
@@ -1562,8 +1563,9 @@
                 </div>
             </div>
 
+                </div>
+            </div>
         </div>
-
         {{-- Save scenario modal --}}
         <div
             x-show="saveModalOpen"
@@ -2602,4 +2604,3 @@
             };
         }
     </script>
-</x-app-layout>
