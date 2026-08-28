@@ -1,7 +1,16 @@
 <x-app-layout>
     @php
+        $whatIfActiveHoldings =
+            $portfolio->holdings
+                ->filter(
+                    fn ($holding) =>
+                        (float) $holding->marketValue > 0.01
+                )
+                ->sortByDesc('marketValue')
+                ->values();
+
         $whatIfInitialSymbol =
-            $portfolio->holdings->first()?->symbol;
+            $whatIfActiveHoldings->first()?->symbol;
 
         $whatIfTotalValue =
             $portfolio->totalValue();
@@ -10,8 +19,7 @@
             $portfolio->cash;
 
         $whatIfOriginalHoldings =
-            $portfolio->holdings
-                ->sortByDesc('marketValue')
+            $whatIfActiveHoldings
                 ->map(function ($holding) use ($whatIfTotalValue) {
                     return [
                         'symbol' => $holding->symbol,
@@ -413,8 +421,7 @@
                                     class="block w-full rounded-xl border-slate-700 bg-slate-950 px-3 py-2.5 text-sm text-slate-200 shadow-none focus:border-blue-500 focus:ring-blue-500"
                                 >
                                     @forelse(
-                                        $portfolio->holdings
-                                            ->sortByDesc('marketValue')
+                                        $whatIfActiveHoldings
                                         as $holding
                                     )
                                         <option
@@ -2564,9 +2571,21 @@
                         }
 
                         this.comparisonHoldings =
-                            data.comparison
-                                ?.holdings
-                            ?? [];
+                            (
+                                data.comparison
+                                    ?.holdings
+                                ?? []
+                            ).filter(
+                                holding =>
+                                    Number(
+                                        holding.current_value
+                                        ?? 0
+                                    ) > 0.01
+                                    || Number(
+                                        holding.simulated_value
+                                        ?? 0
+                                    ) > 0.01
+                            );
 
                         this.simulatedTotal =
                             data.simulated
