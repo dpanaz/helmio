@@ -12,6 +12,7 @@
             ['route' => 'advisor-action-center.index', 'label' => 'Action Center'],
             ['route' => 'ai-insights.index', 'label' => 'AI Insights'],
             ['route' => 'ask-helmio.index', 'label' => 'Ask Helmio'],
+            ['route' => 'what-if.index', 'label' => 'What If'],
             ['route' => 'portfolio-timeline.index', 'label' => 'Portfolio Timeline'],
             ['route' => 'monthly-reviews.index', 'label' => 'Monthly Reviews'],
             ['route' => 'analytics.costs', 'label' => 'Cost Analysis'],
@@ -82,6 +83,13 @@
                 'label' => 'Ask Helmio',
                 'icon' => 'chat',
                 'active' => ['ask-helmio.*'],
+                'premium' => true,
+            ],
+            [
+                'route' => 'what-if.index',
+                'label' => 'What If',
+                'icon' => 'what-if',
+                'active' => ['what-if.*'],
                 'premium' => true,
             ],
         ];
@@ -338,6 +346,9 @@
                                             @break
                                         @case('chat')
                                             <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M8.625 9.75h6.75m-6.75 3h4.5M21 12a8.25 8.25 0 0 1-8.25 8.25 8.4 8.4 0 0 1-3.58-.8L3 21l1.55-6.17A8.25 8.25 0 1 1 21 12Z"/></svg>
+                                            @break
+                                        @case('what-if')
+                                            <svg class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.9"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3v18m9-9H3m12.75-5.25L18 9m-9.75 6.75L6 18"/></svg>
                                             @break
                                         @case('dollar')
                                             <span class="text-sm font-semibold">$</span>
@@ -1007,6 +1018,9 @@
                         )
                         || request()->routeIs(
                             'ask-helmio.*'
+                        )
+                        || request()->routeIs(
+                            'what-if.*'
                         ),
 
                     'text-slate-500' =>
@@ -1016,6 +1030,9 @@
                             )
                             || request()->routeIs(
                                 'ask-helmio.*'
+                            )
+                            || request()->routeIs(
+                                'what-if.*'
                             )
                         ),
                 ])

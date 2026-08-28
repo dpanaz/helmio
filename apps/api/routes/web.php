@@ -39,6 +39,9 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Onboarding\TopFindingsRevealController;
 use App\Http\Controllers\Onboarding\ExecutiveSummaryRevealController;
 use App\Http\Controllers\MarketingPageController;
+use App\Http\Controllers\Analytics\WhatIfController;
+use App\Http\Controllers\Analytics\WhatIfScenarioController;
+
 
 /*
 |--------------------------------------------------------------------------
@@ -529,6 +532,56 @@ Route::middleware([
     )->name('accounts.profile.update');
 
     /*
+    |--------------------------------------------------------------------------
+    | What if
+    |--------------------------------------------------------------------------
+    */
+
+
+Route::middleware('auth')
+    ->group(function (): void {
+        Route::get(
+            '/what-if',
+            [WhatIfController::class, 'index']
+        )->name('what-if.index');
+
+        Route::post(
+            '/what-if/simulate',
+            [WhatIfController::class, 'simulate']
+        )->name('what-if.simulate');
+
+        Route::get(
+            '/what-if/scenarios',
+            [WhatIfScenarioController::class, 'index']
+        )->name('what-if.scenarios.index');
+
+        Route::post(
+            '/what-if/scenarios',
+            [WhatIfScenarioController::class, 'store']
+        )->name('what-if.scenarios.store');
+
+        Route::get(
+            '/what-if/scenarios/{scenario}',
+            [WhatIfScenarioController::class, 'show']
+        )->name('what-if.scenarios.show');
+
+        Route::put(
+            '/what-if/scenarios/{scenario}',
+            [WhatIfScenarioController::class, 'update']
+        )->name('what-if.scenarios.update');
+
+        Route::post(
+            '/what-if/scenarios/{scenario}/duplicate',
+            [WhatIfScenarioController::class, 'duplicate']
+        )->name('what-if.scenarios.duplicate');
+
+        Route::delete(
+            '/what-if/scenarios/{scenario}',
+            [WhatIfScenarioController::class, 'destroy']
+        )->name('what-if.scenarios.destroy');
+    });
+
+ /*
     |--------------------------------------------------------------------------
     | Holdings
     |--------------------------------------------------------------------------
