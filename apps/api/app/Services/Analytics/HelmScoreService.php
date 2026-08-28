@@ -32,6 +32,63 @@ class HelmScoreService
      * @param Collection<int, InvestmentAccount> $accounts
      * @return array<string, mixed>
      */
+    /**
+     * Calculate only Helm Score categories that depend on the
+     * current portfolio state.
+     *
+     * This intentionally excludes performance, risk, trading,
+     * cash history, and tax history so hypothetical portfolios
+     * are not mixed with the user's real historical analytics.
+     *
+     * @param Collection<int, InvestmentAccount> $accounts
+     * @return array<string, mixed>
+     */
+    public function calculatePortfolioStateCategories(
+        Collection $accounts,
+    ): array {
+        $costs =
+            $this->costAnalytics->calculate(
+                $accounts
+            );
+
+        $funds =
+            $this->fundAnalytics->calculate(
+                $accounts
+            );
+
+        $diversification =
+            $this->diversificationAnalytics->calculate(
+                $accounts
+            );
+
+        return [
+            'categories' => [
+                'cost' =>
+                    $this->calculateCostScore(
+                        costs: $costs,
+                        funds: $funds,
+                    ),
+
+                'diversification' =>
+                    $this->normalizeLegacyCategory(
+                        $diversification
+                    ),
+            ],
+
+            'cost_analytics' =>
+                $costs,
+
+            'fund_analytics' =>
+                $funds,
+
+            'diversification_analytics' =>
+                $diversification,
+
+            'formula_version' =>
+                self::FORMULA_VERSION,
+        ];
+    }
+
     public function calculate(Collection $accounts): array
     {
         $costs = $this->costAnalytics->calculate($accounts);
