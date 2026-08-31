@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Helmio</string>
+    <string name="title_activity_main">Helmio</string>
+    <string name="package_name">com.myhelmio.app</string>
+    <string name="custom_url_scheme">com.myhelmio.app</string>
+</resources>
