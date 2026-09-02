@@ -61,6 +61,7 @@ class User extends Authenticatable
 
             'last_monthly_audit_sent_at' =>
                 'datetime',
+            'is_admin' => 'boolean',
         ];
     }
 

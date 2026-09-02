@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Middleware\CaptureMarketingAttribution;
+use App\Http\Middleware\EnsureMarketingAdmin;
 use App\Http\Middleware\EnsureOnboardingComplete;
 use App\Http\Middleware\RequirePremiumSubscription;
 use Illuminate\Foundation\Application;
@@ -57,12 +58,21 @@ return Application::configure(
                 ],
             );
 
+            /*
+            |--------------------------------------------------------------------------
+            | Middleware Aliases
+            |--------------------------------------------------------------------------
+            */
+
             $middleware->alias([
                 'subscribed' =>
                     RequirePremiumSubscription::class,
 
                 'onboarding.complete' =>
                     EnsureOnboardingComplete::class,
+
+                'marketing.admin' =>
+                    EnsureMarketingAdmin::class,
             ]);
         },
     )

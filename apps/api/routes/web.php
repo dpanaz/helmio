@@ -41,6 +41,7 @@ use App\Http\Controllers\Onboarding\ExecutiveSummaryRevealController;
 use App\Http\Controllers\MarketingPageController;
 use App\Http\Controllers\Analytics\WhatIfController;
 use App\Http\Controllers\Analytics\WhatIfScenarioController;
+use App\Http\Controllers\Admin\RedditCampaignController;
 
 
 /*
@@ -1118,5 +1119,32 @@ Route::middleware('auth')
         ],
     )->name('ask-helmio.archive');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Marketing administration
+|--------------------------------------------------------------------------
+|
+| Campaign attribution, conversion, and revenue reporting is restricted
+| to authenticated Helmio administrators.
+|
+*/
+
+Route::middleware([
+    'auth',
+    'verified',
+    'marketing.admin',
+])
+    ->prefix('admin/marketing')
+    ->name('admin.marketing.')
+    ->group(function (): void {
+        Route::get(
+            '/reddit',
+            [
+                RedditCampaignController::class,
+                'index',
+            ],
+        )->name('reddit');
+    });
 
 require __DIR__.'/auth.php';
