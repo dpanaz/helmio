@@ -16,6 +16,7 @@ class MarketingConversionService
         ?MarketingVisit $visit = null,
         ?float $value = null,
         array $metadata = [],
+        ?string $conversionId = null,
     ): MarketingConversion {
         $visit ??= $this->resolveVisit(
             $user,
@@ -27,7 +28,12 @@ class MarketingConversionService
             ]);
         }
 
-        $conversionId = implode('_', [
+        /*
+         * Callers such as Stripe webhook listeners can
+         * provide a stable external ID for deduplication.
+         * Other conversions receive Helmio's default ID.
+         */
+        $conversionId ??= implode('_', [
             'helmio',
             Str::lower($type),
             $user?->id
@@ -38,17 +44,33 @@ class MarketingConversionService
         $conversion = MarketingConversion::query()
             ->firstOrCreate(
                 [
-                    'conversion_id' => $conversionId,
+                    'conversion_id' =>
+                        $conversionId,
                 ],
                 [
-                    'marketing_visit_id' => $visit?->id,
-                    'user_id' => $user?->id,
-                    'type' => $type,
-                    'value' => $value,
-                    'currency' => 'USD',
-                    'converted_at' => now(),
-                    'reddit_status' => 'pending',
-                    'metadata' => $metadata,
+                    'marketing_visit_id' =>
+                        $visit?->id,
+
+                    'user_id' =>
+                        $user?->id,
+
+                    'type' =>
+                        $type,
+
+                    'value' =>
+                        $value,
+
+                    'currency' =>
+                        'USD',
+
+                    'converted_at' =>
+                        now(),
+
+                    'reddit_status' =>
+                        'pending',
+
+                    'metadata' =>
+                        $metadata,
                 ],
             );
 
@@ -111,12 +133,15 @@ class MarketingConversionService
 
         /*
          * Webhooks and background jobs have no browser
-         * session or cookie. Resolve their attribution
-         * through the user connected at signup.
+         * session or cookie. Resolve attribution through
+         * the user connected to the visit at signup.
          */
         if ($user) {
             return MarketingVisit::query()
-                ->where('user_id', $user->id)
+                ->where(
+                    'user_id',
+                    $user->id,
+                )
                 ->latest('first_seen_at')
                 ->first();
         }
