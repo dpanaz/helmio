@@ -17,7 +17,9 @@ class MarketingConversionService
         ?float $value = null,
         array $metadata = [],
     ): MarketingConversion {
-        $visit ??= $this->resolveVisit();
+        $visit ??= $this->resolveVisit(
+            $user,
+        );
 
         if ($visit && $user) {
             $visit->update([
@@ -59,36 +61,66 @@ class MarketingConversionService
         return $conversion;
     }
 
-    private function resolveVisit(): ?MarketingVisit
-    {
-        $visitId = session(
-            'marketing_visit_id',
-        );
-
-        if ($visitId) {
-            $visit = MarketingVisit::find(
-                $visitId,
+    private function resolveVisit(
+        ?User $user = null,
+    ): ?MarketingVisit {
+        /*
+         * Web requests can resolve attribution using
+         * the visit ID stored in the session.
+         */
+        if (app()->bound('session')) {
+            $visitId = session(
+                'marketing_visit_id',
             );
 
-            if ($visit) {
-                return $visit;
+            if ($visitId) {
+                $visit = MarketingVisit::find(
+                    $visitId,
+                );
+
+                if ($visit) {
+                    return $visit;
+                }
             }
         }
 
-        $visitorUuid = request()->cookie(
-            'helmio_visitor_uuid',
-        );
+        /*
+         * The visitor cookie provides a fallback when
+         * the session has changed but the browser is
+         * still the same.
+         */
+        if (app()->bound('request')) {
+            $visitorUuid = request()->cookie(
+                'helmio_visitor_uuid',
+            );
 
-        if (! $visitorUuid) {
-            return null;
+            if ($visitorUuid) {
+                $visit = MarketingVisit::query()
+                    ->where(
+                        'visitor_uuid',
+                        $visitorUuid,
+                    )
+                    ->latest('first_seen_at')
+                    ->first();
+
+                if ($visit) {
+                    return $visit;
+                }
+            }
         }
 
-        return MarketingVisit::query()
-            ->where(
-                'visitor_uuid',
-                $visitorUuid,
-            )
-            ->latest('first_seen_at')
-            ->first();
+        /*
+         * Webhooks and background jobs have no browser
+         * session or cookie. Resolve their attribution
+         * through the user connected at signup.
+         */
+        if ($user) {
+            return MarketingVisit::query()
+                ->where('user_id', $user->id)
+                ->latest('first_seen_at')
+                ->first();
+        }
+
+        return null;
     }
 }

@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\BrokerageConnection;
 use App\Services\Brokerage\BrokerageProviderManager;
 use App\Services\Brokerage\BrokerageSyncService;
+use App\Services\Marketing\MarketingConversionService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -248,6 +249,7 @@ class BrokerageConnectionController extends Controller
         BrokerageConnection $brokerageConnection,
         BrokerageProviderManager $manager,
         BrokerageSyncService $syncService,
+        MarketingConversionService $marketingConversions,
     ): RedirectResponse {
         $this->authorizeConnection(
             $request,
@@ -517,6 +519,27 @@ class BrokerageConnectionController extends Controller
             $stats = $syncService->sync(
                 $brokerageConnection->fresh(),
                 'connection',
+            );
+
+            $marketingConversions->record(
+                type: 'AccountConnected',
+                user: $request->user(),
+                metadata: [
+                    'brokerage_connection_id' =>
+                        $brokerageConnection->id,
+
+                    'provider' =>
+                        $brokerageConnection->provider,
+
+                    'accounts_imported' =>
+                        (int) ($stats['accounts'] ?? 0),
+
+                    'holdings_imported' =>
+                        (int) ($stats['positions'] ?? 0),
+
+                    'transactions_imported' =>
+                        (int) ($stats['transactions'] ?? 0),
+                ],
             );
 
             $message = sprintf(
