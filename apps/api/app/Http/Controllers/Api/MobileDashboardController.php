@@ -125,29 +125,46 @@ class MobileDashboardController extends Controller
     /**
      * @param Collection<int, InvestmentAccount> $accounts
      */
-    private function portfolioValue(
-        Collection $accounts,
-    ): float {
-        return round(
-            (float) $accounts
-                ->flatMap(
-                    fn (
-                        InvestmentAccount $account
-                    ) => $account->holdings,
-                )
-                ->sum(
-                    fn ($holding) =>
-                        max(
+   private function portfolioValue(
+    Collection $accounts,
+        ): float {
+            return round(
+                (float) $accounts->sum(
+                    function (InvestmentAccount $account): float {
+                        if ($account->current_value !== null) {
+                            return max(
+                                0,
+                                (float) $account->current_value,
+                            );
+                        }
+
+                        $holdingsValue = (float) $account
+                            ->holdings
+                            ->sum(
+                                fn ($holding): float =>
+                                    max(
+                                        0,
+                                        (float) (
+                                            $holding->market_value
+                                            ?? 0
+                                        ),
+                                    ),
+                            );
+
+                        $cashValue = max(
                             0,
                             (float) (
-                                $holding->market_value
+                                $account->cash_value
                                 ?? 0
                             ),
-                        ),
+                        );
+
+                        return $holdingsValue + $cashValue;
+                    },
                 ),
-            2,
-        );
-    }
+                2,
+            );
+        }
 
     /**
      * @param array<string, mixed> $categories
