@@ -7,13 +7,16 @@ use App\Models\AuditRun;
 use App\Models\AuditRunFinding;
 use App\Models\Benchmark;
 use App\Models\User;
+use App\Services\Marketing\MarketingConversionService;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class AdvisorAuditPersistenceService
 {
     public function __construct(
         private readonly AdvisorAuditService $advisorAuditService,
+        private readonly MarketingConversionService $marketingConversions,
     ) {
     }
 
@@ -79,6 +82,54 @@ class AdvisorAuditPersistenceService
                     $activeFingerprints,
             );
         });
+
+        /*
+         * Record the conversion only after the audit transaction
+         * completes. Marketing failures must never cause a saved
+         * advisor audit to be treated as failed.
+         */
+        try {
+            $this->marketingConversions->record(
+                type: 'AuditCompleted',
+                user: $user,
+                metadata: [
+                    'formula_version' =>
+                        $audit['formula_version']
+                        ?? null,
+
+                    'overall_score' =>
+                        isset($audit['overall_score'])
+                        && is_numeric(
+                            $audit['overall_score'],
+                        )
+                            ? (int) $audit['overall_score']
+                            : null,
+
+                    'critical_count' =>
+                        (int) data_get(
+                            $audit,
+                            'findings.summary.critical_count',
+                            0,
+                        ),
+
+                    'important_count' =>
+                        (int) data_get(
+                            $audit,
+                            'findings.summary.important_count',
+                            0,
+                        ),
+
+                    'opportunity_count' =>
+                        (int) data_get(
+                            $audit,
+                            'findings.summary.opportunity_count',
+                            0,
+                        ),
+                ],
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+        }
 
         return $audit;
     }
