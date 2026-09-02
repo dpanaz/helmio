@@ -11,6 +11,20 @@ return [
     | as Mailgun, Postmark, AWS and more.
     |
     */
+    'reddit' => [
+    'pixel_id' => env('REDDIT_PIXEL_ID'),
+
+    'conversion_token' => env(
+        'REDDIT_CONVERSION_TOKEN',
+    ),
+
+    'conversions_enabled' => env(
+        'REDDIT_CONVERSIONS_ENABLED',
+        false,
+    ),
+
+    'test_id' => env('REDDIT_TEST_ID'),
+],
 
     'alpha_vantage' => [
     'key' => env('ALPHA_VANTAGE_API_KEY'),

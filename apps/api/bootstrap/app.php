@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Middleware\CaptureMarketingAttribution;
 use App\Http\Middleware\EnsureOnboardingComplete;
 use App\Http\Middleware\RequirePremiumSubscription;
 use Illuminate\Foundation\Application;
@@ -24,11 +25,28 @@ return Application::configure(
 
             /*
             |--------------------------------------------------------------------------
+            | Marketing Attribution
+            |--------------------------------------------------------------------------
+            |
+            | Capture campaign parameters and Reddit click IDs on web requests.
+            | This must run within the web middleware group so sessions and
+            | cookies are available.
+            |
+            */
+
+            $middleware->web(
+                append: [
+                    CaptureMarketingAttribution::class,
+                ],
+            );
+
+            /*
+            |--------------------------------------------------------------------------
             | External Webhooks
             |--------------------------------------------------------------------------
             |
-            | SnapTrade sends POST requests from outside the Helmio application
-            | and therefore cannot provide a Laravel CSRF token.
+            | SnapTrade and Stripe send requests from outside Helmio and
+            | therefore cannot provide a Laravel CSRF token.
             |
             */
 
