@@ -1,122 +1,125 @@
-<!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="scroll-smooth">
-<head>
-    <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Built for oversight. Not trading. | Helmio</title>
-    <meta name="description" content="Helmio is designed around read-only investment monitoring without authority to buy, sell, transfer, or withdraw your assets.">
-    @vite(['resources/css/app.css', 'resources/js/app.js'])
-</head>
-<body class="min-h-screen bg-slate-950 text-white antialiased">
-<div class="min-h-screen overflow-hidden bg-slate-950">
-<header class="border-b border-white/10 bg-slate-950/90 backdrop-blur">
-<div class="mx-auto flex max-w-7xl items-center justify-between px-4 py-4 sm:px-6 lg:px-8">
-<a href="{{ url('/') }}" class="flex items-center gap-3">
-<div class="flex h-10 w-10 items-center justify-center rounded-xl bg-blue-600 text-lg font-bold">H</div>
-<div><p class="text-lg font-semibold">Helmio</p><p class="text-[9px] font-semibold uppercase tracking-[.22em] text-slate-500">Investment Oversight</p></div>
-</a>
-<nav class="hidden items-center gap-7 text-sm text-slate-400 md:flex">
-<a href="{{ route('marketing.how-it-works') }}" class="hover:text-white">How It Works</a>
-<a href="{{ route('marketing.security') }}" class="hover:text-white">Security</a>
-<a href="{{ url('/pricing') }}" class="hover:text-white">Pricing</a>
-</nav>
-<div class="flex items-center gap-3">
-@auth
-<a href="{{ route('dashboard') }}" class="rounded-xl border border-slate-700 px-4 py-2 text-sm font-semibold">Dashboard</a>
-@else
-<a href="{{ route('login') }}" class="hidden text-sm font-semibold text-slate-300 sm:inline">Sign In</a>
-<a href="{{ route('register') }}" class="rounded-xl bg-blue-600 px-4 py-2 text-sm font-semibold hover:bg-blue-500">Get Started</a>
-@endauth
-</div>
-</div>
-</header>
+@extends('layouts.marketing')
 
-<main>
-<section class="relative border-b border-white/10">
-<div class="absolute inset-0"><div class="absolute left-1/2 top-0 h-[620px] w-[900px] -translate-x-1/2 rounded-full bg-blue-600/10 blur-3xl"></div></div>
-<div class="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8 lg:py-32">
-<div class="mx-auto max-w-4xl text-center">
-<span class="inline-flex rounded-full border border-blue-500/25 bg-blue-500/10 px-3 py-1.5 text-xs font-semibold uppercase tracking-[.16em] text-blue-300">SECURITY & PRIVACY</span>
-<h1 class="mt-7 text-4xl font-semibold tracking-[-.04em] sm:text-5xl lg:text-6xl">Built for oversight. Not trading.</h1>
-<p class="mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-400 sm:text-lg">Helmio is designed around read-only investment monitoring without authority to buy, sell, transfer, or withdraw your assets.</p>
-<div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
-<a href="{{ route('marketing.how-it-works') }}" class="inline-flex min-w-52 items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold hover:bg-blue-500">Learn How Helmio Works →</a>
-<a href="{{ route('marketing.how-it-works') }}" class="inline-flex min-w-44 items-center justify-center rounded-xl border border-slate-700 bg-slate-900/60 px-5 py-3 text-sm font-semibold text-slate-200">How Helmio Works</a>
-</div>
-<div class="mt-8 flex flex-wrap justify-center gap-5 text-xs text-slate-500"><span>Read-only monitoring</span><span>•</span><span>No trading authority</span><span>•</span><span>Independent oversight</span></div>
-</div>
-</div>
-</section>
+@section('title', 'Built for oversight. Not trading. | Helmio')
 
-<section class="border-b border-white/10 bg-slate-900/35">
-<div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
-<div class="mx-auto max-w-3xl text-center">
-<p class="text-xs font-semibold uppercase tracking-[.18em] text-blue-400">Why it matters</p>
-<h2 class="mt-3 text-3xl font-semibold tracking-[-.03em] sm:text-4xl">See what is happening beneath the account balance.</h2>
-<p class="mt-5 text-base leading-7 text-slate-400">Helmio turns portfolio data into understandable monitoring signals so you can see what deserves a closer look.</p>
-</div>
-</div>
-</section>
+@section(
+    'meta_description',
+    'Helmio is designed around read-only investment monitoring without authority to buy, sell, transfer, or withdraw your assets.'
+)
 
-<section>
-<div class="mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
-<div class="mx-auto max-w-3xl text-center">
-<p class="text-xs font-semibold uppercase tracking-[.18em] text-blue-400">What Helmio looks for</p>
-<h2 class="mt-3 text-3xl font-semibold tracking-[-.03em] sm:text-4xl">More clarity behind your investments.</h2>
-</div>
-<div class="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
-<article class="group rounded-2xl border border-slate-800 bg-slate-900/65 p-6 transition hover:-translate-y-0.5 hover:border-blue-500/30 hover:bg-slate-900">
-<div class="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-sm font-semibold text-blue-300">01</div>
-<h3 class="mt-5 text-lg font-semibold text-white">Read-Only Approach</h3>
-<p class="mt-2 text-sm leading-6 text-slate-400">Helmio is designed to monitor investment information without requesting trading authority.</p>
-</article>
-<article class="group rounded-2xl border border-slate-800 bg-slate-900/65 p-6 transition hover:-translate-y-0.5 hover:border-blue-500/30 hover:bg-slate-900">
-<div class="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-sm font-semibold text-blue-300">02</div>
-<h3 class="mt-5 text-lg font-semibold text-white">No Money Movement</h3>
-<p class="mt-2 text-sm leading-6 text-slate-400">Helmio is not built to transfer, withdraw, or move assets from your investment accounts.</p>
-</article>
-<article class="group rounded-2xl border border-slate-800 bg-slate-900/65 p-6 transition hover:-translate-y-0.5 hover:border-blue-500/30 hover:bg-slate-900">
-<div class="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-sm font-semibold text-blue-300">03</div>
-<h3 class="mt-5 text-lg font-semibold text-white">Secure Connections</h3>
-<p class="mt-2 text-sm leading-6 text-slate-400">Supported connections are intended to use established financial-data connection methods.</p>
-</article>
-<article class="group rounded-2xl border border-slate-800 bg-slate-900/65 p-6 transition hover:-translate-y-0.5 hover:border-blue-500/30 hover:bg-slate-900">
-<div class="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-sm font-semibold text-blue-300">04</div>
-<h3 class="mt-5 text-lg font-semibold text-white">Minimal Access</h3>
-<p class="mt-2 text-sm leading-6 text-slate-400">The platform is built around information needed for oversight rather than transaction authority.</p>
-</article>
-<article class="group rounded-2xl border border-slate-800 bg-slate-900/65 p-6 transition hover:-translate-y-0.5 hover:border-blue-500/30 hover:bg-slate-900">
-<div class="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-sm font-semibold text-blue-300">05</div>
-<h3 class="mt-5 text-lg font-semibold text-white">Private Portfolio Data</h3>
-<p class="mt-2 text-sm leading-6 text-slate-400">Portfolio information is used to provide monitoring and analytics features.</p>
-</article>
-<article class="group rounded-2xl border border-slate-800 bg-slate-900/65 p-6 transition hover:-translate-y-0.5 hover:border-blue-500/30 hover:bg-slate-900">
-<div class="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-sm font-semibold text-blue-300">06</div>
-<h3 class="mt-5 text-lg font-semibold text-white">Ongoing Monitoring</h3>
-<p class="mt-2 text-sm leading-6 text-slate-400">Security and privacy are part of the product architecture, not an optional add-on.</p>
-</article>
-</div>
-</div>
-</section>
+@section('canonical', route('marketing.security'))
 
-<section class="border-t border-white/10 bg-slate-900/35">
-<div class="mx-auto max-w-5xl px-4 py-20 text-center sm:px-6 lg:px-8">
-<div class="rounded-3xl border border-blue-500/20 bg-gradient-to-br from-blue-500/10 via-slate-900 to-slate-950 px-6 py-12">
-<p class="text-xs font-semibold uppercase tracking-[.18em] text-blue-400">Independent investment oversight</p>
-<h2 class="mx-auto mt-4 max-w-3xl text-3xl font-semibold tracking-[-.03em] sm:text-4xl">Know what your portfolio is doing.</h2>
-<p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-400">Connect your accounts read-only and let Helmio continuously monitor the investments behind your statements.</p>
-<a href="{{ route('marketing.how-it-works') }}" class="mt-8 inline-flex rounded-xl bg-blue-600 px-6 py-3 text-sm font-semibold hover:bg-blue-500">Learn How Helmio Works →</a>
-</div>
-</div>
-</section>
-</main>
+@section('content')
+    <section
+        class="relative overflow-hidden border-b border-slate-800/70 bg-slate-950"
+        style="background: linear-gradient(135deg, #020617 0%, #071225 52%, #020617 100%);"
+    >
+        <div class="pointer-events-none absolute inset-0">
+            <div class="absolute left-1/2 top-[-20rem] h-[44rem] w-[72rem] -translate-x-1/2 rounded-full bg-blue-600/15 blur-3xl"></div>
+            <div class="absolute right-[-12rem] top-24 h-[28rem] w-[28rem] rounded-full bg-cyan-500/10 blur-3xl"></div>
+        </div>
 
-<footer class="border-t border-white/10">
-<div class="mx-auto flex max-w-7xl flex-col gap-4 px-4 py-8 text-xs text-slate-500 sm:px-6 md:flex-row md:justify-between lg:px-8">
-<p>© {{ now()->year }} Helmio.</p>
-<div class="flex gap-5"><a href="{{ url('/security') }}">Security</a><a href="{{ url('/privacy') }}">Privacy</a><a href="{{ url('/terms') }}">Terms</a><a href="{{ url('/contact') }}">Contact</a></div>
-</div>
-</footer>
-</div>
-</body>
-</html>
+        <div class="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 sm:py-28 lg:px-8 lg:py-32">
+            <div class="mx-auto max-w-4xl text-center">
+                <span class="inline-flex items-center gap-2 rounded-full border border-blue-400/20 bg-blue-500/10 px-3.5 py-2 text-xs font-semibold text-blue-200">
+                    <span class="relative flex h-2 w-2">
+                        <span class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"></span>
+                        <span class="relative inline-flex h-2 w-2 rounded-full bg-emerald-400"></span>
+                    </span>
+                    Security & privacy
+                </span>
+
+                <h1 class="mt-7 text-4xl font-semibold leading-tight tracking-tight text-white sm:text-5xl lg:text-6xl">
+                    Built for oversight.
+                    <span class="block text-blue-400">Not trading.</span>
+                </h1>
+
+                <p class="mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-300 sm:text-lg">
+                    Helmio is designed around read-only investment monitoring without
+                    authority to buy, sell, transfer, or withdraw your assets.
+                </p>
+
+                <div class="mt-9 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                    <a href="{{ route('marketing.how-it-works') }}" class="inline-flex min-w-56 items-center justify-center gap-2 rounded-2xl bg-blue-600 px-6 py-3.5 text-base font-semibold text-white shadow-xl shadow-blue-950/30 transition hover:-translate-y-0.5 hover:bg-blue-500">
+                        Learn how Helmio works <span aria-hidden="true">→</span>
+                    </a>
+
+                    @auth
+                        <a href="{{ route('dashboard') }}" class="inline-flex min-w-44 items-center justify-center rounded-2xl bg-white/[0.04] px-6 py-3.5 text-base font-semibold text-white ring-1 ring-inset ring-slate-800/70 transition hover:bg-white/[0.08]">Dashboard</a>
+                    @else
+                        <a href="{{ route('register') }}" class="inline-flex min-w-44 items-center justify-center rounded-2xl bg-white/[0.04] px-6 py-3.5 text-base font-semibold text-white ring-1 ring-inset ring-slate-800/70 transition hover:bg-white/[0.08]">Start free</a>
+                    @endauth
+                </div>
+
+                <div class="mt-8 flex flex-wrap justify-center gap-x-6 gap-y-3 text-sm text-slate-400">
+                    @foreach (['Read-only connections', 'No trading authority', 'No money movement'] as $trustItem)
+                        <span class="inline-flex items-center gap-2">
+                            <svg class="h-4 w-4 text-emerald-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="m5 12 4 4L19 6" />
+                            </svg>
+                            {{ $trustItem }}
+                        </span>
+                    @endforeach
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="border-b border-slate-800/70 bg-white/[0.025]">
+        <div class="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8 lg:py-20">
+            <div class="mx-auto max-w-3xl text-center">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-400">Why it matters</p>
+                <h2 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">Your portfolio access should match the job.</h2>
+                <p class="mt-5 text-base leading-7 text-slate-400">Helmio needs information to monitor your portfolio—not permission to control it.</p>
+            </div>
+        </div>
+    </section>
+
+    <section class="relative overflow-hidden">
+        <div class="pointer-events-none absolute inset-0">
+            <div class="absolute left-1/2 top-16 h-80 w-[56rem] -translate-x-1/2 rounded-full bg-blue-600/10 blur-3xl"></div>
+        </div>
+
+        <div class="relative mx-auto max-w-7xl px-4 py-20 sm:px-6 lg:px-8 lg:py-24">
+            <div class="mx-auto max-w-3xl text-center">
+                <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-400">Designed for safer oversight</p>
+                <h2 class="mt-3 text-3xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">Monitoring without control of your assets.</h2>
+            </div>
+
+            @php
+                $protections = [
+                    ['01', 'Read-Only Approach', 'Helmio is designed to monitor investment information without requesting trading authority.'],
+                    ['02', 'No Money Movement', 'Helmio is not built to transfer, withdraw, or move assets from your investment accounts.'],
+                    ['03', 'Secure Connections', 'Supported connections use established financial-data connection methods.'],
+                    ['04', 'Minimal Access', 'The platform is built around information needed for oversight rather than transaction authority.'],
+                    ['05', 'Private Portfolio Data', 'Portfolio information is used to provide monitoring and analytics features.'],
+                    ['06', 'Ongoing Monitoring', 'Security and privacy are part of the product architecture, not an optional add-on.'],
+                ];
+            @endphp
+
+            <div class="mt-12 grid gap-5 md:grid-cols-2 lg:grid-cols-3">
+                @foreach ($protections as $protection)
+                    <article class="group rounded-2xl bg-slate-900/65 p-6 ring-1 ring-inset ring-slate-800/70 transition hover:-translate-y-1 hover:bg-slate-900 hover:ring-blue-500/30">
+                        <div class="flex h-11 w-11 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-sm font-semibold text-blue-300">{{ $protection[0] }}</div>
+                        <h3 class="mt-5 text-lg font-semibold text-white">{{ $protection[1] }}</h3>
+                        <p class="mt-2 text-sm leading-6 text-slate-400">{{ $protection[2] }}</p>
+                    </article>
+                @endforeach
+            </div>
+        </div>
+    </section>
+
+    <section class="border-t border-slate-800/70 bg-white/[0.025]">
+        <div class="mx-auto max-w-5xl px-4 py-20 text-center sm:px-6 lg:px-8">
+            <div class="relative overflow-hidden rounded-[2rem] bg-slate-900/75 px-6 py-12 ring-1 ring-inset ring-blue-500/20 sm:px-10">
+                <div class="pointer-events-none absolute inset-0 bg-gradient-to-br from-blue-500/10 via-transparent to-cyan-500/5"></div>
+                <div class="relative">
+                    <p class="text-xs font-semibold uppercase tracking-[0.18em] text-blue-400">Independent investment oversight</p>
+                    <h2 class="mx-auto mt-4 max-w-3xl text-3xl font-semibold tracking-[-0.03em] text-white sm:text-4xl">See what Helmio monitors.</h2>
+                    <p class="mx-auto mt-4 max-w-2xl text-base leading-7 text-slate-400">Learn how Helmio turns read-only account information into clear portfolio insights.</p>
+                    <a href="{{ route('marketing.how-it-works') }}" class="mt-8 inline-flex rounded-2xl bg-blue-600 px-6 py-3.5 text-base font-semibold text-white shadow-xl shadow-blue-950/30 transition hover:-translate-y-0.5 hover:bg-blue-500">Learn how Helmio works →</a>
+                </div>
+            </div>
+        </div>
+    </section>
+@endsection
