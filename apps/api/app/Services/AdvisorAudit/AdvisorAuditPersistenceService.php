@@ -17,6 +17,7 @@ class AdvisorAuditPersistenceService
     public function __construct(
         private readonly AdvisorAuditService $advisorAuditService,
         private readonly MarketingConversionService $marketingConversions,
+        private readonly AdvisorAuditNotificationService $notificationService,
     ) {
     }
 
@@ -38,17 +39,52 @@ class AdvisorAuditPersistenceService
             benchmark: $benchmark,
         );
 
+        $formulaVersion = (string) (
+            $audit['formula_version']
+            ?? AdvisorAuditService::FORMULA_VERSION
+        );
+
+        $calculatedForDate =
+            $endDate->toDateString();
+
+        /*
+         * Capture the prior audit before persisting this one so the
+         * notification layer can compare score and finding changes.
+         * Exclude the row that runAndPersist() will updateOrCreate for
+         * this user/date/formula combination.
+         */
+        $previousRun = AuditRun::query()
+            ->where('user_id', $user->id)
+            ->where(function ($query) use (
+                $calculatedForDate,
+                $formulaVersion
+            ): void {
+                $query
+                    ->whereDate(
+                        'calculated_for_date',
+                        '!=',
+                        $calculatedForDate
+                    )
+                    ->orWhere(
+                        'formula_version',
+                        '!=',
+                        $formulaVersion
+                    );
+            })
+            ->orderByDesc('id')
+            ->first();
+
         /*
          * Persist both the immutable audit run and the current
          * AuditFinding state in one transaction. The Action Center
          * and dashboard read AuditFinding rows, so this is the
          * source-of-truth write path for a completed Advisor Audit.
          */
-        DB::transaction(function () use (
+        $currentRun = DB::transaction(function () use (
             $user,
             $audit,
             $endDate
-        ): void {
+        ): AuditRun {
             $auditRun = $this->persistAuditRun(
                 user: $user,
                 audit: $audit,
@@ -81,7 +117,25 @@ class AdvisorAuditPersistenceService
                 activeFingerprints:
                     $activeFingerprints,
             );
+
+            return $auditRun;
         });
+
+        /*
+         * In-app notifications are part of every successful Advisor
+         * Audit, regardless of whether monthly audit scheduling is
+         * enabled. Notification failures must never invalidate a
+         * successfully persisted audit.
+         */
+        try {
+            $this->notificationService->sendInApp(
+                user: $user,
+                currentRun: $currentRun,
+                previousRun: $previousRun,
+            );
+        } catch (Throwable $exception) {
+            report($exception);
+        }
 
         /*
          * Record the conversion only after the audit transaction
