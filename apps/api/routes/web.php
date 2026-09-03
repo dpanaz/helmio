@@ -109,6 +109,14 @@ Route::view(
     'legal.privacy',
 )->name('privacy');
 
+Route::get(
+    '/pricing',
+    [
+        BillingController::class,
+        'pricing',
+    ],
+)->name('billing.pricing');
+
 Route::post(
     '/webhooks/snaptrade',
     SnapTradeWebhookController::class,
@@ -138,14 +146,6 @@ Route::middleware([
     | Billing
     |--------------------------------------------------------------------------
     */
-
-    Route::get(
-        '/pricing',
-        [
-            BillingController::class,
-            'pricing',
-        ],
-    )->name('billing.pricing');
 
     Route::post(
         '/billing/checkout',
