@@ -8,46 +8,64 @@ class MarketingPageController extends Controller
 {
     public function advisorCheck(): View
     {
-        return view('marketing.financial-advisor-check');
+        return view(
+            'marketing.advisor-check',
+        );
     }
 
     public function advisorFees(): View
     {
-        return view('marketing.financial-advisor-fees');
+        return view(
+            'marketing.advisor-fees',
+        );
     }
 
     public function advisorPerformance(): View
     {
-        return view('marketing.financial-advisor-performance');
+        return view(
+            'marketing.financial-advisor-performance',
+        );
     }
 
     public function portfolioChurning(): View
     {
-        return view('marketing.portfolio-churning');
+        return view(
+            'marketing.portfolio-churning',
+        );
     }
 
     public function portfolioDiversification(): View
     {
-        return view('marketing.portfolio-diversification');
+        return view(
+            'marketing.portfolio-diversification',
+        );
     }
 
     public function portfolioRisk(): View
     {
-        return view('marketing.portfolio-risk');
+        return view(
+            'marketing.portfolio-risk',
+        );
     }
 
     public function taxEfficiency(): View
     {
-        return view('marketing.tax-efficiency');
+        return view(
+            'marketing.tax-efficiency',
+        );
     }
 
     public function howItWorks(): View
     {
-        return view('marketing.how-it-works');
+        return view(
+            'marketing.how-it-works',
+        );
     }
 
     public function security(): View
     {
-        return view('marketing.security');
+        return view(
+            'marketing.security',
+        );
     }
 }
