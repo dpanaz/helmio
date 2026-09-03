@@ -52,6 +52,12 @@
         content="summary_large_image"
     >
 
+    <link
+        rel="icon"
+        type="image/png"
+        href="{{ asset('helmio-logo.png') }}"
+    >
+
     @vite([
         'resources/css/app.css',
         'resources/js/app.js',
@@ -77,9 +83,9 @@
                     aria-label="Helmio home"
                 >
                     <img
-                        src="{{ asset('helmio-mark.svg') }}"
-                        alt=""
-                        class="h-10 w-10 rounded-xl shadow-lg shadow-blue-950/30 transition group-hover:scale-105"
+                        src="{{ asset('helmio-logo.png') }}"
+                        alt="Helmio"
+                        class="h-11 w-11 rounded-xl bg-white object-contain p-1 shadow-lg shadow-blue-950/30 transition group-hover:scale-105"
                     >
 
                     <div>
@@ -206,9 +212,9 @@
                         class="flex items-center gap-3"
                     >
                         <img
-                            src="{{ asset('helmio-mark.svg') }}"
-                            alt=""
-                            class="h-9 w-9 rounded-xl"
+                            src="{{ asset('helmio-logo.png') }}"
+                            alt="Helmio"
+                            class="h-10 w-10 rounded-xl bg-white object-contain p-1"
                         >
 
                         <div>
