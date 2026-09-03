@@ -1,20 +1,13 @@
-<x-app-layout>
-    <x-slot name="header">
-        <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400">
-                Helmio Membership
-            </p>
+@extends('layouts.marketing')
 
-            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-white">
-                Choose Your Plan
-            </h2>
+@section('title', 'Helmio Pricing | Independent Portfolio Monitoring')
 
-            <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-400">
-                Continuous portfolio monitoring, advisor oversight,
-                monthly reviews, and AI-powered insights.
-            </p>
-        </div>
-    </x-slot>
+@section(
+    'meta_description',
+    'Choose monthly or annual Helmio Premium for continuous portfolio monitoring, advisor oversight, monthly reviews, and AI-powered insights.'
+)
+
+@section('content')
 
     @php
         $hasAccess = (bool) data_get(
@@ -159,7 +152,7 @@
                             >
                                 Manage Subscription
                             </a>
-                        @else
+                        @elseif (auth()->check())
                             <form
                                 method="POST"
                                 action="{{ route('billing.checkout') }}"
@@ -181,6 +174,13 @@
                                     Start Monthly Trial
                                 </button>
                             </form>
+                        @else
+                            <a
+                                href="{{ route('register') }}"
+                                class="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-500"
+                            >
+                                Start Monthly Trial
+                            </a>
                         @endif
                     </div>
                 </section>
@@ -267,7 +267,7 @@
                             >
                                 Manage Subscription
                             </a>
-                        @else
+                        @elseif (auth()->check())
                             <form
                                 method="POST"
                                 action="{{ route('billing.checkout') }}"
@@ -289,6 +289,13 @@
                                     Start Annual Trial
                                 </button>
                             </form>
+                        @else
+                            <a
+                                href="{{ route('register') }}"
+                                class="inline-flex w-full items-center justify-center rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-500"
+                            >
+                                Start Annual Trial
+                            </a>
                         @endif
                     </div>
                 </section>
@@ -346,4 +353,4 @@
             </section>
         </div>
     </div>
-</x-app-layout>
+@endsection
