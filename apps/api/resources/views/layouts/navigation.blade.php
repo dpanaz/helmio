@@ -254,6 +254,12 @@
                         </x-slot>
 
                         <x-slot name="content">
+                            @if (Auth::user()->hasStaffPermission('dashboard.view'))
+                                <x-dropdown-link :href="route('admin.dashboard')">
+                                    Helmio Operations
+                                </x-dropdown-link>
+                            @endif
+
                             <x-dropdown-link :href="route('billing.index')">
                                 Billing
                             </x-dropdown-link>
