@@ -47,6 +47,13 @@
                 'active' => ['accounts.*'],
                 'premium' => true,
             ],
+            [
+                'route' => 'support.index',
+                'label' => 'Support',
+                'icon' => 'chat',
+                'active' => ['support.*'],
+                'premium' => false,
+            ],
         ];
 
         $sidebarMonitor = [
