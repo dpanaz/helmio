@@ -231,7 +231,10 @@ class OpenAiPortfolioChatProvider implements
                 fn (array $message): array => [
                     'role' => $message['role'],
                     'content' => [[
-                        'type' => 'input_text',
+                        'type' =>
+                            $message['role'] === 'assistant'
+                                ? 'output_text'
+                                : 'input_text',
                         'text' => (string) $message[
                             'content'
                         ],
