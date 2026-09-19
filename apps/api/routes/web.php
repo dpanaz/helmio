@@ -41,6 +41,9 @@ use App\Http\Controllers\Onboarding\ExecutiveSummaryRevealController;
 use App\Http\Controllers\MarketingPageController;
 use App\Http\Controllers\Analytics\WhatIfController;
 use App\Http\Controllers\Analytics\WhatIfScenarioController;
+use App\Http\Controllers\Admin\AdminDashboardController;
+use App\Http\Controllers\Admin\CustomerController;
+use App\Http\Controllers\Admin\CustomerPreviewController;
 use App\Http\Controllers\Admin\RedditCampaignController;
 
 
