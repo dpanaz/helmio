@@ -137,6 +137,27 @@
 
         <div class="min-w-0 lg:pl-64">
 
+            @if ($customerPreviewActive ?? false)
+                <div class="sticky top-0 z-[90] border-b border-amber-300 bg-amber-400 px-4 py-3 text-slate-950 shadow-lg">
+                    <div class="mx-auto flex max-w-[1500px] flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                        <div>
+                            <strong class="text-sm">Read-only customer view</strong>
+                            <span class="ml-2 text-sm">
+                                You are viewing Helmio as {{ $customerPreviewCustomer->name }}
+                                ({{ $customerPreviewCustomer->email }}). Every page is audited.
+                            </span>
+                        </div>
+                        <form method="POST" action="{{ route('admin.customer-preview.destroy') }}">
+                            @csrf
+                            @method('DELETE')
+                            <button class="rounded-lg bg-slate-950 px-4 py-2 text-xs font-bold uppercase tracking-wider text-white">
+                                Exit customer view
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            @endif
+
             {{-- ===================================================== --}}
             {{-- OPTIONAL PAGE HEADER --}}
             {{-- ===================================================== --}}
