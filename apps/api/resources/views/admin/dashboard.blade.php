@@ -10,7 +10,7 @@
         ];
 
         $links = [
-            ['label' => 'Customers', 'description' => 'Search customers and inspect account health.', 'permission' => 'customers.view', 'route' => null],
+            ['label' => 'Customers', 'description' => 'Search customers and inspect account health.', 'permission' => 'customers.view', 'route' => 'admin.customers.index'],
             ['label' => 'Support inbox', 'description' => 'Tickets and live customer conversations.', 'permission' => 'support.view', 'route' => null],
             ['label' => 'Reddit marketing', 'description' => 'Attribution, conversion, and revenue reporting.', 'permission' => 'marketing.view', 'route' => 'admin.marketing.reddit'],
             ['label' => 'Operations', 'description' => 'Sync, analytics, AI, and queue health.', 'permission' => 'operations.view', 'route' => null],
