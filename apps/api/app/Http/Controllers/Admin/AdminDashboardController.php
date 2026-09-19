@@ -38,6 +38,10 @@ class AdminDashboardController extends Controller
                     ->where('converted_at', '>=', $since)
                     ->count(),
                 'active_subscriptions' => DB::table('subscriptions')
+                    ->whereIn(
+                        'stripe_status',
+                        ['active', 'trialing'],
+                    )
                     ->where(function ($query): void {
                         $query
                             ->whereNull('ends_at')
