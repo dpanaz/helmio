@@ -169,6 +169,29 @@ class User extends Authenticatable
         );
     }
 
+    public function supportConversations(): HasMany
+    {
+        return $this->hasMany(
+            SupportConversation::class,
+        );
+    }
+
+    public function assignedSupportConversations(): HasMany
+    {
+        return $this->hasMany(
+            SupportConversation::class,
+            'assigned_to_user_id',
+        );
+    }
+
+    public function supportMessages(): HasMany
+    {
+        return $this->hasMany(
+            SupportMessage::class,
+            'sender_user_id',
+        );
+    }
+
     public function isStaff(): bool
     {
         return $this->is_admin
