@@ -1122,6 +1122,27 @@ Route::middleware('auth')
 
 /*
 |--------------------------------------------------------------------------
+| Helmio operations portal
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth',
+    'verified',
+    'staff.permission:dashboard.view',
+    'staff.audit',
+])
+    ->prefix('admin')
+    ->name('admin.')
+    ->group(function (): void {
+        Route::get(
+            '/',
+            AdminDashboardController::class,
+        )->name('dashboard');
+    });
+
+/*
+|--------------------------------------------------------------------------
 | Marketing administration
 |--------------------------------------------------------------------------
 |
@@ -1133,7 +1154,8 @@ Route::middleware('auth')
 Route::middleware([
     'auth',
     'verified',
-    'marketing.admin',
+    'staff.permission:marketing.view',
+    'staff.audit',
 ])
     ->prefix('admin/marketing')
     ->name('admin.marketing.')
