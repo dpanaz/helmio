@@ -45,6 +45,8 @@ use App\Http\Controllers\Admin\AdminDashboardController;
 use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\CustomerPreviewController;
 use App\Http\Controllers\Admin\RedditCampaignController;
+use App\Http\Controllers\Admin\SupportInboxController;
+use App\Http\Controllers\SupportConversationController;
 
 
 /*
@@ -434,6 +436,24 @@ Route::middleware([
             'destroy',
         ],
     )->name('notifications.destroy');
+});
+
+/*
+|--------------------------------------------------------------------------
+| Customer support
+|--------------------------------------------------------------------------
+*/
+
+Route::middleware([
+    'auth',
+    'verified',
+])->prefix('support')->name('support.')->group(function (): void {
+    Route::get('/', [SupportConversationController::class, 'index'])->name('index');
+    Route::get('/new', [SupportConversationController::class, 'create'])->name('create');
+    Route::post('/', [SupportConversationController::class, 'store'])->name('store');
+    Route::get('/{conversation}', [SupportConversationController::class, 'show'])->name('show');
+    Route::post('/{conversation}/reply', [SupportConversationController::class, 'reply'])->name('reply');
+    Route::get('/{conversation}/messages', [SupportConversationController::class, 'messages'])->name('messages');
 });
 
 /*
@@ -1178,6 +1198,25 @@ Route::delete(
     ])
     ->name('admin.customer-preview.destroy');
 
+
+Route::middleware([
+    'auth',
+    'verified',
+    'staff.permission:support.view',
+    'staff.audit',
+])
+    ->prefix('admin/support')
+    ->name('admin.support.')
+    ->group(function (): void {
+        Route::get('/', [SupportInboxController::class, 'index'])->name('index');
+        Route::get('/{conversation}', [SupportInboxController::class, 'show'])->name('show');
+        Route::patch('/{conversation}', [SupportInboxController::class, 'update'])
+            ->middleware('staff.permission:support.manage')
+            ->name('update');
+        Route::post('/{conversation}/reply', [SupportInboxController::class, 'reply'])
+            ->middleware('staff.permission:support.manage')
+            ->name('reply');
+    });
 
 /*
 |--------------------------------------------------------------------------
