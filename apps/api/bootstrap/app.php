@@ -3,6 +3,9 @@
 use App\Http\Middleware\CaptureMarketingAttribution;
 use App\Http\Middleware\EnsureMarketingAdmin;
 use App\Http\Middleware\EnsureOnboardingComplete;
+use App\Http\Middleware\EnsureStaffPermission;
+use App\Http\Middleware\ReadOnlyCustomerPreview;
+use App\Http\Middleware\RecordStaffActivity;
 use App\Http\Middleware\RequirePremiumSubscription;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
