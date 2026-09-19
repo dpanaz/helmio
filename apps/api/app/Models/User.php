@@ -119,4 +119,58 @@ class User extends Authenticatable
             PushSubscription::class,
         );
     }
+
+    public function staffRoles(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            StaffRole::class,
+            'staff_role_user',
+        )->withTimestamps();
+    }
+
+    public function hasStaffRole(string $role): bool
+    {
+        return $this->staffRoles()
+            ->where('slug', $role)
+            ->exists();
+    }
+
+    public function hasStaffPermission(string $permission): bool
+    {
+        if ($this->is_admin || $this->hasStaffRole('admin')) {
+            return true;
+        }
+
+        return $this->staffRoles()
+            ->whereHas(
+                'permissions',
+                fn ($query) =>
+                    $query->where(
+                        'staff_permissions.slug',
+                        $permission,
+                    ),
+            )
+            ->exists();
+    }
+
+    /**
+     * @param array<int, string> $permissions
+     */
+    public function hasAnyStaffPermission(array $permissions): bool
+    {
+        if ($permissions === []) {
+            return $this->isStaff();
+        }
+
+        return collect($permissions)->contains(
+            fn (string $permission): bool =>
+                $this->hasStaffPermission($permission),
+        );
+    }
+
+    public function isStaff(): bool
+    {
+        return $this->is_admin
+            || $this->staffRoles()->exists();
+    }
 }
