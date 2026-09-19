@@ -73,6 +73,12 @@ return Application::configure(
 
                 'marketing.admin' =>
                     EnsureMarketingAdmin::class,
+
+                'staff.permission' =>
+                    EnsureStaffPermission::class,
+
+                'staff.audit' =>
+                    RecordStaffActivity::class,
             ]);
         },
     )
