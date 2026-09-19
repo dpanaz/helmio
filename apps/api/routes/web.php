@@ -1141,6 +1141,41 @@ Route::middleware([
         )->name('dashboard');
     });
 
+Route::middleware([
+    'auth',
+    'verified',
+    'staff.permission:customers.view',
+    'staff.audit',
+])
+    ->prefix('admin/customers')
+    ->name('admin.customers.')
+    ->group(function (): void {
+        Route::get('/', [CustomerController::class, 'index'])
+            ->name('index');
+
+        Route::get('/{customer}', [CustomerController::class, 'show'])
+            ->name('show');
+
+        Route::post(
+            '/{customer}/preview',
+            [CustomerPreviewController::class, 'store'],
+        )
+            ->middleware('staff.permission:customers.preview')
+            ->name('preview.store');
+    });
+
+Route::delete(
+    '/admin/customer-preview',
+    [CustomerPreviewController::class, 'destroy'],
+)
+    ->middleware([
+        'auth',
+        'verified',
+        'staff.permission:customers.preview',
+    ])
+    ->name('admin.customer-preview.destroy');
+
+
 /*
 |--------------------------------------------------------------------------
 | Marketing administration
