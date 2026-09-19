@@ -14,7 +14,9 @@ class EnsureMarketingAdmin
     ): Response {
         abort_unless(
             $request->user()
-            && $request->user()->is_admin,
+            && $request->user()->hasStaffPermission(
+                'marketing.view',
+            ),
             403,
         );
 
