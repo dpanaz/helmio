@@ -269,6 +269,9 @@
                             <x-dropdown-link :href="route('profile.edit')">
                                 Profile
                             </x-dropdown-link>
+                            <x-dropdown-link :href="route('support.index')">
+                                Support
+                            </x-dropdown-link>
 
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
