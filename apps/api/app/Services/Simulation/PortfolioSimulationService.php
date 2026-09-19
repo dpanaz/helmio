@@ -23,7 +23,10 @@ class PortfolioSimulationService
         $accounts = InvestmentAccount::query()
             ->where('user_id', $user->id)
             ->with([
-                'holdings.security',
+                'holdings' => fn ($query) =>
+                    $query
+                        ->currentSnapshot()
+                        ->with('security'),
             ])
             ->get();
 
@@ -232,7 +235,10 @@ class PortfolioSimulationService
         $accounts = InvestmentAccount::query()
             ->where('user_id', $user->id)
             ->with([
-                'holdings.security',
+                'holdings' => fn ($query) =>
+                    $query
+                        ->currentSnapshot()
+                        ->with('security'),
                 'transactions',
                 'institution',
             ])
