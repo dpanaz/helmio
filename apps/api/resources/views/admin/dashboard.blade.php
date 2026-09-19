@@ -2,7 +2,7 @@
     @php
         $cards = [
             ['label' => 'Customers', 'value' => $metrics['customers'], 'detail' => $metrics['new_customers'].' new in 30 days', 'color' => 'blue'],
-            ['label' => 'Active subscriptions', 'value' => $metrics['active_subscriptions'], 'detail' => 'Current billing relationships', 'color' => 'emerald'],
+            ['label' => 'Active subscriptions', 'value' => $metrics['active_subscriptions'], 'detail' => 'Stripe active or trialing', 'color' => 'emerald'],
             ['label' => 'Connected accounts', 'value' => $metrics['accounts'], 'detail' => 'Investment accounts monitored', 'color' => 'cyan'],
             ['label' => 'Marketing visitors', 'value' => $metrics['marketing_visitors'], 'detail' => 'Attributed in 30 days', 'color' => 'violet'],
             ['label' => 'Conversions', 'value' => $metrics['marketing_conversions'], 'detail' => 'Recorded in 30 days', 'color' => 'amber'],
