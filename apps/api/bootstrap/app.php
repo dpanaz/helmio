@@ -38,6 +38,7 @@ return Application::configure(
             $middleware->web(
                 append: [
                     CaptureMarketingAttribution::class,
+                    ReadOnlyCustomerPreview::class,
                 ],
             );
 
