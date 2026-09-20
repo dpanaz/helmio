@@ -88,7 +88,7 @@
             </section>
 
             <section>
-                <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"><div><h2 class="text-xl font-semibold text-white">Business snapshot</h2><p class="mt-1 text-sm text-slate-400">{{ $billingMetrics['available'] ? 'Live Stripe subscription and refund data.' : 'Local subscription fallback data.' }}</p></div><p class="text-xs text-slate-500">Refreshed {{ $billingMetrics['refreshed_at']->diffForHumans() }}</p></div>
+                <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"><div><h2 class="text-xl font-semibold text-white">Business snapshot</h2><p class="mt-1 text-sm text-slate-400">{{ $billingMetrics['available'] ? 'Live Stripe subscription and refund data.' : 'Local subscription fallback data.' }}</p></div><p class="text-xs text-slate-500">Refreshed {{ \Illuminate\Support\Carbon::parse($billingMetrics['refreshed_at'])->diffForHumans() }}</p></div>
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     @foreach ($cards as $card)
                         <article class="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl shadow-black/10">

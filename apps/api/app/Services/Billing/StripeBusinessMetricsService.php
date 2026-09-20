@@ -9,7 +9,7 @@ use Throwable;
 
 class StripeBusinessMetricsService
 {
-    private const CACHE_KEY = 'admin.stripe-business-metrics';
+    private const CACHE_KEY = 'admin.stripe-business-metrics.v2';
 
     public function __construct(
         private readonly BillingPlanService $plans,
@@ -99,7 +99,7 @@ class StripeBusinessMetricsService
                 'source' => 'stripe',
                 'available' => true,
                 'error' => null,
-                'refreshed_at' => now(),
+                'refreshed_at' => now()->toIso8601String(),
                 'active_subscriptions' => $active,
                 'trials' => $trials,
                 'past_due' => $pastDue,
@@ -140,7 +140,7 @@ class StripeBusinessMetricsService
             'source' => 'local',
             'available' => false,
             'error' => $error,
-            'refreshed_at' => now(),
+            'refreshed_at' => now()->toIso8601String(),
             'active_subscriptions' => (clone $active)->count(),
             'trials' => (clone $active)->where('stripe_status', 'trialing')->count(),
             'past_due' => DB::table('subscriptions')->whereIn('stripe_status', ['past_due', 'unpaid'])->count(),
