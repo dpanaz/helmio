@@ -28,6 +28,10 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
+        $request->user()->forceFill([
+            'last_login_at' => now(),
+        ])->save();
+
         if ($request->user()->isStaff()) {
             $route = match (true) {
                 $request->user()->hasStaffPermission('dashboard.view') => 'admin.dashboard',

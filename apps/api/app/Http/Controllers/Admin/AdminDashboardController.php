@@ -3,55 +3,176 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\AiInsightRun;
+use App\Models\AskHelmioMessage;
+use App\Models\BrokerageConnection;
+use App\Models\BrokerageSyncRun;
 use App\Models\InvestmentAccount;
 use App\Models\MarketingConversion;
 use App\Models\MarketingVisit;
 use App\Models\StaffAuditLog;
+use App\Models\SupportConversation;
 use App\Models\User;
+use App\Services\Billing\BillingPlanService;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\View\View;
 
 class AdminDashboardController extends Controller
 {
-    public function __invoke(): View
+    public function __invoke(BillingPlanService $plans): View
     {
         $since = now()->subDays(30);
+        $activeSubscription = fn (Builder $query) => $query
+            ->whereIn('stripe_status', ['active', 'trialing'])
+            ->where(fn (Builder $query) => $query
+                ->whereNull('ends_at')
+                ->orWhere('ends_at', '>', now()));
+
+        $activeSubscriptions = DB::table('subscriptions')
+            ->whereIn('stripe_status', ['active', 'trialing'])
+            ->where(fn ($query) => $query
+                ->whereNull('ends_at')
+                ->orWhere('ends_at', '>', now()));
+
+        $monthlyPriceId = $plans->priceId('monthly');
+        $annualPriceId = $plans->priceId('annual');
+        $monthlySubscriptions = $monthlyPriceId
+            ? (clone $activeSubscriptions)->where('stripe_price', $monthlyPriceId)->count()
+            : 0;
+        $annualSubscriptions = $annualPriceId
+            ? (clone $activeSubscriptions)->where('stripe_price', $annualPriceId)->count()
+            : 0;
+        $mrr = ($monthlySubscriptions * $plans->amount('monthly'))
+            + (($annualSubscriptions * $plans->amount('annual')) / 12);
+
+        $customerQuery = fn () => User::query()->whereDoesntHave('staffRoles');
+        $customers = $customerQuery()->count();
+        $connectedCustomers = $customerQuery()->whereHas('investmentAccounts')->count();
+        $profileCustomers = $customerQuery()->whereHas('investorProfile')->count();
+        $onboardedCustomers = $customerQuery()
+            ->whereHas('subscriptions', $activeSubscription)
+            ->whereHas('investorProfile')
+            ->whereHas('investmentAccounts')
+            ->count();
+
+        $staleCutoff = now()->subHours((int) config('brokerage.stale_after_hours', 24));
+        $openStatuses = [
+            SupportConversation::STATUS_OPEN,
+            SupportConversation::STATUS_PENDING,
+            SupportConversation::STATUS_WAITING_CUSTOMER,
+        ];
+
+        $system = [
+            'failed_jobs' => Schema::hasTable('failed_jobs')
+                ? DB::table('failed_jobs')->where('failed_at', '>=', now()->subDay())->count()
+                : 0,
+            'queued_jobs' => Schema::hasTable('jobs') ? DB::table('jobs')->count() : 0,
+            'connection_errors' => BrokerageConnection::query()
+                ->whereIn('status', ['error', 'disabled', 'disconnected'])->count(),
+            'stale_connections' => BrokerageConnection::query()
+                ->where(fn (Builder $query) => $query
+                    ->whereNull('last_successful_sync_at')
+                    ->orWhere('last_successful_sync_at', '<', $staleCutoff))
+                ->whereNotIn('status', ['disabled', 'disconnected'])
+                ->count(),
+            'failed_syncs' => BrokerageSyncRun::query()
+                ->where('status', BrokerageSyncRun::STATUS_FAILED)
+                ->where('started_at', '>=', now()->subDay())->count(),
+            'ai_failures' => AskHelmioMessage::query()
+                ->where('status', AskHelmioMessage::STATUS_FAILED)
+                ->where('created_at', '>=', now()->subDay())->count()
+                + AiInsightRun::query()
+                    ->where('status', AiInsightRun::STATUS_FAILED)
+                    ->where('created_at', '>=', now()->subDay())->count(),
+            'reddit_failures' => MarketingConversion::query()
+                ->where('reddit_status', 'failed')
+                ->where('converted_at', '>=', now()->subDay())->count(),
+        ];
+
+        $support = [
+            'open' => SupportConversation::query()->whereIn('status', $openStatuses)->count(),
+            'unassigned' => SupportConversation::query()
+                ->whereIn('status', $openStatuses)->whereNull('assigned_to_user_id')->count(),
+            'urgent' => SupportConversation::query()
+                ->whereIn('status', $openStatuses)
+                ->whereIn('priority', ['urgent', 'high'])->count(),
+            'oldest' => SupportConversation::query()
+                ->whereIn('status', $openStatuses)->oldest('created_at')->first(),
+        ];
+
+        $attention = collect([
+            ['label' => 'Brokerage connections need attention', 'count' => $system['connection_errors'], 'route' => 'admin.customers.index', 'severity' => 'critical'],
+            ['label' => 'Connections have stale portfolio data', 'count' => $system['stale_connections'], 'route' => 'admin.customers.index', 'severity' => 'warning'],
+            ['label' => 'Unassigned support conversations', 'count' => $support['unassigned'], 'route' => 'admin.support.index', 'severity' => 'warning'],
+            ['label' => 'Failed background jobs in 24 hours', 'count' => $system['failed_jobs'], 'route' => null, 'severity' => 'critical'],
+            ['label' => 'AI requests failed in 24 hours', 'count' => $system['ai_failures'], 'route' => null, 'severity' => 'warning'],
+            ['label' => 'Reddit conversions failed in 24 hours', 'count' => $system['reddit_failures'], 'route' => 'admin.marketing.reddit', 'severity' => 'warning'],
+        ])->filter(fn (array $item): bool => $item['count'] > 0)->values();
+
+        $atRiskCustomers = $customerQuery()
+            ->whereHas('subscriptions', $activeSubscription)
+            ->withCount('investmentAccounts')
+            ->with('brokerageConnections')
+            ->get()
+            ->map(function (User $customer) use ($staleCutoff): ?array {
+                $reasons = [];
+
+                if ($customer->investment_accounts_count === 0) {
+                    $reasons[] = 'No connected account';
+                }
+                if ($customer->brokerageConnections->contains(fn (BrokerageConnection $connection) =>
+                    in_array($connection->status, ['error', 'disabled', 'disconnected'], true))) {
+                    $reasons[] = 'Connection error';
+                }
+                if ($customer->brokerageConnections->isNotEmpty()
+                    && $customer->brokerageConnections->contains(fn (BrokerageConnection $connection) =>
+                        $connection->last_successful_sync_at === null
+                        || $connection->last_successful_sync_at->lt($staleCutoff))) {
+                    $reasons[] = 'Stale data';
+                }
+                if ($customer->last_login_at && $customer->last_login_at->lt(now()->subDays(30))) {
+                    $reasons[] = 'Inactive 30+ days';
+                }
+
+                return $reasons === [] ? null : ['user' => $customer, 'reasons' => $reasons];
+            })
+            ->filter()
+            ->take(10);
 
         return view('admin.dashboard', [
             'metrics' => [
-                'customers' => User::query()
-                    ->whereDoesntHave('staffRoles')
-                    ->count(),
-                'new_customers' => User::query()
-                    ->whereDoesntHave('staffRoles')
-                    ->where('created_at', '>=', $since)
-                    ->count(),
-                'staff' => User::query()
-                    ->whereHas('staffRoles')
-                    ->count(),
+                'customers' => $customers,
+                'new_customers' => $customerQuery()->where('created_at', '>=', $since)->count(),
+                'active_subscriptions' => (clone $activeSubscriptions)->count(),
+                'trials' => (clone $activeSubscriptions)->where('stripe_status', 'trialing')->count(),
+                'trials_ending' => (clone $activeSubscriptions)
+                    ->whereNotNull('trial_ends_at')
+                    ->whereBetween('trial_ends_at', [now(), now()->addDays(7)])->count(),
+                'mrr' => $mrr,
+                'arr' => $mrr * 12,
+                'monthly_plans' => $monthlySubscriptions,
+                'annual_plans' => $annualSubscriptions,
                 'accounts' => InvestmentAccount::query()->count(),
                 'marketing_visitors' => MarketingVisit::query()
-                    ->where('first_seen_at', '>=', $since)
-                    ->distinct()
-                    ->count('visitor_uuid'),
+                    ->where('first_seen_at', '>=', $since)->distinct()->count('visitor_uuid'),
                 'marketing_conversions' => MarketingConversion::query()
-                    ->where('converted_at', '>=', $since)
-                    ->count(),
-                'active_subscriptions' => DB::table('subscriptions')
-                    ->whereIn(
-                        'stripe_status',
-                        ['active', 'trialing'],
-                    )
-                    ->where(function ($query): void {
-                        $query
-                            ->whereNull('ends_at')
-                            ->orWhere('ends_at', '>', now());
-                    })
-                    ->count(),
-                'staff_activity' => StaffAuditLog::query()
-                    ->where('created_at', '>=', $since)
-                    ->count(),
+                    ->where('converted_at', '>=', $since)->count(),
+                'staff' => User::query()->whereHas('staffRoles')->count(),
+                'staff_activity' => StaffAuditLog::query()->where('created_at', '>=', $since)->count(),
             ],
+            'customerHealth' => [
+                'connected' => $connectedCustomers,
+                'profiles' => $profileCustomers,
+                'onboarded' => $onboardedCustomers,
+                'without_accounts' => max(0, $customers - $connectedCustomers),
+                'active_30_days' => $customerQuery()->where('last_login_at', '>=', $since)->count(),
+            ],
+            'system' => $system,
+            'support' => $support,
+            'attention' => $attention,
+            'atRiskCustomers' => $atRiskCustomers,
         ]);
     }
 }
