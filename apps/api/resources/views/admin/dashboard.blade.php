@@ -5,6 +5,8 @@
             ['label' => 'ARR', 'value' => '$'.number_format($metrics['arr'], 2), 'detail' => 'Current MRR annualized'],
             ['label' => 'Active subscriptions', 'value' => number_format($metrics['active_subscriptions']), 'detail' => $metrics['monthly_plans'].' monthly · '.$metrics['annual_plans'].' annual'],
             ['label' => 'Active trials', 'value' => number_format($metrics['trials']), 'detail' => $metrics['trials_ending'].' ending within 7 days'],
+            ['label' => 'Past due', 'value' => number_format($metrics['past_due']), 'detail' => 'Subscriptions requiring payment attention'],
+            ['label' => 'Refunds (30 days)', 'value' => '$'.number_format($metrics['refund_amount_30d'], 2), 'detail' => $metrics['refunds_30d'].' successful refunds'],
             ['label' => 'Customers', 'value' => number_format($metrics['customers']), 'detail' => $metrics['new_customers'].' new in 30 days'],
             ['label' => 'Connected accounts', 'value' => number_format($metrics['accounts']), 'detail' => $customerHealth['connected'].' customers connected'],
         ];
@@ -29,6 +31,7 @@
             ['label' => 'Customers', 'description' => 'Search customers and inspect account health.', 'permission' => 'customers.view', 'route' => 'admin.customers.index'],
             ['label' => 'Support inbox', 'description' => 'Tickets and live customer conversations.', 'permission' => 'support.view', 'route' => 'admin.support.index'],
             ['label' => 'Reddit marketing', 'description' => 'Attribution, conversion, and revenue reporting.', 'permission' => 'marketing.view', 'route' => 'admin.marketing.reddit'],
+            ['label' => 'Operations health', 'description' => 'Investigate queue, sync, AI, and delivery failures.', 'permission' => 'operations.view', 'route' => 'admin.operations.index'],
             ['label' => 'Employees', 'description' => 'Create employees and assign staff roles.', 'permission' => 'staff.manage', 'route' => 'admin.staff.index'],
             ['label' => 'Subscription pricing', 'description' => 'Manage monthly and annual customer pricing.', 'permission' => 'billing.manage', 'route' => 'admin.pricing.edit'],
         ];
@@ -42,11 +45,15 @@
                     <h1 class="mt-2 text-3xl font-semibold tracking-tight text-white">Business Dashboard</h1>
                     <p class="mt-2 text-sm text-slate-400">Revenue, customers, support, and platform health in one place.</p>
                 </div>
-                <div class="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm">
-                    <span class="text-slate-500">Signed in as</span>
-                    <strong class="ml-2 text-white">{{ auth()->user()->name }}</strong>
+                <div class="flex flex-wrap items-center gap-3">
+                    <div class="rounded-xl border border-slate-700 bg-slate-900 px-4 py-3 text-sm"><span class="text-slate-500">Signed in as</span><strong class="ml-2 text-white">{{ auth()->user()->name }}</strong></div>
+                    <form method="POST" action="{{ route('admin.stripe-metrics.refresh') }}">@csrf<button class="rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm font-semibold text-blue-300 hover:bg-blue-500/20">Refresh Stripe</button></form>
                 </div>
             </header>
+
+            @if (session('success'))<div class="mb-6 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">{{ session('success') }}</div>@endif
+            @if (session('warning'))<div class="mb-6 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-300">{{ session('warning') }}</div>@endif
+            @unless ($billingMetrics['available'])<div class="mb-6 rounded-xl border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200"><strong>Stripe fallback active.</strong> Revenue cards are using Helmio's local subscription records because Stripe could not be reached.</div>@endunless
 
             <section class="mb-8">
                 <div class="mb-4 flex items-center justify-between">
@@ -80,7 +87,7 @@
             </section>
 
             <section>
-                <div class="mb-4"><h2 class="text-xl font-semibold text-white">Business snapshot</h2><p class="mt-1 text-sm text-slate-400">Current subscription values based on Helmio's synchronized Stripe records.</p></div>
+                <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between"><div><h2 class="text-xl font-semibold text-white">Business snapshot</h2><p class="mt-1 text-sm text-slate-400">{{ $billingMetrics['available'] ? 'Live Stripe subscription and refund data.' : 'Local subscription fallback data.' }}</p></div><p class="text-xs text-slate-500">Refreshed {{ $billingMetrics['refreshed_at']->diffForHumans() }}</p></div>
                 <div class="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
                     @foreach ($cards as $card)
                         <article class="rounded-2xl border border-slate-800 bg-slate-900/80 p-5 shadow-xl shadow-black/10">

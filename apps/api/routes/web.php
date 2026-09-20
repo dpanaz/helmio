@@ -48,6 +48,8 @@ use App\Http\Controllers\Admin\RedditCampaignController;
 use App\Http\Controllers\Admin\SupportInboxController;
 use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\PricingController;
+use App\Http\Controllers\Admin\OperationsHealthController;
+use App\Http\Controllers\Admin\StripeMetricsController;
 use App\Http\Controllers\SupportConversationController;
 
 
@@ -1177,6 +1179,32 @@ Route::middleware([
         Route::get('/', [PricingController::class, 'edit'])->name('edit');
         Route::put('/', [PricingController::class, 'update'])->name('update');
     });
+
+Route::middleware([
+    'auth',
+    'verified',
+    'staff.permission:operations.view',
+    'staff.audit',
+])
+    ->prefix('admin/operations')
+    ->name('admin.operations.')
+    ->group(function (): void {
+        Route::get('/', [OperationsHealthController::class, 'index'])->name('index');
+        Route::post('/jobs/{uuid}/retry', [OperationsHealthController::class, 'retryJob'])
+            ->name('jobs.retry');
+    });
+
+Route::post(
+    '/admin/stripe-metrics/refresh',
+    [StripeMetricsController::class, 'refresh'],
+)
+    ->middleware([
+        'auth',
+        'verified',
+        'staff.permission:dashboard.view',
+        'staff.audit',
+    ])
+    ->name('admin.stripe-metrics.refresh');
 
 Route::middleware([
     'auth',

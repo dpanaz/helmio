@@ -13,7 +13,7 @@ use App\Models\MarketingVisit;
 use App\Models\StaffAuditLog;
 use App\Models\SupportConversation;
 use App\Models\User;
-use App\Services\Billing\BillingPlanService;
+use App\Services\Billing\StripeBusinessMetricsService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
@@ -21,9 +21,10 @@ use Illuminate\View\View;
 
 class AdminDashboardController extends Controller
 {
-    public function __invoke(BillingPlanService $plans): View
+    public function __invoke(StripeBusinessMetricsService $stripeMetrics): View
     {
         $since = now()->subDays(30);
+        $billing = $stripeMetrics->metrics();
         $activeSubscription = fn (Builder $query) => $query
             ->whereIn('stripe_status', ['active', 'trialing'])
             ->where(fn (Builder $query) => $query
@@ -35,17 +36,6 @@ class AdminDashboardController extends Controller
             ->where(fn ($query) => $query
                 ->whereNull('ends_at')
                 ->orWhere('ends_at', '>', now()));
-
-        $monthlyPriceId = $plans->priceId('monthly');
-        $annualPriceId = $plans->priceId('annual');
-        $monthlySubscriptions = $monthlyPriceId
-            ? (clone $activeSubscriptions)->where('stripe_price', $monthlyPriceId)->count()
-            : 0;
-        $annualSubscriptions = $annualPriceId
-            ? (clone $activeSubscriptions)->where('stripe_price', $annualPriceId)->count()
-            : 0;
-        $mrr = ($monthlySubscriptions * $plans->amount('monthly'))
-            + (($annualSubscriptions * $plans->amount('annual')) / 12);
 
         $customerQuery = fn () => User::query()->whereDoesntHave('staffRoles');
         $customers = $customerQuery()->count();
@@ -106,8 +96,9 @@ class AdminDashboardController extends Controller
             ['label' => 'Brokerage connections need attention', 'count' => $system['connection_errors'], 'route' => 'admin.customers.index', 'severity' => 'critical'],
             ['label' => 'Connections have stale portfolio data', 'count' => $system['stale_connections'], 'route' => 'admin.customers.index', 'severity' => 'warning'],
             ['label' => 'Unassigned support conversations', 'count' => $support['unassigned'], 'route' => 'admin.support.index', 'severity' => 'warning'],
-            ['label' => 'Failed background jobs in 24 hours', 'count' => $system['failed_jobs'], 'route' => null, 'severity' => 'critical'],
-            ['label' => 'AI requests failed in 24 hours', 'count' => $system['ai_failures'], 'route' => null, 'severity' => 'warning'],
+            ['label' => 'Stripe subscriptions are past due', 'count' => $billing['past_due'], 'route' => 'admin.operations.index', 'severity' => 'critical'],
+            ['label' => 'Failed background jobs in 24 hours', 'count' => $system['failed_jobs'], 'route' => 'admin.operations.index', 'severity' => 'critical'],
+            ['label' => 'AI requests failed in 24 hours', 'count' => $system['ai_failures'], 'route' => 'admin.operations.index', 'severity' => 'warning'],
             ['label' => 'Reddit conversions failed in 24 hours', 'count' => $system['reddit_failures'], 'route' => 'admin.marketing.reddit', 'severity' => 'warning'],
         ])->filter(fn (array $item): bool => $item['count'] > 0)->values();
 
@@ -142,15 +133,20 @@ class AdminDashboardController extends Controller
             'metrics' => [
                 'customers' => $customers,
                 'new_customers' => $customerQuery()->where('created_at', '>=', $since)->count(),
-                'active_subscriptions' => (clone $activeSubscriptions)->count(),
-                'trials' => (clone $activeSubscriptions)->where('stripe_status', 'trialing')->count(),
+                'active_subscriptions' => $billing['active_subscriptions'],
+                'trials' => $billing['trials'],
                 'trials_ending' => (clone $activeSubscriptions)
                     ->whereNotNull('trial_ends_at')
                     ->whereBetween('trial_ends_at', [now(), now()->addDays(7)])->count(),
-                'mrr' => $mrr,
-                'arr' => $mrr * 12,
-                'monthly_plans' => $monthlySubscriptions,
-                'annual_plans' => $annualSubscriptions,
+                'mrr' => $billing['mrr'],
+                'arr' => $billing['arr'],
+                'monthly_plans' => $billing['monthly_plans'],
+                'annual_plans' => $billing['annual_plans'],
+                'past_due' => $billing['past_due'],
+                'new_subscriptions_30d' => $billing['new_subscriptions_30d'],
+                'cancellations_30d' => $billing['cancellations_30d'],
+                'refunds_30d' => $billing['refunds_30d'],
+                'refund_amount_30d' => $billing['refund_amount_30d'],
                 'accounts' => InvestmentAccount::query()->count(),
                 'marketing_visitors' => MarketingVisit::query()
                     ->where('first_seen_at', '>=', $since)->distinct()->count('visitor_uuid'),
@@ -170,6 +166,7 @@ class AdminDashboardController extends Controller
             'support' => $support,
             'attention' => $attention,
             'atRiskCustomers' => $atRiskCustomers,
+            'billingMetrics' => $billing,
         ]);
     }
 }

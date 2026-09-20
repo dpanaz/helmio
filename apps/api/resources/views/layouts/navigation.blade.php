@@ -191,6 +191,7 @@
                 ['route' => 'admin.customers.index', 'label' => 'Customers', 'icon' => 'accounts', 'active' => ['admin.customers.*'], 'permission' => 'customers.view'],
                 ['route' => 'admin.support.index', 'label' => 'Support Inbox', 'icon' => 'chat', 'active' => ['admin.support.*'], 'permission' => 'support.view'],
                 ['route' => 'admin.marketing.reddit', 'label' => 'Marketing', 'icon' => 'trend', 'active' => ['admin.marketing.*'], 'permission' => 'marketing.view'],
+                ['route' => 'admin.operations.index', 'label' => 'Operations Health', 'icon' => 'alert', 'active' => ['admin.operations.*'], 'permission' => 'operations.view'],
                 ['route' => 'admin.staff.index', 'label' => 'Employees', 'icon' => 'shield', 'active' => ['admin.staff.*'], 'permission' => 'staff.manage'],
                 ['route' => 'admin.pricing.edit', 'label' => 'Pricing', 'icon' => 'dollar', 'active' => ['admin.pricing.*'], 'permission' => 'billing.manage'],
             ])->filter(
