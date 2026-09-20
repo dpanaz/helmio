@@ -7,13 +7,19 @@
 @endif
 </header>
 <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-@foreach ([['label' => 'Accounts', 'value' => $customer->investmentAccounts->count()], ['label' => 'Connections', 'value' => $customer->brokerageConnections->count()], ['label' => 'Ask Helmio conversations', 'value' => $customer->ask_helmio_conversations_count], ['label' => 'Ask Helmio messages', 'value' => $customer->ask_helmio_messages_count]] as $metric)
+@foreach ([['label' => 'Accounts', 'value' => $customer->investmentAccounts->count()], ['label' => 'Active connections', 'value' => $customer->active_brokerage_connections_count], ['label' => 'Ask Helmio conversations', 'value' => $customer->ask_helmio_conversations_count], ['label' => 'Ask Helmio messages', 'value' => $customer->ask_helmio_messages_count]] as $metric)
 <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5"><p class="text-xs font-bold uppercase tracking-wider text-slate-500">{{ $metric['label'] }}</p><p class="mt-3 text-3xl font-semibold text-white">{{ number_format($metric['value']) }}</p></article>
 @endforeach
 </section>
 <section class="mt-8 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900"><div class="border-b border-slate-800 px-5 py-4"><h2 class="font-semibold text-white">Investment accounts</h2></div><div class="divide-y divide-slate-800">
 @forelse ($customer->investmentAccounts as $account)
-<div class="grid gap-3 px-5 py-4 sm:grid-cols-4 sm:items-center"><div><p class="font-semibold text-white">{{ $account->name }}</p><p class="mt-1 text-sm text-slate-500">{{ $account->institution?->name ?? $account->provider ?? 'Manual' }}</p></div><p class="text-sm">{{ $account->account_type ?? 'Account' }}</p><p class="text-sm">USD {{ number_format((float) $account->current_value, 2) }}</p><p class="text-sm text-slate-500 sm:text-right">Synced {{ $account->last_synced_at?->diffForHumans() ?? 'never' }}</p></div>
+@php
+    $latestSyncAt = $account->brokerageConnection?->last_successful_sync_at
+        ?? $account->provider_synced_at
+        ?? $account->last_synced_at
+        ?? $account->brokerageConnection?->last_synced_at;
+@endphp
+<div class="grid gap-3 px-5 py-4 sm:grid-cols-4 sm:items-center"><div><p class="font-semibold text-white">{{ $account->name }}</p><p class="mt-1 text-sm text-slate-500">{{ $account->institution?->name ?? $account->provider ?? 'Manual' }}</p></div><p class="text-sm">{{ $account->account_type ?? 'Account' }}</p><p class="text-sm">USD {{ number_format((float) $account->current_value, 2) }}</p><p class="text-sm text-slate-500 sm:text-right">{{ $latestSyncAt ? 'Synced '.$latestSyncAt->diffForHumans() : 'Never successfully synced' }}</p></div>
 @empty
 <p class="px-5 py-12 text-center text-slate-500">No investment accounts connected.</p>
 @endforelse

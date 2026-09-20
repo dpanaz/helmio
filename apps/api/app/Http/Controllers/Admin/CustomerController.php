@@ -24,7 +24,8 @@ class CustomerController extends Controller
             )
             ->withCount([
                 'investmentAccounts',
-                'brokerageConnections',
+                'brokerageConnections as active_brokerage_connections_count' =>
+                    fn ($query) => $query->where('status', 'active'),
                 'askHelmioConversations',
             ])
             ->latest()
@@ -40,10 +41,13 @@ class CustomerController extends Controller
 
         $customer->load([
             'investmentAccounts.institution',
+            'investmentAccounts.brokerageConnection',
             'brokerageConnections',
             'investorProfile',
             'subscriptions',
         ])->loadCount([
+            'brokerageConnections as active_brokerage_connections_count' =>
+                fn ($query) => $query->where('status', 'active'),
             'askHelmioConversations',
             'askHelmioMessages',
         ]);

@@ -70,12 +70,12 @@ class AdminDashboardController extends Controller
                 : 0,
             'queued_jobs' => Schema::hasTable('jobs') ? DB::table('jobs')->count() : 0,
             'connection_errors' => BrokerageConnection::query()
-                ->whereIn('status', ['error', 'disabled', 'disconnected'])->count(),
+                ->where('status', BrokerageConnection::STATUS_ERROR)->count(),
             'stale_connections' => BrokerageConnection::query()
                 ->where(fn (Builder $query) => $query
                     ->whereNull('last_successful_sync_at')
                     ->orWhere('last_successful_sync_at', '<', $staleCutoff))
-                ->whereNotIn('status', ['disabled', 'disconnected'])
+                ->where('status', BrokerageConnection::STATUS_ACTIVE)
                 ->count(),
             'failed_syncs' => BrokerageSyncRun::query()
                 ->where('status', BrokerageSyncRun::STATUS_FAILED)
@@ -114,17 +114,14 @@ class AdminDashboardController extends Controller
         $atRiskCustomers = $customerQuery()
             ->whereHas('subscriptions', $activeSubscription)
             ->withCount('investmentAccounts')
-            ->with('brokerageConnections')
+            ->with(['brokerageConnections' => fn ($query) =>
+                $query->where('status', BrokerageConnection::STATUS_ACTIVE)])
             ->get()
             ->map(function (User $customer) use ($staleCutoff): ?array {
                 $reasons = [];
 
                 if ($customer->investment_accounts_count === 0) {
                     $reasons[] = 'No connected account';
-                }
-                if ($customer->brokerageConnections->contains(fn (BrokerageConnection $connection) =>
-                    in_array($connection->status, ['error', 'disabled', 'disconnected'], true))) {
-                    $reasons[] = 'Connection error';
                 }
                 if ($customer->brokerageConnections->isNotEmpty()
                     && $customer->brokerageConnections->contains(fn (BrokerageConnection $connection) =>
