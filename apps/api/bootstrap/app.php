@@ -4,6 +4,7 @@ use App\Http\Middleware\CaptureMarketingAttribution;
 use App\Http\Middleware\EnsureMarketingAdmin;
 use App\Http\Middleware\EnsureOnboardingComplete;
 use App\Http\Middleware\EnsureStaffPermission;
+use App\Http\Middleware\EnsureStaffActive;
 use App\Http\Middleware\ReadOnlyCustomerPreview;
 use App\Http\Middleware\RecordStaffActivity;
 use App\Http\Middleware\RequirePremiumSubscription;
@@ -41,6 +42,7 @@ return Application::configure(
             $middleware->web(
                 append: [
                     CaptureMarketingAttribution::class,
+                    EnsureStaffActive::class,
                     ReadOnlyCustomerPreview::class,
                 ],
             );

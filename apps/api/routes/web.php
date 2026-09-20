@@ -50,6 +50,7 @@ use App\Http\Controllers\Admin\StaffController;
 use App\Http\Controllers\Admin\PricingController;
 use App\Http\Controllers\Admin\OperationsHealthController;
 use App\Http\Controllers\Admin\StripeMetricsController;
+use App\Http\Controllers\Admin\StaffAuditController;
 use App\Http\Controllers\SupportConversationController;
 
 
@@ -1165,7 +1166,22 @@ Route::middleware([
         Route::get('/', [StaffController::class, 'index'])->name('index');
         Route::post('/', [StaffController::class, 'store'])->name('store');
         Route::patch('/{staffMember}', [StaffController::class, 'update'])->name('update');
+        Route::post('/{staffMember}/resend-invite', [StaffController::class, 'resendInvite'])
+            ->name('invite');
+        Route::patch('/{staffMember}/suspend', [StaffController::class, 'suspend'])
+            ->name('suspend');
+        Route::patch('/{staffMember}/restore', [StaffController::class, 'restore'])
+            ->name('restore');
     });
+
+Route::get('/admin/audit', [StaffAuditController::class, 'index'])
+    ->middleware([
+        'auth',
+        'verified',
+        'staff.permission:audit.view',
+        'staff.audit',
+    ])
+    ->name('admin.audit.index');
 
 Route::middleware([
     'auth',

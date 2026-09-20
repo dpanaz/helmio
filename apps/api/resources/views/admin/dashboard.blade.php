@@ -33,6 +33,7 @@
             ['label' => 'Reddit marketing', 'description' => 'Attribution, conversion, and revenue reporting.', 'permission' => 'marketing.view', 'route' => 'admin.marketing.reddit'],
             ['label' => 'Operations health', 'description' => 'Investigate queue, sync, AI, and delivery failures.', 'permission' => 'operations.view', 'route' => 'admin.operations.index'],
             ['label' => 'Employees', 'description' => 'Create employees and assign staff roles.', 'permission' => 'staff.manage', 'route' => 'admin.staff.index'],
+            ['label' => 'Staff audit log', 'description' => 'Review customer access and sensitive staff actions.', 'permission' => 'audit.view', 'route' => 'admin.audit.index'],
             ['label' => 'Subscription pricing', 'description' => 'Manage monthly and annual customer pricing.', 'permission' => 'billing.manage', 'route' => 'admin.pricing.edit'],
         ];
     @endphp

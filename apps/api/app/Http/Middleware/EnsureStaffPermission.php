@@ -17,6 +17,7 @@ class EnsureStaffPermission
 
         abort_unless(
             $user
+            && $user->staff_suspended_at === null
             && $user->hasAnyStaffPermission($permissions),
             403,
         );

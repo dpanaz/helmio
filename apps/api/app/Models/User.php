@@ -64,6 +64,8 @@ class User extends Authenticatable
                 'datetime',
             'last_login_at' =>
                 'datetime',
+            'staff_suspended_at' =>
+                'datetime',
             'is_admin' => 'boolean',
         ];
     }
@@ -140,6 +142,10 @@ class User extends Authenticatable
 
     public function hasStaffPermission(string $permission): bool
     {
+        if ($this->staff_suspended_at !== null) {
+            return false;
+        }
+
         if ($this->is_admin || $this->hasStaffRole('admin')) {
             return true;
         }
