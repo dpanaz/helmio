@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Services\Billing\SubscriptionAccessService;
+use App\Services\Billing\BillingPlanService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -46,6 +47,7 @@ class BillingController extends Controller
     public function pricing(
         Request $request,
         SubscriptionAccessService $accessService,
+        BillingPlanService $plans,
     ): View {
         $user = $request->user();
 
@@ -62,13 +64,10 @@ class BillingController extends Controller
             'billingStatus' =>
                 $billingStatus,
 
-            'monthlyPriceId' => config(
-                'services.stripe.prices.monthly',
-            ),
-
-            'annualPriceId' => config(
-                'services.stripe.prices.annual',
-            ),
+            'monthlyPriceId' => $plans->priceId('monthly'),
+            'annualPriceId' => $plans->priceId('annual'),
+            'monthlyAmount' => $plans->amount('monthly'),
+            'annualAmount' => $plans->amount('annual'),
 
             'trialDays' => (int) config(
                 'services.stripe.trial_days',
@@ -80,6 +79,7 @@ class BillingController extends Controller
     public function checkout(
         Request $request,
         SubscriptionAccessService $accessService,
+        BillingPlanService $plans,
     ): Checkout|RedirectResponse {
         $validated = $request->validate([
             'billing_period' => [
@@ -99,10 +99,7 @@ class BillingController extends Controller
                 );
         }
 
-        $priceId = config(
-            'services.stripe.prices.'
-            .$validated['billing_period'],
-        );
+        $priceId = $plans->priceId($validated['billing_period']);
 
         abort_if(
             blank($priceId),

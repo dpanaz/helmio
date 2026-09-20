@@ -32,6 +32,14 @@
         $unreadNotificationCount =
             auth()->user()->unreadNotifications()->count();
 
+        $isStaff = auth()->user()->isStaff();
+        $staffHomeRoute = match (true) {
+            auth()->user()->hasStaffPermission('dashboard.view') => 'admin.dashboard',
+            auth()->user()->hasStaffPermission('support.view') => 'admin.support.index',
+            auth()->user()->hasStaffPermission('customers.view') => 'admin.customers.index',
+            default => 'profile.edit',
+        };
+
         $sidebarMain = [
             [
                 'route' => 'dashboard',
@@ -176,6 +184,33 @@
                 'premium' => true,
             ],
         ];
+
+        if ($isStaff) {
+            $staffItems = collect([
+                ['route' => 'admin.dashboard', 'label' => 'Business Dashboard', 'icon' => 'home', 'active' => ['admin.dashboard'], 'permission' => 'dashboard.view'],
+                ['route' => 'admin.customers.index', 'label' => 'Customers', 'icon' => 'accounts', 'active' => ['admin.customers.*'], 'permission' => 'customers.view'],
+                ['route' => 'admin.support.index', 'label' => 'Support Inbox', 'icon' => 'chat', 'active' => ['admin.support.*'], 'permission' => 'support.view'],
+                ['route' => 'admin.marketing.reddit', 'label' => 'Marketing', 'icon' => 'trend', 'active' => ['admin.marketing.*'], 'permission' => 'marketing.view'],
+                ['route' => 'admin.staff.index', 'label' => 'Employees', 'icon' => 'shield', 'active' => ['admin.staff.*'], 'permission' => 'staff.manage'],
+                ['route' => 'admin.pricing.edit', 'label' => 'Pricing', 'icon' => 'dollar', 'active' => ['admin.pricing.*'], 'permission' => 'billing.manage'],
+            ])->filter(
+                fn (array $item): bool => auth()->user()->hasStaffPermission($item['permission'])
+            )->map(function (array $item): array {
+                $item['premium'] = false;
+                return $item;
+            })->values()->all();
+
+            $navigationSections = [
+                ['label' => 'Helmio Operations', 'items' => $staffItems],
+            ];
+        } else {
+            $navigationSections = [
+                ['label' => 'Main', 'items' => $sidebarMain],
+                ['label' => 'Monitor', 'items' => $sidebarMonitor],
+                ['label' => 'Portfolio Analysis', 'items' => $sidebarAnalysis],
+                ['label' => 'History', 'items' => $sidebarHistory],
+            ];
+        }
     @endphp
 
     {{-- ============================================================= --}}
@@ -189,7 +224,7 @@
         {{-- Brand --}}
         <div class="flex h-20 shrink-0 items-center border-b border-slate-800/80 px-5">
             <a
-                href="{{ route('dashboard') }}"
+                href="{{ route($isStaff ? $staffHomeRoute : 'dashboard') }}"
                 class="flex min-w-0 items-center gap-3"
             >
                 <img
@@ -203,7 +238,7 @@
                         Helmio
                     </p>
                     <p class="mt-0.5 truncate text-[9px] font-semibold uppercase tracking-[0.2em] text-slate-600">
-                        Investment oversight
+                        {{ $isStaff ? 'Operations portal' : 'Investment oversight' }}
                     </p>
                 </div>
             </a>
@@ -267,18 +302,16 @@
                                 </x-dropdown-link>
                             @endif
 
-                            <x-dropdown-link :href="route('billing.index')">
-                                Billing
-                            </x-dropdown-link>
-                            <x-dropdown-link :href="route('investor-profile.edit')">
-                                Investor Profile
-                            </x-dropdown-link>
+                            @unless ($isStaff)
+                                <x-dropdown-link :href="route('billing.index')">Billing</x-dropdown-link>
+                                <x-dropdown-link :href="route('investor-profile.edit')">Investor Profile</x-dropdown-link>
+                            @endunless
                             <x-dropdown-link :href="route('profile.edit')">
                                 Profile
                             </x-dropdown-link>
-                            <x-dropdown-link :href="route('support.index')">
-                                Support
-                            </x-dropdown-link>
+                            @unless ($isStaff)
+                                <x-dropdown-link :href="route('support.index')">Support</x-dropdown-link>
+                            @endunless
 
                             <form method="POST" action="{{ route('logout') }}">
                                 @csrf
@@ -297,12 +330,7 @@
 
         {{-- Scrollable navigation --}}
         <div class="flex-1 overflow-y-auto px-3 py-5 [scrollbar-width:thin] [scrollbar-color:#334155_transparent]">
-            @foreach ([
-                ['label' => 'Main', 'items' => $sidebarMain],
-                ['label' => 'Monitor', 'items' => $sidebarMonitor],
-                ['label' => 'Portfolio Analysis', 'items' => $sidebarAnalysis],
-                ['label' => 'History', 'items' => $sidebarHistory],
-            ] as $section)
+            @foreach ($navigationSections as $section)
                 <section class="mb-6 last:mb-0">
                     <p class="mb-2 px-3 text-[10px] font-bold uppercase tracking-[0.18em] text-slate-600">
                         {{ $section['label'] }}
@@ -430,7 +458,7 @@
             class="flex h-16 min-w-0 items-center justify-between gap-3 px-4"
         >
             <a
-                href="{{ route('dashboard') }}"
+                href="{{ route($isStaff ? $staffHomeRoute : 'dashboard') }}"
                 class="flex min-w-0 items-center gap-3 overflow-hidden"
             >
                 <img
@@ -449,7 +477,7 @@
                     <p
                         class="truncate text-[10px] uppercase tracking-[0.16em] text-slate-500"
                     >
-                        Investment oversight
+                        {{ $isStaff ? 'Operations portal' : 'Investment oversight' }}
                     </p>
                 </div>
             </a>
@@ -493,6 +521,8 @@
     {{-- MOBILE MORE SHEET --}}
     {{-- Kept outside the main nav so iOS fixes overlays to viewport. --}}
     {{-- ============================================================= --}}
+
+    @unless ($isStaff)
 
     <div
         x-cloak
@@ -1102,4 +1132,27 @@
             </button>
         </div>
     </div>
+    @endunless
+
+    @if ($isStaff)
+        <div class="fixed inset-x-0 bottom-0 z-[100] border-t border-slate-800 bg-slate-950/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+            <div class="flex min-h-16 items-stretch overflow-x-auto">
+                @foreach ($staffItems as $item)
+                    <a
+                        href="{{ route($item['route']) }}"
+                        @class([
+                            'flex min-w-[88px] flex-1 flex-col items-center justify-center gap-1 px-2 py-2 text-[10px] font-semibold',
+                            'text-blue-400' => request()->routeIs(...$item['active']),
+                            'text-slate-500' => ! request()->routeIs(...$item['active']),
+                        ])
+                    >
+                        <span class="flex h-6 w-6 items-center justify-center rounded-lg bg-slate-900 text-xs">
+                            @if ($item['icon'] === 'dollar') $ @else ● @endif
+                        </span>
+                        <span class="max-w-full truncate">{{ $item['label'] }}</span>
+                    </a>
+                @endforeach
+            </div>
+        </div>
+    @endif
 </div>

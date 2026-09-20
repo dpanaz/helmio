@@ -14,7 +14,8 @@
             ['label' => 'Support inbox', 'description' => 'Tickets and live customer conversations.', 'permission' => 'support.view', 'route' => 'admin.support.index'],
             ['label' => 'Reddit marketing', 'description' => 'Attribution, conversion, and revenue reporting.', 'permission' => 'marketing.view', 'route' => 'admin.marketing.reddit'],
             ['label' => 'Operations', 'description' => 'Sync, analytics, AI, and queue health.', 'permission' => 'operations.view', 'route' => null],
-            ['label' => 'Team access', 'description' => 'Roles, permissions, and staff membership.', 'permission' => 'staff.manage', 'route' => null],
+            ['label' => 'Team access', 'description' => 'Create employees and assign staff roles.', 'permission' => 'staff.manage', 'route' => 'admin.staff.index'],
+            ['label' => 'Subscription pricing', 'description' => 'Manage monthly and annual customer pricing.', 'permission' => 'billing.manage', 'route' => 'admin.pricing.edit'],
             ['label' => 'Audit log', 'description' => 'Review sensitive staff activity.', 'permission' => 'audit.view', 'route' => null],
         ];
     @endphp

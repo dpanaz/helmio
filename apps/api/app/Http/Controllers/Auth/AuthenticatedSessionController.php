@@ -28,8 +28,15 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        if ($request->user()->hasStaffRole('admin')) {
-            return redirect()->route('admin.dashboard');
+        if ($request->user()->isStaff()) {
+            $route = match (true) {
+                $request->user()->hasStaffPermission('dashboard.view') => 'admin.dashboard',
+                $request->user()->hasStaffPermission('support.view') => 'admin.support.index',
+                $request->user()->hasStaffPermission('customers.view') => 'admin.customers.index',
+                default => 'profile.edit',
+            };
+
+            return redirect()->route($route);
         }
 
         return redirect()->intended(route('dashboard', absolute: false));

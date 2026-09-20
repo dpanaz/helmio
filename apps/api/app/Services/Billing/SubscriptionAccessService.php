@@ -7,6 +7,11 @@ use Laravel\Cashier\Subscription;
 
 class SubscriptionAccessService
 {
+    public function __construct(
+        private readonly BillingPlanService $plans,
+    ) {
+    }
+
     public function status(User $user): array
     {
         if ($this->isDemoUser($user)) {
@@ -55,11 +60,17 @@ class SubscriptionAccessService
 
     private function resolvePlan(?Subscription $subscription): ?string
     {
-        return match ($this->resolvePriceId($subscription)) {
-            config('services.stripe.prices.monthly') => 'monthly',
-            config('services.stripe.prices.annual') => 'annual',
-            default => null,
-        };
+        $priceId = $this->resolvePriceId($subscription);
+
+        if ($priceId && $priceId === $this->plans->priceId('monthly')) {
+            return 'monthly';
+        }
+
+        if ($priceId && $priceId === $this->plans->priceId('annual')) {
+            return 'annual';
+        }
+
+        return null;
     }
 
     private function resolvePriceId(?Subscription $subscription): ?string

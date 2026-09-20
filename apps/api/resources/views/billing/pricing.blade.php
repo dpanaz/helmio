@@ -100,7 +100,7 @@
 
                     <div class="mt-6 flex items-end gap-2">
                         <span class="text-5xl font-bold tracking-tight text-white">
-                            $19.95
+                            ${{ number_format($monthlyAmount, 2) }}
                         </span>
 
                         <span class="pb-2 text-slate-500">
@@ -217,7 +217,7 @@
 
                     <div class="mt-6 flex items-end gap-2">
                         <span class="text-5xl font-bold tracking-tight text-white">
-                            $199.95
+                            ${{ number_format($annualAmount, 2) }}
                         </span>
 
                         <span class="pb-2 text-slate-500">
@@ -226,7 +226,7 @@
                     </div>
 
                     <p class="mt-3 text-sm font-medium text-blue-300">
-                        Save $38 compared with monthly billing.
+                        Save ${{ number_format(max(0, ($monthlyAmount * 12) - $annualAmount), 2) }} compared with monthly billing.
                     </p>
 
                     <ul class="mt-7 space-y-4 text-sm text-slate-300">

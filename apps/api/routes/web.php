@@ -46,6 +46,8 @@ use App\Http\Controllers\Admin\CustomerController;
 use App\Http\Controllers\Admin\CustomerPreviewController;
 use App\Http\Controllers\Admin\RedditCampaignController;
 use App\Http\Controllers\Admin\SupportInboxController;
+use App\Http\Controllers\Admin\StaffController;
+use App\Http\Controllers\Admin\PricingController;
 use App\Http\Controllers\SupportConversationController;
 
 
@@ -1148,6 +1150,33 @@ Route::middleware('auth')
 | Helmio operations portal
 |--------------------------------------------------------------------------
 */
+
+Route::middleware([
+    'auth',
+    'verified',
+    'staff.permission:staff.manage',
+    'staff.audit',
+])
+    ->prefix('admin/staff')
+    ->name('admin.staff.')
+    ->group(function (): void {
+        Route::get('/', [StaffController::class, 'index'])->name('index');
+        Route::post('/', [StaffController::class, 'store'])->name('store');
+        Route::patch('/{staffMember}', [StaffController::class, 'update'])->name('update');
+    });
+
+Route::middleware([
+    'auth',
+    'verified',
+    'staff.permission:billing.manage',
+    'staff.audit',
+])
+    ->prefix('admin/pricing')
+    ->name('admin.pricing.')
+    ->group(function (): void {
+        Route::get('/', [PricingController::class, 'edit'])->name('edit');
+        Route::put('/', [PricingController::class, 'update'])->name('update');
+    });
 
 Route::middleware([
     'auth',
