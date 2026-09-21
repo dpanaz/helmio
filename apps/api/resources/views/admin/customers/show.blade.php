@@ -2,9 +2,10 @@
 <div class="min-h-screen bg-slate-950 text-slate-100"><div class="mx-auto max-w-[1300px] px-4 py-8 sm:px-6 lg:px-8">
 <header class="mb-6 flex flex-col gap-5 border-b border-slate-800 pb-6 lg:flex-row lg:items-end lg:justify-between">
 <div><a href="{{ route('admin.customers.index') }}" class="text-sm font-semibold text-blue-400">← Customers</a><h1 class="mt-3 text-3xl font-semibold text-white">{{ $customer->name }}</h1><p class="mt-2 text-sm text-slate-400">{{ $customer->email }} · Customer since {{ $customer->created_at?->format('M j, Y') }}</p></div>
-@if (auth()->user()->hasStaffPermission('customers.preview'))
-<form method="POST" action="{{ route('admin.customers.preview.store', $customer) }}">@csrf<button class="rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-slate-950">View as Customer</button></form>
-@endif
+<div class="flex flex-wrap gap-3">
+@if (auth()->user()->hasStaffPermission('billing.view'))<a href="{{ route('admin.customers.billing.show', $customer) }}" class="rounded-xl border border-blue-500/30 bg-blue-500/10 px-5 py-3 text-sm font-bold text-blue-300">View Billing</a>@endif
+@if (auth()->user()->hasStaffPermission('customers.preview'))<form method="POST" action="{{ route('admin.customers.preview.store', $customer) }}">@csrf<button class="rounded-xl bg-amber-500 px-5 py-3 text-sm font-bold text-slate-950">View as Customer</button></form>@endif
+</div>
 </header>
 <section class="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
 @foreach ([['label' => 'Accounts', 'value' => $customer->investmentAccounts->count()], ['label' => 'Active connections', 'value' => $customer->active_brokerage_connections_count], ['label' => 'Ask Helmio conversations', 'value' => $customer->ask_helmio_conversations_count], ['label' => 'Ask Helmio messages', 'value' => $customer->ask_helmio_messages_count]] as $metric)

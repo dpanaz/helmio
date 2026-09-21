@@ -51,6 +51,7 @@ use App\Http\Controllers\Admin\PricingController;
 use App\Http\Controllers\Admin\OperationsHealthController;
 use App\Http\Controllers\Admin\StripeMetricsController;
 use App\Http\Controllers\Admin\StaffAuditController;
+use App\Http\Controllers\Admin\CustomerBillingController;
 use App\Http\Controllers\SupportConversationController;
 
 
@@ -1221,6 +1222,19 @@ Route::post(
         'staff.audit',
     ])
     ->name('admin.stripe-metrics.refresh');
+
+Route::middleware([
+    'auth',
+    'verified',
+    'staff.permission:billing.view',
+    'staff.audit',
+])
+    ->prefix('admin/customers/{customer}/billing')
+    ->name('admin.customers.billing.')
+    ->group(function (): void {
+        Route::get('/', [CustomerBillingController::class, 'show'])->name('show');
+        Route::post('/refresh', [CustomerBillingController::class, 'refresh'])->name('refresh');
+    });
 
 Route::middleware([
     'auth',
