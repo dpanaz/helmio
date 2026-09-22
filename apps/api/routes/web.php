@@ -32,6 +32,7 @@ use App\Http\Controllers\RiskAnalyticsController;
 use App\Http\Controllers\TaxEfficiencyAnalyticsController;
 use App\Http\Controllers\TradingDisciplineAnalyticsController;
 use App\Http\Controllers\Webhooks\SnapTradeWebhookController;
+use App\Http\Controllers\Webhooks\StripeWebhookController;
 use App\Http\Controllers\OnboardingController;
 use App\Http\Controllers\Onboarding\HelmScoreRevealController;
 use App\Http\Controllers\Onboarding\PortfolioRevealController;
@@ -132,6 +133,11 @@ Route::post(
     '/webhooks/snaptrade',
     SnapTradeWebhookController::class,
 )->name('webhooks.snaptrade');
+
+Route::post(
+    '/stripe/webhook',
+    [StripeWebhookController::class, 'handleWebhook'],
+)->name('cashier.webhook');
 
 Route::get('/', function () {
     return view('welcome');

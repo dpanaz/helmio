@@ -60,7 +60,7 @@ return Application::configure(
             $middleware->preventRequestForgery(
                 except: [
                     'webhooks/snaptrade',
-                    'stripe/*',
+                    'stripe/webhook',
                 ],
             );
 

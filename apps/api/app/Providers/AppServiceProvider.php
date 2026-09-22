@@ -13,6 +13,7 @@ use App\Services\Brokerage\Providers\FakeBrokerageProvider;
 use App\Services\Brokerage\Providers\SnapTradeBrokerageProvider;
 use App\Services\Brokerage\SnapTrade\SnapTradeClientFactory;
 use Illuminate\Support\ServiceProvider;
+use Laravel\Cashier\Cashier;
 use SnapTrade\Client;
 
 class AppServiceProvider extends ServiceProvider
@@ -22,6 +23,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        /*
+         * Helmio registers the Cashier webhook route itself so test and
+         * live Stripe destinations can use separate signing secrets.
+         */
+        Cashier::ignoreRoutes();
+
         $this->app->bind(
             AiInsightProviderInterface::class,
             function (

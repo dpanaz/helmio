@@ -42,6 +42,23 @@ return [
         'webhook_secret' =>
             env('STRIPE_WEBHOOK_SECRET'),
 
+        /*
+         * Test and live webhook destinations have different signing
+         * secrets, even when both point at the same URL. Keep the legacy
+         * secret as a fallback for existing single-mode installations.
+         */
+        'webhook_secrets' => [
+            'test' => env(
+                'STRIPE_WEBHOOK_SECRET_TEST',
+                env('STRIPE_WEBHOOK_SECRET'),
+            ),
+
+            'live' => env(
+                'STRIPE_WEBHOOK_SECRET_LIVE',
+                env('STRIPE_WEBHOOK_SECRET'),
+            ),
+        ],
+
         'prices' => [
             'monthly' =>
                 env('STRIPE_PRICE_MONTHLY'),
