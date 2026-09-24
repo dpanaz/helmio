@@ -11,7 +11,7 @@ use Throwable;
 
 class RotateSnapTradeUserSecret extends Command
 {
-    protected $signature = 'helmio:snaptrade-rotate-user-secret {userId : Helmio user ID}';
+    protected $signature = 'helmio:snaptrade-rotate-user-secret {userId : Helmio user ID} {--confirm-provider-user-id= : Exact SnapTrade user ID to authorize non-interactive rotation}';
 
     protected $description = 'Rotate one SnapTrade user secret and immediately save it encrypted';
 
@@ -29,7 +29,14 @@ class RotateSnapTradeUserSecret extends Command
         }
 
         $providerUserId = $providerUser->provider_user_id;
-        if (! $this->confirm("Rotate the secret for {$providerUserId}? This immediately invalidates the old secret.")) {
+        $confirmedProviderUserId = $this->option('confirm-provider-user-id');
+
+        if ($confirmedProviderUserId !== null) {
+            if ($confirmedProviderUserId !== $providerUserId) {
+                $this->error('Confirmed SnapTrade user ID does not match the stored connection.');
+                return self::FAILURE;
+            }
+        } elseif (! $this->confirm("Rotate the secret for {$providerUserId}? This immediately invalidates the old secret.")) {
             return self::FAILURE;
         }
 
