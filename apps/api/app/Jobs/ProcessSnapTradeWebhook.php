@@ -288,7 +288,6 @@ class ProcessSnapTradeWebhook implements ShouldQueue
         BrokerageConnection $connection,
         BrokerageSyncService $syncService,
         PortfolioAnalyticsDispatcher $analyticsDispatcher,
-        BrokerageProviderManager $brokerageManager,
         array $metadata,
         string $eventType,
     ): void {
