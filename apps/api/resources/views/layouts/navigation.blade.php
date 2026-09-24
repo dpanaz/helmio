@@ -33,16 +33,8 @@
             auth()->user()->unreadNotifications()->count();
 
         $isStaff = auth()->user()->isStaff();
-        $unreadSupportCount = $isStaff ? 0 : \App\Models\SupportConversation::query()
-            ->where('user_id', auth()->id())
-            ->whereHas('messages', fn ($query) => $query
-                ->where('sender_type', 'staff')
-                ->where('is_internal', false)
-                ->where(function ($query) {
-                    $query->whereNull('support_conversations.customer_last_read_at')
-                        ->orWhereColumn('support_messages.created_at', '>', 'support_conversations.customer_last_read_at');
-                }))
-            ->count();
+        $unreadSupportCount = $isStaff ? 0 : app(\App\Services\Support\UnreadSupportService::class)
+            ->countFor(auth()->id());
         $staffHomeRoute = match (true) {
             auth()->user()->hasStaffPermission('dashboard.view') => 'admin.dashboard',
             auth()->user()->hasStaffPermission('support.view') => 'admin.support.index',
