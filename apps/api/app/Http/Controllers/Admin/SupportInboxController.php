@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\SupportConversation;
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -12,6 +13,51 @@ use Illuminate\View\View;
 
 class SupportInboxController extends Controller
 {
+    public function create(): View
+    {
+        $customers = User::query()->whereDoesntHave('staffRoles')
+            ->orderBy('name')->get(['id', 'name', 'email']);
+
+        return view('admin.support.create', compact('customers'));
+    }
+
+    public function store(Request $request): RedirectResponse
+    {
+        $validated = $request->validate([
+            'user_id' => ['required', 'integer', 'exists:users,id'],
+            'subject' => ['required', 'string', 'max:160'],
+            'message' => ['required', 'string', 'max:10000'],
+        ]);
+
+        $customer = User::query()->findOrFail($validated['user_id']);
+        abort_if($customer->isStaff(), 422, 'Select a customer account.');
+
+        $conversation = DB::transaction(function () use ($request, $validated): SupportConversation {
+            $conversation = SupportConversation::query()->create([
+                'user_id' => $validated['user_id'],
+                'assigned_to_user_id' => $request->user()->id,
+                'channel' => SupportConversation::CHANNEL_TICKET,
+                'status' => SupportConversation::STATUS_WAITING_CUSTOMER,
+                'priority' => 'normal',
+                'subject' => $validated['subject'],
+                'last_message_at' => now(),
+                'staff_last_read_at' => now(),
+            ]);
+
+            $conversation->messages()->create([
+                'sender_user_id' => $request->user()->id,
+                'sender_type' => 'staff',
+                'body' => $validated['message'],
+                'is_internal' => false,
+            ]);
+
+            return $conversation;
+        });
+
+        return redirect()->route('admin.support.show', $conversation)
+            ->with('status', 'Message sent to the customer.');
+    }
+
     public function index(Request $request): View
     {
         $status = $request->string('status')->toString();

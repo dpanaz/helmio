@@ -1,6 +1,6 @@
 <x-app-layout>
 <div class="min-h-screen bg-slate-950 text-slate-100"><div class="mx-auto max-w-[1500px] px-4 py-8 sm:px-6 lg:px-8">
-<header class="mb-6 border-b border-slate-800 pb-6"><a href="{{ route('admin.dashboard') }}" class="text-sm font-semibold text-blue-400">← Operations</a><h1 class="mt-3 text-3xl font-semibold">Support Inbox</h1><p class="mt-2 text-sm text-slate-400">Tickets and live customer conversations in one queue.</p></header>
+<header class="mb-6 flex flex-wrap items-end justify-between gap-4 border-b border-slate-800 pb-6"><div><a href="{{ route('admin.dashboard') }}" class="text-sm font-semibold text-blue-400">← Operations</a><h1 class="mt-3 text-3xl font-semibold">Support Inbox</h1><p class="mt-2 text-sm text-slate-400">Tickets and live customer conversations in one queue.</p></div>@if (auth()->user()->hasStaffPermission('support.manage'))<a href="{{ route('admin.support.create') }}" class="rounded-xl bg-blue-600 px-5 py-3 text-sm font-semibold text-white">Message a customer</a>@endif</header>
 <div class="mb-5 flex flex-wrap gap-2">
 @foreach (['' => 'All', 'open' => 'Open', 'pending' => 'Pending', 'waiting_customer' => 'Waiting', 'resolved' => 'Resolved', 'closed' => 'Closed'] as $value => $label)
 <a href="{{ route('admin.support.index', array_filter(['status' => $value, 'channel' => $channel])) }}" class="rounded-full px-3 py-2 text-xs font-bold {{ $status === $value ? 'bg-blue-600 text-white' : 'bg-slate-900 text-slate-400' }}">{{ $label }}@if ($value !== '') · {{ $counts[$value] ?? 0 }}@endif</a>
