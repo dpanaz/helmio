@@ -1302,6 +1302,10 @@ Route::middleware([
     ->name('admin.support.')
     ->group(function (): void {
         Route::get('/', [SupportInboxController::class, 'index'])->name('index');
+        Route::get('/create', [SupportInboxController::class, 'create'])
+            ->middleware('staff.permission:support.manage')->name('create');
+        Route::post('/', [SupportInboxController::class, 'store'])
+            ->middleware('staff.permission:support.manage')->name('store');
         Route::get('/{conversation}', [SupportInboxController::class, 'show'])->name('show');
         Route::patch('/{conversation}', [SupportInboxController::class, 'update'])
             ->middleware('staff.permission:support.manage')
