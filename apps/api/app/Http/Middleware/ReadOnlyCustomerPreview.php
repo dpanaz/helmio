@@ -25,6 +25,13 @@ class ReadOnlyCustomerPreview
             return $next($request);
         }
 
+        // Allow logout during a read-only preview, using the staff session.
+        if ($request->routeIs('logout')) {
+            $this->clear($request);
+
+            return $next($request);
+        }
+
         $staff = $request->user();
 
         if (! $staff || $staff->id !== (int) $staffId || ! $staff->isStaff()) {
