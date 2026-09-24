@@ -281,7 +281,7 @@ return $stats;
                     $finishedAt,
 
                 'last_error' =>
-                    $exception->getMessage(),
+                    \App\Support\SafeFailureMessage::redact($exception->getMessage()),
             ]);
 
             $syncRun->update([
@@ -304,7 +304,7 @@ return $stats;
                     $durationMs,
 
                 'error_message' =>
-                    $exception->getMessage(),
+                    \App\Support\SafeFailureMessage::redact($exception->getMessage()),
 
                 'metadata' => [
                     'trigger' =>
