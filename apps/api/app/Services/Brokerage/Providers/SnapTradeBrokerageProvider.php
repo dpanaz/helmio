@@ -574,7 +574,7 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
          */
         $response = $this->client
             ->accountInformation
-            ->getUserAccountPositions(
+            ->getAllAccountPositions(
                 user_id:
                     $providerUser
                         ->provider_user_id,
@@ -1096,8 +1096,8 @@ class SnapTradeBrokerageProvider implements BrokerageProviderInterface
 
             $this->client
                 ->connections
-                ->removeBrokerageAuthorization(
-                    authorization_id:
+                ->deleteConnection(
+                    connection_id:
                         $connection
                             ->provider_connection_id,
 

@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\BrokerageConnection;
 use App\Models\BrokerageProviderUser;
 use App\Services\Analytics\Pipeline\PortfolioAnalyticsDispatcher;
+use App\Services\Brokerage\BrokerageProviderManager;
 use App\Services\Brokerage\BrokerageSyncService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
@@ -33,6 +34,7 @@ class ProcessSnapTradeWebhook implements ShouldQueue
     public function handle(
         BrokerageSyncService $syncService,
         PortfolioAnalyticsDispatcher $analyticsDispatcher,
+        BrokerageProviderManager $brokerageManager,
     ): void {
         $eventType = strtoupper(
             (string) (
@@ -128,11 +130,32 @@ class ProcessSnapTradeWebhook implements ShouldQueue
                 ->latest('id')
                 ->first();
 
+        if (
+            $connection === null
+            && is_string($authorizationId)
+            && $authorizationId !== ''
+            && $eventType !== 'CONNECTION_DELETED'
+        ) {
+            // The webhook may arrive before the redirect callback.
+            $providerUser->loadMissing('user');
+
+            if ($providerUser->user !== null) {
+                $brokerageManager->driver('snaptrade')
+                    ->listConnections($providerUser->user);
+
+                $connection = BrokerageConnection::query()
+                    ->where('user_id', $providerUser->user_id)
+                    ->where('provider', 'snaptrade')
+                    ->where('provider_connection_id', $authorizationId)
+                    ->first();
+            }
+        }
+
         if ($connection === null) {
-            /*
-             * A webhook can arrive before the redirect callback has
-             * reconciled the connection. Let the queue retry.
-             */
+            if ($eventType === 'CONNECTION_DELETED') {
+                return;
+            }
+
             throw new RuntimeException(
                 'No local SnapTrade connection matches this webhook.'
             );
@@ -265,6 +288,7 @@ class ProcessSnapTradeWebhook implements ShouldQueue
         BrokerageConnection $connection,
         BrokerageSyncService $syncService,
         PortfolioAnalyticsDispatcher $analyticsDispatcher,
+        BrokerageProviderManager $brokerageManager,
         array $metadata,
         string $eventType,
     ): void {
