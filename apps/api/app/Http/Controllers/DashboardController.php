@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\PortfolioAnalysisRun;
 use App\Services\Dashboard\DashboardService;
+use App\Services\Support\UnreadSupportService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
@@ -13,6 +14,7 @@ class DashboardController extends Controller
     public function index(
         Request $request,
         DashboardService $dashboardService,
+        UnreadSupportService $unreadSupport,
     ): View {
         $userId = $request->user()->id;
 
@@ -25,6 +27,7 @@ class DashboardController extends Controller
         );
 
         return view('dashboard', [
+            'unreadSupportCount' => $unreadSupport->countFor($userId),
             'dashboard' =>
                 $dashboard,
 

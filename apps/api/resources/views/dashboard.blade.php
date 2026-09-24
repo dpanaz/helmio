@@ -605,6 +605,15 @@
 
     <div class="min-h-screen bg-[#080d18]">
 
+        @if ($unreadSupportCount > 0)
+            <div class="mx-auto max-w-7xl px-4 pt-6 sm:px-6 lg:px-8">
+                <a href="{{ route('support.index') }}" class="flex flex-wrap items-center justify-between gap-3 rounded-2xl border border-blue-500/40 bg-blue-500/10 px-5 py-4 text-blue-100 hover:bg-blue-500/20">
+                    <span class="flex items-center gap-3 font-semibold"><span class="rounded-full bg-red-500 px-2.5 py-1 text-xs font-bold text-white">{{ min($unreadSupportCount, 99) }}{{ $unreadSupportCount > 99 ? '+' : '' }}</span>You have {{ $unreadSupportCount === 1 ? 'a new message' : 'new messages' }} from Helmio Support.</span>
+                    <span class="text-sm font-semibold text-blue-300">Read messages →</span>
+                </a>
+            </div>
+        @endif
+
         @if (! $hasPremiumAccess)
 
             {{-- ========================================================= --}}
