@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BrokerageConnection;
+use App\Services\Analytics\Pipeline\PortfolioAnalyticsDispatcher;
 use App\Services\Brokerage\BrokerageProviderManager;
 use App\Services\Brokerage\BrokerageSyncService;
 use App\Services\Marketing\MarketingConversionService;
@@ -250,6 +251,7 @@ class BrokerageConnectionController extends Controller
         BrokerageProviderManager $manager,
         BrokerageSyncService $syncService,
         MarketingConversionService $marketingConversions,
+        PortfolioAnalyticsDispatcher $analyticsDispatcher,
     ): RedirectResponse {
         $this->authorizeConnection(
             $request,
@@ -521,6 +523,12 @@ class BrokerageConnectionController extends Controller
                 'connection',
             );
 
+            $analyticsDispatcher->dispatch(
+                user: $request->user(),
+                trigger: 'connection',
+                connection: $brokerageConnection,
+            );
+
             $marketingConversions->record(
                 type: 'AccountConnected',
                 user: $request->user(),
@@ -578,6 +586,7 @@ class BrokerageConnectionController extends Controller
         Request $request,
         BrokerageConnection $brokerageConnection,
         BrokerageSyncService $syncService,
+        PortfolioAnalyticsDispatcher $analyticsDispatcher,
     ): RedirectResponse {
         /*
          * Never allow fake brokerage completion in production.
@@ -625,6 +634,7 @@ class BrokerageConnectionController extends Controller
             connection: $brokerageConnection,
             syncService: $syncService,
             trigger: 'connection',
+            analyticsDispatcher: $analyticsDispatcher,
         );
     }
 
@@ -632,6 +642,7 @@ class BrokerageConnectionController extends Controller
         Request $request,
         BrokerageConnection $brokerageConnection,
         BrokerageSyncService $syncService,
+        PortfolioAnalyticsDispatcher $analyticsDispatcher,
     ): RedirectResponse {
         $this->authorizeConnection(
             $request,
@@ -643,6 +654,7 @@ class BrokerageConnectionController extends Controller
             connection: $brokerageConnection,
             syncService: $syncService,
             trigger: 'manual',
+            analyticsDispatcher: $analyticsDispatcher,
         );
     }
 
@@ -723,11 +735,18 @@ class BrokerageConnectionController extends Controller
         BrokerageConnection $connection,
         BrokerageSyncService $syncService,
         string $trigger,
+        PortfolioAnalyticsDispatcher $analyticsDispatcher,
     ): RedirectResponse {
         try {
             $stats = $syncService->sync(
                 $connection,
                 $trigger,
+            );
+
+            $analyticsDispatcher->dispatch(
+                user: $request->user(),
+                trigger: $trigger,
+                connection: $connection,
             );
 
             $message = sprintf(
