@@ -2,6 +2,7 @@
 
 namespace Tests\Feature\Auth;
 
+use App\Models\SupportConversation;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -27,5 +28,15 @@ class RegistrationTest extends TestCase
 
         $this->assertAuthenticated();
         $response->assertRedirect(route('dashboard', absolute: false));
+
+        $conversation = SupportConversation::query()
+            ->where('user_id', auth()->id())
+            ->where('subject', 'Welcome to Helmio')
+            ->firstOrFail();
+
+        $this->assertSame(SupportConversation::STATUS_WAITING_CUSTOMER, $conversation->status);
+        $this->assertSame(1, $conversation->messages()->count());
+        $this->assertSame('staff', $conversation->messages()->first()->sender_type);
+        $this->assertFalse($conversation->messages()->first()->is_internal);
     }
 }
