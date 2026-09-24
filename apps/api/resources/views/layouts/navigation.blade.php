@@ -33,6 +33,16 @@
             auth()->user()->unreadNotifications()->count();
 
         $isStaff = auth()->user()->isStaff();
+        $unreadSupportCount = $isStaff ? 0 : \App\Models\SupportConversation::query()
+            ->where('user_id', auth()->id())
+            ->whereHas('messages', fn ($query) => $query
+                ->where('sender_type', 'staff')
+                ->where('is_internal', false)
+                ->where(function ($query) {
+                    $query->whereNull('support_conversations.customer_last_read_at')
+                        ->orWhereColumn('support_messages.created_at', '>', 'support_conversations.customer_last_read_at');
+                }))
+            ->count();
         $staffHomeRoute = match (true) {
             auth()->user()->hasStaffPermission('dashboard.view') => 'admin.dashboard',
             auth()->user()->hasStaffPermission('support.view') => 'admin.support.index',
@@ -312,7 +322,7 @@
                                 Profile
                             </x-dropdown-link>
                             @unless ($isStaff)
-                                <x-dropdown-link :href="route('support.index')">Support</x-dropdown-link>
+                                <x-dropdown-link :href="route('support.index')">Support @if ($unreadSupportCount > 0)({{ $unreadSupportCount }})@endif</x-dropdown-link>
                             @endunless
 
                             <form method="POST" action="{{ route('logout') }}">
@@ -432,6 +442,10 @@
                                 <span class="min-w-0 flex-1 truncate">
                                     {{ $item['label'] }}
                                 </span>
+
+                                @if ($item['route'] === 'support.index' && $unreadSupportCount > 0)
+                                    <span aria-label="{{ $unreadSupportCount }} unread support conversations" class="rounded-full bg-red-500 px-2 py-0.5 text-[10px] font-bold text-white">{{ min($unreadSupportCount, 99) }}{{ $unreadSupportCount > 99 ? '+' : '' }}</span>
+                                @endif
 
                                 @if ($itemLocked)
                                     <svg class="h-3.5 w-3.5 shrink-0 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M16.5 10.5V7.5a4.5 4.5 0 0 0-9 0v3"/></svg>
