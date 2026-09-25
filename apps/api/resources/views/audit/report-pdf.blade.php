@@ -555,6 +555,9 @@
 
 <body>
     @php
+        // Queued notifications can contain report data serialized before findings
+        // were included. Render the report even when that older field is absent.
+        $findings = $findings ?? ($auditRun ?? null)?->findings ?? collect();
         /*
          * Support both the legacy Audit service shape and the newer
          * Advisor Audit payload without breaking existing reports.
