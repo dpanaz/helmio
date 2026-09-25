@@ -9,6 +9,7 @@ use App\Services\AdvisorAudit\AdvisorAuditPersistenceService;
 use Carbon\Carbon;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 class RunAdvisorAuditForUser implements ShouldQueue
@@ -60,7 +61,7 @@ class RunAdvisorAuditForUser implements ShouldQueue
                 ->subYear()
                 ->startOfDay();
 
-        $previousRun = AuditRun::query()
+        $previousRun = $this->latestAuditQuery()
             ->where(
                 'user_id',
                 $setting->user_id
@@ -88,7 +89,7 @@ class RunAdvisorAuditForUser implements ShouldQueue
                             $setting->benchmark,
                     );
 
-            $currentRun = AuditRun::query()
+            $currentRun = $this->latestAuditQuery()
                 ->where(
                     'user_id',
                     $setting->user_id
@@ -134,6 +135,24 @@ class RunAdvisorAuditForUser implements ShouldQueue
 
             throw $exception;
         }
+    }
+
+    /**
+     * Keep the latest-run lookup on the user/date/id index in MySQL.
+     * MySQL can otherwise choose the formula-version unique index and
+     * filesort wide audit rows until the production sort buffer fills.
+     */
+    private function latestAuditQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = AuditRun::query();
+
+        if (DB::connection()->getDriverName() === 'mysql') {
+            $query->from(DB::raw(
+                'audit_runs FORCE INDEX (audit_runs_user_date_id_index)'
+            ));
+        }
+
+        return $query;
     }
 
     private function calculateNextRunAt(
