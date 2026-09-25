@@ -45,7 +45,9 @@
                                 @if (auth()->user()->hasStaffPermission('staff.manage'))
                                     <input type="checkbox" name="uuids[]" value="{{ $job->uuid }}" form="clear-failed-jobs" aria-label="Select failed job {{ $job->uuid }}" class="mt-1 rounded border-slate-600 bg-slate-950 text-blue-500">
                                 @endif
-                                <div class="min-w-0"><p class="font-semibold text-white">{{ $jobName($job) }}</p><p class="mt-1 break-words text-sm text-red-300">{{ Str::limit(\App\Support\SafeFailureMessage::redact($exceptionSummary($job)), 260) }}</p><p class="mt-2 text-xs text-slate-500">{{ $job->queue }} · Failed {{ \Carbon\Carbon::parse($job->failed_at)->diffForHumans() }} · {{ $job->uuid }}</p></div>
+                                <div class="min-w-0"><p class="font-semibold text-white">{{ $jobName($job) }}</p><p class="mt-1 break-words text-sm text-red-300">{{ Str::limit($exceptionSummary($job), 260) }}</p><p class="mt-2 text-xs text-slate-500">{{ $job->queue }} · Failed {{ \Carbon\Carbon::parse($job->failed_at)->diffForHumans() }} · {{ $job->uuid }}</p>
+                                    <details class="mt-3 max-w-4xl"><summary class="cursor-pointer text-sm font-semibold text-blue-300 hover:text-blue-200">View full error message</summary><p class="mt-2 break-all rounded-xl bg-slate-950 p-4 text-sm leading-6 text-slate-300">{{ $exceptionSummary($job) }}</p><p class="mt-2 text-xs text-slate-500">The full stack trace and job payload are hidden. Review any SQL before sharing it outside Helmio.</p></details>
+                                </div>
                             </div>
                             <form method="POST" action="{{ route('admin.operations.jobs.retry', $job->uuid) }}">@csrf<button class="whitespace-nowrap rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-300 hover:bg-blue-500/20">Retry job</button></form>
                         </div>
