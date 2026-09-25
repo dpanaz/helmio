@@ -19,7 +19,7 @@
             <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 @foreach ([
                     ['Queued jobs', $queuedJobs],
-                    ['Failed jobs', $failedJobs->count()],
+                    ['Failed jobs', $failedJobCount],
                     ['Sync failures', $syncFailures->count()],
                     ['AI failures', $askFailures->count() + $insightFailures->count()],
                     ['Reddit failures', $redditFailures->count()],
@@ -29,11 +29,24 @@
             </section>
 
             <section class="mt-8 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
-                <div class="border-b border-slate-800 px-6 py-5"><h2 class="text-lg font-semibold text-white">Failed queue jobs</h2><p class="mt-1 text-sm text-slate-400">Retry only after reviewing the failure reason. Every retry is audited.</p></div>
+                <div class="flex flex-wrap items-center justify-between gap-4 border-b border-slate-800 px-6 py-5">
+                    <div><h2 class="text-lg font-semibold text-white">Failed queue jobs</h2><p class="mt-1 text-sm text-slate-400">Showing the latest {{ $failedJobs->count() }} of {{ $failedJobCount }}. Retry only after reviewing the cause. Clear resolved historical failures without retrying them; both actions are audited.</p></div>
+                    @if (auth()->user()->hasStaffPermission('staff.manage') && $failedJobs->isNotEmpty())
+                        <div class="flex items-center gap-4">
+                            <label class="flex items-center gap-2 text-sm text-slate-300"><input type="checkbox" aria-label="Select all visible failed jobs" onchange="document.querySelectorAll('input[form=&quot;clear-failed-jobs&quot;]').forEach(box => box.checked = this.checked)" class="rounded border-slate-600 bg-slate-950 text-blue-500"> Select all shown</label>
+                            <form id="clear-failed-jobs" method="POST" action="{{ route('admin.operations.jobs.clear') }}" onsubmit="return confirm('Clear the selected failed job records? This removes them from the failure count and they cannot be retried afterward.');">@csrf<button class="rounded-xl border border-slate-600 px-4 py-2 text-sm font-semibold text-slate-200 hover:bg-slate-800">Clear selected</button></form>
+                        </div>
+                    @endif
+                </div>
                 <div class="divide-y divide-slate-800">
                     @forelse ($failedJobs as $job)
                         <div class="flex flex-col gap-4 px-6 py-5 lg:flex-row lg:items-center lg:justify-between">
-                            <div class="min-w-0"><p class="font-semibold text-white">{{ $jobName($job) }}</p><p class="mt-1 break-words text-sm text-red-300">{{ Str::limit(\App\Support\SafeFailureMessage::redact($exceptionSummary($job)), 260) }}</p><p class="mt-2 text-xs text-slate-500">{{ $job->queue }} · Failed {{ \Carbon\Carbon::parse($job->failed_at)->diffForHumans() }} · {{ $job->uuid }}</p></div>
+                            <div class="flex min-w-0 items-start gap-3">
+                                @if (auth()->user()->hasStaffPermission('staff.manage'))
+                                    <input type="checkbox" name="uuids[]" value="{{ $job->uuid }}" form="clear-failed-jobs" aria-label="Select failed job {{ $job->uuid }}" class="mt-1 rounded border-slate-600 bg-slate-950 text-blue-500">
+                                @endif
+                                <div class="min-w-0"><p class="font-semibold text-white">{{ $jobName($job) }}</p><p class="mt-1 break-words text-sm text-red-300">{{ Str::limit(\App\Support\SafeFailureMessage::redact($exceptionSummary($job)), 260) }}</p><p class="mt-2 text-xs text-slate-500">{{ $job->queue }} · Failed {{ \Carbon\Carbon::parse($job->failed_at)->diffForHumans() }} · {{ $job->uuid }}</p></div>
+                            </div>
                             <form method="POST" action="{{ route('admin.operations.jobs.retry', $job->uuid) }}">@csrf<button class="whitespace-nowrap rounded-xl border border-blue-500/30 bg-blue-500/10 px-4 py-2 text-sm font-semibold text-blue-300 hover:bg-blue-500/20">Retry job</button></form>
                         </div>
                     @empty

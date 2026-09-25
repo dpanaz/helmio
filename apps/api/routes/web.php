@@ -1215,6 +1215,9 @@ Route::middleware([
         Route::get('/', [OperationsHealthController::class, 'index'])->name('index');
         Route::post('/jobs/{uuid}/retry', [OperationsHealthController::class, 'retryJob'])
             ->name('jobs.retry');
+        Route::post('/jobs/clear', [OperationsHealthController::class, 'clearJobs'])
+            ->middleware('staff.permission:staff.manage')
+            ->name('jobs.clear');
     });
 
 Route::post(

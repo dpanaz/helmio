@@ -25,6 +25,7 @@ class OperationsHealthController extends Controller
 
         return view('admin.operations.index', [
             'failedJobs' => $failedJobs,
+            'failedJobCount' => Schema::hasTable('failed_jobs') ? DB::table('failed_jobs')->count() : 0,
             'queuedJobs' => Schema::hasTable('jobs') ? DB::table('jobs')->count() : 0,
             'syncFailures' => BrokerageSyncRun::query()
                 ->where('status', BrokerageSyncRun::STATUS_FAILED)
@@ -61,5 +62,49 @@ class OperationsHealthController extends Controller
         ]);
 
         return back()->with('success', 'The failed job was returned to its queue.');
+    }
+
+    public function clearJobs(Request $request): RedirectResponse
+    {
+        abort_unless(Schema::hasTable('failed_jobs'), 404);
+
+        $validated = $request->validate([
+            'uuids' => ['required', 'array', 'min:1', 'max:25'],
+            'uuids.*' => ['required', 'uuid', 'distinct'],
+        ]);
+
+        $uuids = $validated['uuids'];
+
+        $count = DB::transaction(function () use ($request, $uuids): int {
+            $jobs = DB::table('failed_jobs')
+                ->whereIn('uuid', $uuids)
+                ->lockForUpdate()
+                ->get(['uuid', 'queue', 'failed_at']);
+
+            if ($jobs->count() !== count($uuids)) {
+                abort(409, 'Some selected failed jobs have already changed. Refresh the page.');
+            }
+
+            StaffAuditLog::query()->create([
+                'actor_user_id' => $request->user()->id,
+                'event' => 'operations.failed_jobs.cleared',
+                'route_name' => $request->route()?->getName(),
+                'request_method' => $request->method(),
+                'request_path' => $request->path(),
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+                'metadata' => [
+                    'jobs' => $jobs->map(fn ($job) => [
+                        'uuid' => $job->uuid,
+                        'queue' => $job->queue,
+                        'failed_at' => $job->failed_at,
+                    ])->all(),
+                ],
+            ]);
+
+            return DB::table('failed_jobs')->whereIn('uuid', $uuids)->delete();
+        });
+
+        return back()->with('success', "Cleared {$count} failed job records. No jobs were retried.");
     }
 }
