@@ -19,8 +19,8 @@
                 <p
                     class="mt-2 max-w-3xl text-sm leading-6 text-slate-400"
                 >
-                    A chronological record of material portfolio,
-                    audit, risk, cost, trading, and allocation changes.
+                    See what changed in your investments, why it matters,
+                    and where to look for more detail.
                 </p>
             </div>
 
@@ -37,6 +37,36 @@
         <div
             class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8"
         >
+            <section class="rounded-2xl border {{ $attentionCount > 0 ? 'border-amber-500/30 bg-amber-500/[0.06]' : 'border-blue-500/25 bg-blue-500/[0.05]' }} p-6 sm:p-7" aria-label="Timeline summary">
+                <p class="text-xs font-bold uppercase tracking-[0.16em] {{ $attentionCount > 0 ? 'text-amber-300' : 'text-blue-300' }}">Your timeline at a glance</p>
+                <h3 class="mt-2 text-xl font-semibold text-white">
+                    @if ($eventCount === 0)
+                        No changes recorded yet
+                    @elseif ($attentionCount > 0)
+                        {{ $attentionCount }} {{ Str::plural('change', $attentionCount) }} may need a closer look
+                    @else
+                        No changes currently marked for review
+                    @endif
+                </h3>
+                <p class="mt-2 max-w-3xl text-sm leading-6 text-slate-300">
+                    @if ($eventCount === 0)
+                        Helmio compares recorded assessments to build this history as more data becomes available.
+                    @else
+                        {{ number_format($eventCount) }} recorded {{ Str::plural('change', $eventCount) }}{{ $latestEvent ? ', most recently on '.$latestEvent->event_date->format('M j, Y') : '' }}. These entries describe changes Helmio detected; an informational entry does not necessarily mean there is a problem.
+                    @endif
+                </p>
+                @if ($attentionCount > 0)
+                    <a href="{{ route('portfolio-timeline.index', ['view' => 'attention']) }}" class="mt-4 inline-flex rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-semibold text-slate-950 hover:bg-amber-300">See changes to review →</a>
+                @endif
+            </section>
+
+            <nav class="flex flex-wrap gap-2" aria-label="Quick timeline filters">
+                @foreach ([['label' => 'All changes', 'query' => []], ['label' => 'Needs review', 'query' => ['view' => 'attention']], ['label' => 'Positive', 'query' => ['severity' => 'positive']]] as $quickFilter)
+                    @php $quickActive = request()->only(['view', 'category', 'severity']) == $quickFilter['query']; @endphp
+                    <a href="{{ route('portfolio-timeline.index', $quickFilter['query']) }}" @class(['rounded-full border px-4 py-2 text-sm font-semibold transition', 'border-blue-400 bg-blue-500/20 text-blue-100' => $quickActive, 'border-slate-700 bg-slate-900 text-slate-300 hover:border-blue-500/50' => ! $quickActive])>{{ $quickFilter['label'] }}</a>
+                @endforeach
+            </nav>
+            <p class="text-xs leading-5 text-slate-500">Needs review includes medium, high, and critical changes. Positive marks an improvement. Information records a change without labeling it as a concern.</p>
             {{-- ===================================================== --}}
             {{-- SUMMARY CARDS --}}
             {{-- ===================================================== --}}
@@ -52,7 +82,7 @@
                     >
                         <div>
                             <p class="text-sm text-slate-500">
-                                Timeline events
+                                Recorded changes
                             </p>
 
                             <p
@@ -142,7 +172,7 @@
                     >
                         <div>
                             <p class="text-sm text-red-300">
-                                Critical changes
+                                Urgent changes
                             </p>
 
                             <p
@@ -207,6 +237,7 @@
                     @if (
                         request('category')
                         || request('severity')
+                        || request('view')
                     )
                         <a
                             href="{{ route('portfolio-timeline.index') }}"
@@ -222,6 +253,9 @@
                     action="{{ route('portfolio-timeline.index') }}"
                     class="grid gap-4 sm:grid-cols-[1fr_1fr_auto]"
                 >
+                    @if (request('view') === 'attention')
+                        <input type="hidden" name="view" value="attention">
+                    @endif
                     <div>
                         <label
                             for="category"
@@ -352,8 +386,7 @@
                             <p
                                 class="mt-1 text-sm text-slate-500"
                             >
-                                Material changes detected between
-                                recorded portfolio assessments.
+                                Newest changes first. Open the details on any entry to compare values.
                             </p>
                         </div>
 
@@ -361,11 +394,7 @@
                             <span
                                 class="text-xs font-medium text-slate-600"
                             >
-                                Showing {{ $events->count() }}
-                                {{ Str::plural(
-                                    'event',
-                                    $events->count()
-                                ) }}
+                                Showing {{ $events->firstItem() }}–{{ $events->lastItem() }} of {{ number_format($events->total()) }}
                             </span>
                         @endif
                     </div>
@@ -504,6 +533,11 @@
                                             </p>
                                         @endif
 
+                                        @if (! empty($event->metrics) || ! empty($event->before) || ! empty($event->after))
+                                            <details class="group mt-4 rounded-xl border border-slate-800 bg-slate-900/50 p-4">
+                                                <summary class="cursor-pointer text-sm font-semibold text-blue-300 marker:text-blue-400">See numbers and before/after details</summary>
+                                        @endif
+
                                         @if (! empty($event->metrics))
                                             <div
                                                 class="mt-5 flex flex-wrap gap-2"
@@ -632,6 +666,9 @@
                                                 @endif
                                             </div>
                                         @endif
+                                        @if (! empty($event->metrics) || ! empty($event->before) || ! empty($event->after))
+                                            </details>
+                                        @endif
                                     </div>
 
                                     @if (
@@ -653,7 +690,7 @@
                                                         ) }}"
                                                 class="inline-flex items-center gap-2 rounded-xl border border-slate-700 bg-slate-950 px-4 py-2.5 text-sm font-semibold text-blue-400 transition hover:border-blue-500/50 hover:text-blue-300"
                                             >
-                                                Supporting analysis
+                                                Explore this change
 
                                                 <svg
                                                     class="h-4 w-4"
@@ -698,22 +735,24 @@
                         <p
                             class="mt-4 font-semibold text-white"
                         >
-                            No timeline events yet
+                            {{ request()->hasAny(['view', 'category', 'severity']) ? 'No changes match these filters' : 'No timeline events yet' }}
                         </p>
 
                         <p
                             class="mx-auto mt-2 max-w-lg text-sm leading-6 text-slate-500"
                         >
-                            At least two recorded audits are required
-                            before Helmio can identify and display
-                            meaningful changes over time.
+                            @if (request()->hasAny(['view', 'category', 'severity']))
+                                Try another filter or view every recorded change.
+                            @else
+                                Helmio needs at least two recorded assessments to compare before it can show changes here.
+                            @endif
                         </p>
 
                         <a
-                            href="{{ route('advisor-audit.index') }}"
+                            href="{{ request()->hasAny(['view', 'category', 'severity']) ? route('portfolio-timeline.index') : route('advisor-audit.index') }}"
                             class="mt-5 inline-flex rounded-xl bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-blue-500"
                         >
-                            Open Advisor Audit
+                            {{ request()->hasAny(['view', 'category', 'severity']) ? 'View all changes' : 'Open Advisor Audit' }}
                         </a>
                     </div>
                 @endforelse

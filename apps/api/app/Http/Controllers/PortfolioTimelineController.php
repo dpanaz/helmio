@@ -23,6 +23,10 @@ class PortfolioTimelineController extends Controller
                 $request->user()->id,
             );
 
+        if ($request->string('view')->toString() === 'attention') {
+            $query->whereIn('severity', ['critical', 'high', 'medium']);
+        }
+
         if ($request->filled('category')) {
             $query->where(
                 'category',
@@ -45,6 +49,10 @@ class PortfolioTimelineController extends Controller
 
         return view('timeline.index', [
             'events' => $events,
+            'attentionCount' => TimelineEvent::query()
+                ->where('user_id', $request->user()->id)
+                ->whereIn('severity', ['critical', 'high', 'medium'])
+                ->count(),
 
             'eventCount' =>
                 TimelineEvent::query()
