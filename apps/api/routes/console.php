@@ -25,7 +25,7 @@ Schedule::command(
     Schedule::command(
     'helmio:generate-monthly-reviews',
 )
-    ->monthlyOn(1, '08:00')
+    ->dailyAt('08:00')
     ->timezone('America/Chicago')
     ->withoutOverlapping();
 

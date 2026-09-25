@@ -4,11 +4,10 @@ namespace App\Console\Commands;
 
 use App\Models\MonthlyPortfolioReview;
 use App\Models\User;
-use App\Notifications\MonthlyPortfolioReviewReadyNotification;
 use App\Services\Portfolio\MonthlyPortfolioReviewService;
+use App\Services\Portfolio\MonthlyReviewReadyNotifier;
 use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
-use Illuminate\Notifications\DatabaseNotification;
 use Throwable;
 
 class GenerateMonthlyPortfolioReviews extends Command
@@ -23,6 +22,7 @@ class GenerateMonthlyPortfolioReviews extends Command
 
     public function handle(
         MonthlyPortfolioReviewService $reviewService,
+        MonthlyReviewReadyNotifier $notifier,
     ): int {
         $month = $this->resolveMonth();
 
@@ -50,6 +50,7 @@ class GenerateMonthlyPortfolioReviews extends Command
                 100,
                 function ($users) use (
                     $reviewService,
+                    $notifier,
                     $month,
                     &$generated,
                     &$skipped,
@@ -79,8 +80,11 @@ class GenerateMonthlyPortfolioReviews extends Command
 
                             if (
                                 $existing !== null
+                                && $existing->status === MonthlyPortfolioReview::STATUS_COMPLETED
                                 && ! $this->option('force')
                             ) {
+                                $notifier->notifyOnce($user, $existing);
+
                                 $this->line(
                                     sprintf(
                                         'Skipped user %d: review already exists.',
@@ -112,7 +116,7 @@ class GenerateMonthlyPortfolioReviews extends Command
                                 continue;
                             }
 
-                            $this->notifyOnce(
+                            $notifier->notifyOnce(
                                 $user,
                                 $review,
                             );
@@ -189,39 +193,4 @@ class GenerateMonthlyPortfolioReviews extends Command
         }
     }
 
-    private function notifyOnce(
-        User $user,
-        MonthlyPortfolioReview $review,
-    ): void {
-        $eventKey = sprintf(
-            'monthly-review-ready:%d:%s',
-            $review->id,
-            $review->period_start->format('Y-m'),
-        );
-
-        $exists = DatabaseNotification::query()
-            ->where(
-                'notifiable_type',
-                $user->getMorphClass(),
-            )
-            ->where(
-                'notifiable_id',
-                $user->getKey(),
-            )
-            ->where(
-                'data->event_key',
-                $eventKey,
-            )
-            ->exists();
-
-        if ($exists) {
-            return;
-        }
-
-        $user->notify(
-            new MonthlyPortfolioReviewReadyNotification(
-                $review,
-            ),
-        );
-    }
 }
