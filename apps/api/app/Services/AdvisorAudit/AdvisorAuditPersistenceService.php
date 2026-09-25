@@ -53,14 +53,25 @@ class AdvisorAuditPersistenceService
          * Exclude the row that runAndPersist() will updateOrCreate for
          * this user/date/formula combination.
          */
-        $previousRun = AuditRun::query()
+        $previousRunQuery = AuditRun::query();
+
+        if (DB::connection()->getDriverName() === 'mysql') {
+            $previousRunQuery->from(DB::raw(
+                'audit_runs FORCE INDEX (audit_runs_user_id_id_index)'
+            ));
+        }
+
+        // The column is DATE, so whereDate() adds an unnecessary date()
+        // expression. Read only the indexed ID while finding the prior run:
+        // audit_details can make SELECT * filesorts exhaust MySQL's buffer.
+        $previousRunId = $previousRunQuery
             ->where('user_id', $user->id)
             ->where(function ($query) use (
                 $calculatedForDate,
                 $formulaVersion
             ): void {
                 $query
-                    ->whereDate(
+                    ->where(
                         'calculated_for_date',
                         '!=',
                         $calculatedForDate
@@ -72,7 +83,11 @@ class AdvisorAuditPersistenceService
                     );
             })
             ->orderByDesc('id')
-            ->first();
+            ->value('id');
+
+        $previousRun = $previousRunId !== null
+            ? AuditRun::query()->find($previousRunId)
+            : null;
 
         /*
          * Persist both the immutable audit run and the current
