@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\MonthlyPortfolioReview;
 use App\Services\Portfolio\MonthlyPortfolioReviewService;
+use App\Services\Portfolio\MonthlyReviewReadyNotifier;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\CarbonImmutable;
 use Illuminate\Http\RedirectResponse;
@@ -29,6 +30,7 @@ class MonthlyPortfolioReviewController extends Controller
     public function generate(
         Request $request,
         MonthlyPortfolioReviewService $service,
+        MonthlyReviewReadyNotifier $notifier,
     ): RedirectResponse {
         $validated = $request->validate([
             'month' => [
@@ -48,6 +50,8 @@ class MonthlyPortfolioReviewController extends Controller
             $request->user(),
             $month,
         );
+
+        $notifier->notifyOnce($request->user(), $review);
 
         return redirect()
             ->route(
