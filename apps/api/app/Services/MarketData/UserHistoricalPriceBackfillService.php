@@ -143,6 +143,10 @@ class UserHistoricalPriceBackfillService
                         : [],
                 );
             } catch (Throwable $exception) {
+                if ($exception instanceof TwelveDataRateLimited) {
+                    throw $exception;
+                }
+
                 report($exception);
 
                 $message =
