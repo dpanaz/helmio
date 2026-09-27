@@ -5,6 +5,7 @@ namespace App\Jobs;
 use App\Models\PortfolioAnalysisRun;
 use App\Models\User;
 use App\Services\Analytics\Pipeline\PortfolioAnalyticsPipelineService;
+use App\Services\MarketData\TwelveDataRateLimited;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Throwable;
@@ -13,7 +14,7 @@ class BuildPortfolioAnalytics implements ShouldQueue
 {
     use Queueable;
 
-    public int $tries = 5;
+    public int $tries = 20;
 
     public int $timeout = 900;
 
@@ -80,14 +81,23 @@ class BuildPortfolioAnalytics implements ShouldQueue
                 null,
         ]);
 
-        $result =
-            $pipeline->run(
+        try {
+            $result = $pipeline->run(
                 user:
                     $user,
 
                 run:
                     $run,
             );
+        } catch (TwelveDataRateLimited $exception) {
+            if ($this->attempts() >= $this->tries) {
+                throw $exception;
+            }
+
+            $this->release(75);
+
+            return;
+        }
 
         $run->markReady(
             $result,

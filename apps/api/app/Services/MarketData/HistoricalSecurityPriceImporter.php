@@ -5,6 +5,7 @@ namespace App\Services\MarketData;
 use App\Models\Security;
 use App\Services\Analytics\Performance\HistoricalPriceService;
 use Carbon\CarbonInterface;
+use Illuminate\Support\Facades\Cache;
 
 class HistoricalSecurityPriceImporter
 {
@@ -73,6 +74,25 @@ class HistoricalSecurityPriceImporter
             ];
         }
 
+        // A rate-limited analytics run restarts its backfill on the next
+        // queue attempt. Keep completed securities from consuming credits again.
+        $completedKey = sprintf(
+            'twelve-data:imported:%d:%s:%s:%s',
+            $security->id,
+            hash('sha256', $symbol),
+            $startDate->toDateString(),
+            $endDate->toDateString(),
+        );
+
+        if (Cache::get($completedKey)) {
+            return [
+                'security_id' => $security->id,
+                'symbol' => $symbol,
+                'imported' => 0,
+                'status' => 'complete',
+            ];
+        }
+
         $prices =
             $this->marketData
                 ->historicalDailyPrices(
@@ -131,6 +151,8 @@ class HistoricalSecurityPriceImporter
                     ],
                 );
         }
+
+        Cache::put($completedKey, true, now()->addMinutes(45));
 
         return [
             'security_id' =>

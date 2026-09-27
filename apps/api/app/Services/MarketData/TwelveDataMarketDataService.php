@@ -4,6 +4,8 @@ namespace App\Services\MarketData;
 
 use Carbon\CarbonInterface;
 use Illuminate\Http\Client\Response;
+use Illuminate\Http\Client\RequestException;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
 use RuntimeException;
@@ -526,11 +528,21 @@ class TwelveDataMarketDataService
             );
         }
 
-        $response =
-            Http::timeout(30)
+        $cooldownKey = 'twelve-data:rate-limited:'.hash('sha256', $apiKey);
+
+        if (Cache::get($cooldownKey)) {
+            throw new TwelveDataRateLimited('Twelve Data minute credit limit reached; retry later.');
+        }
+
+        try {
+            $response = Http::timeout(30)
                 ->retry(
                     3,
                     500,
+                    fn ($exception): bool => ! (
+                        $exception instanceof RequestException
+                        && $exception->response->status() === 429
+                    ),
                 )
                 ->get(
                     $baseUrl
@@ -546,6 +558,18 @@ class TwelveDataMarketDataService
                             $apiKey,
                     ],
                 );
+        } catch (RequestException $exception) {
+            if ($exception->response->status() !== 429) {
+                throw $exception;
+            }
+
+            Cache::put($cooldownKey, true, now()->addSeconds(70));
+
+            throw new TwelveDataRateLimited(
+                'Twelve Data minute credit limit reached; retry later.',
+                previous: $exception,
+            );
+        }
 
         $this->assertSuccessfulResponse(
             response:
