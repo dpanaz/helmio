@@ -15,6 +15,7 @@
             </header>
 
             @if (session('success'))<div class="mb-6 rounded-xl border border-emerald-500/20 bg-emerald-500/10 px-4 py-3 text-sm text-emerald-300">{{ session('success') }}</div>@endif
+            @if ($errors->any())<div class="mb-6 rounded-xl border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-300">{{ $errors->first() }}</div>@endif
 
             <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 @foreach ([
@@ -59,19 +60,27 @@
 
             <div class="mt-8 grid gap-6 xl:grid-cols-2">
                 <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
-                    <div class="border-b border-slate-800 px-6 py-5"><h2 class="text-lg font-semibold text-white">Brokerage sync failures</h2></div>
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 px-6 py-5"><div><h2 class="text-lg font-semibold text-white">Brokerage sync failures</h2><p class="mt-1 text-xs text-slate-400">Acknowledge resolved history without deleting or retrying sync runs.</p></div>
+                        @if (auth()->user()->hasStaffPermission('staff.manage') && $syncFailures->isNotEmpty())
+                            <div class="flex items-center gap-3 text-sm"><label class="flex items-center gap-2 text-slate-300"><input type="checkbox" aria-label="Select all shown sync failures" onchange="document.querySelectorAll('input[form=&quot;ack-sync-failures&quot;]').forEach(box => box.checked = this.checked)" class="rounded border-slate-600 bg-slate-950 text-blue-500"> Select all shown</label><form id="ack-sync-failures" method="POST" action="{{ route('admin.operations.failures.acknowledge') }}" onsubmit="return confirm('Acknowledge selected sync failures? Their original records will be preserved.');">@csrf<button class="rounded-xl border border-slate-600 px-3 py-2 font-semibold text-slate-200 hover:bg-slate-800">Acknowledge selected</button></form></div>
+                        @endif
+                    </div>
                     <div class="divide-y divide-slate-800">
                         @forelse ($syncFailures as $run)
-                            <div class="px-6 py-4"><div class="flex justify-between gap-4"><p class="font-semibold text-white">{{ $run->brokerageConnection?->brokerage_name ?? $run->provider }}</p><span class="text-xs text-slate-500">{{ $run->started_at?->diffForHumans() }}</span></div><p class="mt-1 text-sm text-slate-400">{{ $run->user?->name ?? 'Unknown customer' }} · {{ $run->user?->email }}</p><p class="mt-2 text-sm text-red-300">{{ Str::limit(\App\Support\SafeFailureMessage::redact($run->error_message ?? 'No error recorded.'), 240) }}</p></div>
+                            <div class="flex gap-3 px-6 py-4">@if (auth()->user()->hasStaffPermission('staff.manage'))<input type="checkbox" name="sync_ids[]" value="{{ $run->id }}" form="ack-sync-failures" aria-label="Select sync failure {{ $run->id }}" class="mt-1 rounded border-slate-600 bg-slate-950 text-blue-500">@endif<div class="min-w-0 flex-1"><div class="flex justify-between gap-4"><p class="font-semibold text-white">{{ $run->brokerageConnection?->brokerage_name ?? $run->provider }}</p><span class="text-xs text-slate-500">{{ $run->started_at?->diffForHumans() }}</span></div><p class="mt-1 text-sm text-slate-400">{{ $run->user?->name ?? 'Unknown customer' }} · {{ $run->user?->email }}</p><p class="mt-2 text-sm text-red-300">{{ Str::limit(\App\Support\SafeFailureMessage::redact($run->error_message ?? 'No error recorded.'), 240) }}</p></div></div>
                         @empty<p class="px-6 py-10 text-center text-sm text-slate-500">No brokerage sync failures.</p>@endforelse
                     </div>
                 </section>
 
                 <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
-                    <div class="border-b border-slate-800 px-6 py-5"><h2 class="text-lg font-semibold text-white">AI failures</h2></div>
+                    <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 px-6 py-5"><div><h2 class="text-lg font-semibold text-white">AI failures</h2><p class="mt-1 text-xs text-slate-400">Acknowledge resolved history without deleting or retrying messages or insights.</p></div>
+                        @if (auth()->user()->hasStaffPermission('staff.manage') && ($askFailures->isNotEmpty() || $insightFailures->isNotEmpty()))
+                            <div class="flex items-center gap-3 text-sm"><label class="flex items-center gap-2 text-slate-300"><input type="checkbox" aria-label="Select all shown AI failures" onchange="document.querySelectorAll('input[form=&quot;ack-ai-failures&quot;]').forEach(box => box.checked = this.checked)" class="rounded border-slate-600 bg-slate-950 text-blue-500"> Select all shown</label><form id="ack-ai-failures" method="POST" action="{{ route('admin.operations.failures.acknowledge') }}" onsubmit="return confirm('Acknowledge selected AI failures? Their original records will be preserved.');">@csrf<button class="rounded-xl border border-slate-600 px-3 py-2 font-semibold text-slate-200 hover:bg-slate-800">Acknowledge selected</button></form></div>
+                        @endif
+                    </div>
                     <div class="max-h-[520px] divide-y divide-slate-800 overflow-y-auto">
                         @forelse ($askFailures->concat($insightFailures)->sortByDesc('created_at')->take(25) as $failure)
-                            <div class="px-6 py-4"><div class="flex justify-between gap-4"><p class="font-semibold text-white">{{ class_basename($failure) === 'AskHelmioMessage' ? 'Ask Helmio' : 'AI Insight' }}</p><span class="text-xs text-slate-500">{{ $failure->created_at?->diffForHumans() }}</span></div><p class="mt-1 text-sm text-slate-400">{{ $failure->user?->email ?? 'Unknown customer' }} · {{ $failure->provider ?? 'provider unknown' }}</p><p class="mt-2 text-sm text-red-300">{{ Str::limit(\App\Support\SafeFailureMessage::redact($failure->error_message ?? 'No error recorded.'), 240) }}</p></div>
+                            <div class="flex gap-3 px-6 py-4">@if (auth()->user()->hasStaffPermission('staff.manage'))<input type="checkbox" name="{{ $failure instanceof \App\Models\AskHelmioMessage ? 'ask_ids[]' : 'insight_ids[]' }}" value="{{ $failure->id }}" form="ack-ai-failures" aria-label="Select {{ $failure instanceof \App\Models\AskHelmioMessage ? 'Ask Helmio' : 'AI Insight' }} failure {{ $failure->id }}" class="mt-1 rounded border-slate-600 bg-slate-950 text-blue-500">@endif<div class="min-w-0 flex-1"><div class="flex justify-between gap-4"><p class="font-semibold text-white">{{ class_basename($failure) === 'AskHelmioMessage' ? 'Ask Helmio' : 'AI Insight' }}</p><span class="text-xs text-slate-500">{{ $failure->created_at?->diffForHumans() }}</span></div><p class="mt-1 text-sm text-slate-400">{{ $failure->user?->email ?? 'Unknown customer' }} · {{ $failure->provider ?? 'provider unknown' }}</p><p class="mt-2 text-sm text-red-300">{{ Str::limit(\App\Support\SafeFailureMessage::redact($failure->error_message ?? 'No error recorded.'), 240) }}</p></div></div>
                         @empty<p class="px-6 py-10 text-center text-sm text-slate-500">No AI failures.</p>@endforelse
                     </div>
                 </section>
