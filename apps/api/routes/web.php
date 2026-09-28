@@ -1218,6 +1218,9 @@ Route::middleware([
         Route::post('/jobs/clear', [OperationsHealthController::class, 'clearJobs'])
             ->middleware('staff.permission:staff.manage')
             ->name('jobs.clear');
+        Route::post('/failures/acknowledge', [OperationsHealthController::class, 'acknowledgeFailures'])
+            ->middleware('staff.permission:staff.manage')
+            ->name('failures.acknowledge');
     });
 
 Route::post(
