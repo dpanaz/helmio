@@ -8,6 +8,7 @@ use App\Services\Analytics\Pipeline\PortfolioAnalyticsPipelineService;
 use App\Services\MarketData\TwelveDataRateLimited;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Http\Client\RequestException;
 use Throwable;
 
 class BuildPortfolioAnalytics implements ShouldQueue
@@ -89,7 +90,11 @@ class BuildPortfolioAnalytics implements ShouldQueue
                 run:
                     $run,
             );
-        } catch (TwelveDataRateLimited $exception) {
+        } catch (TwelveDataRateLimited|RequestException $exception) {
+            if ($exception instanceof RequestException && $exception->response->status() !== 429) {
+                throw $exception;
+            }
+
             if ($this->attempts() >= $this->tries) {
                 throw $exception;
             }
