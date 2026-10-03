@@ -17,7 +17,7 @@ class BuildPortfolioAnalyticsRateLimitTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_raw_http_429_releases_the_analytics_job(): void
+    public function test_raw_http_429_still_releases_after_twenty_attempts(): void
     {
         $user = User::factory()->create();
         $run = PortfolioAnalysisRun::query()->create(['user_id' => $user->id]);
@@ -32,12 +32,13 @@ class BuildPortfolioAnalyticsRateLimitTest extends TestCase
             $pipeline->shouldReceive('run')->once()->andThrow($exception);
 
             $queueJob = Mockery::mock(QueueJob::class);
-            $queueJob->shouldReceive('attempts')->once()->andReturn(1);
+            $queueJob->shouldReceive('attempts')->once()->andReturn(21);
             $queueJob->shouldReceive('release')->once()->with(75);
 
-            (new BuildPortfolioAnalytics($run->id))
-                ->setJob($queueJob)
-                ->handle($pipeline);
+            $job = new BuildPortfolioAnalytics($run->id);
+            $this->assertSame(120, $job->tries);
+
+            $job->setJob($queueJob)->handle($pipeline);
         }
 
         $this->assertSame(PortfolioAnalysisRun::STATUS_SYNCING, $run->fresh()->status);

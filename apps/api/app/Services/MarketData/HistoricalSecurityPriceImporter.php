@@ -152,7 +152,9 @@ class HistoricalSecurityPriceImporter
                 );
         }
 
-        Cache::put($completedKey, true, now()->addMinutes(45));
+        // Keep progress for the full retry window (120 attempts at 75 seconds),
+        // so later attempts do not spend credits on completed securities again.
+        Cache::put($completedKey, true, now()->addHours(4));
 
         return [
             'security_id' =>
