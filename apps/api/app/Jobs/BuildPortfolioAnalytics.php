@@ -15,7 +15,9 @@ class BuildPortfolioAnalytics implements ShouldQueue
 {
     use Queueable;
 
-    public int $tries = 20;
+    // Large portfolios may need more than twenty minute-credit windows to
+    // backfill historical prices. Each rate-limit release consumes an attempt.
+    public int $tries = 120;
 
     public int $timeout = 900;
 
