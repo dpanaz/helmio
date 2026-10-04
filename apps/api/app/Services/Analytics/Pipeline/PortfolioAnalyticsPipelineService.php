@@ -66,6 +66,16 @@ class PortfolioAnalyticsPipelineService
                 )
                 : $oneYearAgo;
 
+        // A daily-credit pause may resume after midnight. Reuse the original
+        // range so completed per-security imports retain the same cache key.
+        if (
+            ! empty($run->metadata['analysis_start_date'])
+            && ! empty($run->metadata['analysis_end_date'])
+        ) {
+            $startDate = CarbonImmutable::parse($run->metadata['analysis_start_date']);
+            $endDate = CarbonImmutable::parse($run->metadata['analysis_end_date']);
+        }
+
         /*
          * STEP 1
          * Ensure historical market prices exist.

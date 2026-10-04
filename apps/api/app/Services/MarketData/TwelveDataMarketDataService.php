@@ -530,8 +530,15 @@ class TwelveDataMarketDataService
 
         $cooldownKey = 'twelve-data:rate-limited:'.hash('sha256', $apiKey);
 
-        if (Cache::get($cooldownKey)) {
-            throw new TwelveDataRateLimited('Twelve Data minute credit limit reached; retry later.');
+        if ($retryAt = Cache::get($cooldownKey)) {
+            $delay = is_numeric($retryAt)
+                ? max(75, (int) $retryAt - now()->timestamp)
+                : 75;
+
+            throw new TwelveDataRateLimited(
+                'Twelve Data credit limit reached; retry later.',
+                retryAfterSeconds: $delay,
+            );
         }
 
         try {
@@ -563,10 +570,12 @@ class TwelveDataMarketDataService
                 throw $exception;
             }
 
-            Cache::put($cooldownKey, true, now()->addSeconds(70));
+            $delay = TwelveDataRateLimited::retryDelayFor($exception->response);
+            Cache::put($cooldownKey, now()->timestamp + $delay, now()->addSeconds($delay));
 
             throw new TwelveDataRateLimited(
-                'Twelve Data minute credit limit reached; retry later.',
+                'Twelve Data credit limit reached; retry later.',
+                retryAfterSeconds: $delay,
                 previous: $exception,
             );
         }

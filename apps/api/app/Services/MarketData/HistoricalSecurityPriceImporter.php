@@ -152,9 +152,9 @@ class HistoricalSecurityPriceImporter
                 );
         }
 
-        // Keep progress for the full retry window (120 attempts at 75 seconds),
-        // so later attempts do not spend credits on completed securities again.
-        Cache::put($completedKey, true, now()->addHours(4));
+        // Daily-credit pauses can span midnight UTC. Keep completed imports
+        // across those retries so the next day's credits advance the run.
+        Cache::put($completedKey, true, now()->addDays(7));
 
         return [
             'security_id' =>
