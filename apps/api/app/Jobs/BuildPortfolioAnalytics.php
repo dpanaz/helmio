@@ -101,7 +101,11 @@ class BuildPortfolioAnalytics implements ShouldQueue
                 throw $exception;
             }
 
-            $this->release(75);
+            $this->release(
+                $exception instanceof TwelveDataRateLimited
+                    ? $exception->retryAfterSeconds
+                    : TwelveDataRateLimited::retryDelayFor($exception->response),
+            );
 
             return;
         }
