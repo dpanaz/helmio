@@ -6,6 +6,7 @@ use App\Models\PortfolioAnalysisRun;
 use App\Models\User;
 use App\Services\Analytics\Pipeline\PortfolioAnalyticsPipelineService;
 use App\Services\MarketData\TwelveDataRateLimited;
+use DateTimeInterface;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Http\Client\RequestException;
@@ -15,9 +16,11 @@ class BuildPortfolioAnalytics implements ShouldQueue
 {
     use Queueable;
 
-    // Large portfolios may need more than twenty minute-credit windows to
-    // backfill historical prices. Each rate-limit release consumes an attempt.
+    // The retry deadline takes precedence over this count. Queue releases
+    // still consume attempts while Twelve Data credits replenish.
     public int $tries = 120;
+
+    public int $maxExceptions = 3;
 
     public int $timeout = 900;
 
@@ -38,6 +41,12 @@ class BuildPortfolioAnalytics implements ShouldQueue
             900,
             3600,
         ];
+    }
+
+    public function retryUntil(): DateTimeInterface
+    {
+        // A historical backfill can span multiple daily credit resets.
+        return now()->addDays(7);
     }
 
     public function handle(
@@ -94,10 +103,6 @@ class BuildPortfolioAnalytics implements ShouldQueue
             );
         } catch (TwelveDataRateLimited|RequestException $exception) {
             if ($exception instanceof RequestException && $exception->response->status() !== 429) {
-                throw $exception;
-            }
-
-            if ($this->attempts() >= $this->tries) {
                 throw $exception;
             }
 
