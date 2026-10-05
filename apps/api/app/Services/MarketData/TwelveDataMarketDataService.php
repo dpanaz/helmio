@@ -528,6 +528,19 @@ class TwelveDataMarketDataService
             );
         }
 
+        // Invalid historical symbols apply across date ranges and queue retries.
+        // Scope the result to this provider host and credential, and expire it
+        // so newly supported securities can be checked again.
+        $invalidSymbolKey = $endpoint === '/time_series'
+            ? 'twelve-data:invalid-symbol:'.hash('sha256', json_encode([
+                $baseUrl, $apiKey, strtoupper(trim((string) ($parameters['symbol'] ?? ''))),
+            ], JSON_THROW_ON_ERROR))
+            : null;
+
+        if ($invalidSymbolKey !== null && Cache::get($invalidSymbolKey)) {
+            throw new TwelveDataInvalidSymbol('Twelve Data did not recognize this historical-price symbol.');
+        }
+
         $cooldownKey = 'twelve-data:rate-limited:'.hash('sha256', $apiKey);
 
         if ($retryAt = Cache::get($cooldownKey)) {
@@ -546,10 +559,8 @@ class TwelveDataMarketDataService
                 ->retry(
                     3,
                     500,
-                    fn ($exception): bool => ! (
-                        $exception instanceof RequestException
-                        && $exception->response->status() === 429
-                    ),
+                    fn ($exception): bool => ! ($exception instanceof RequestException)
+                        || $exception->response->serverError(),
                 )
                 ->get(
                     $baseUrl
@@ -566,6 +577,10 @@ class TwelveDataMarketDataService
                     ],
                 );
         } catch (RequestException $exception) {
+            if ($exception->response->status() === 404 && $invalidSymbolKey !== null) {
+                $this->rejectInvalidSymbol($invalidSymbolKey);
+            }
+
             if ($exception->response->status() !== 429) {
                 throw $exception;
             }
@@ -601,6 +616,11 @@ class TwelveDataMarketDataService
             ($data['status'] ?? null)
             === 'error'
         ) {
+            // Twelve Data can also encode an invalid-symbol 404 in HTTP 200.
+            if ((int) ($data['code'] ?? 0) === 404 && $invalidSymbolKey !== null) {
+                $this->rejectInvalidSymbol($invalidSymbolKey);
+            }
+
             throw new RuntimeException(
                 sprintf(
                     'Twelve Data returned an error for %s: %s',
@@ -612,6 +632,13 @@ class TwelveDataMarketDataService
         }
 
         return $data;
+    }
+
+    private function rejectInvalidSymbol(string $cacheKey): never
+    {
+        Cache::put($cacheKey, true, now()->addDay());
+
+        throw new TwelveDataInvalidSymbol('Twelve Data did not recognize this historical-price symbol.');
     }
 
     private function assertSuccessfulResponse(
