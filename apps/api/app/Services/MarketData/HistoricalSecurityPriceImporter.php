@@ -93,18 +93,21 @@ class HistoricalSecurityPriceImporter
             ];
         }
 
-        $prices =
-            $this->marketData
-                ->historicalDailyPrices(
-                    symbol:
-                        $symbol,
-
-                    startDate:
-                        $startDate,
-
-                    endDate:
-                        $endDate,
-                );
+        try {
+            $prices = $this->marketData->historicalDailyPrices(
+                symbol: $symbol,
+                startDate: $startDate,
+                endDate: $endDate,
+            );
+        } catch (TwelveDataInvalidSymbol) {
+            return [
+                'security_id' => $security->id,
+                'symbol' => $symbol,
+                'imported' => 0,
+                'status' => 'skipped_invalid_symbol',
+                'reason' => 'Market-data provider did not recognize this security identifier.',
+            ];
+        }
 
         foreach ($prices as $price) {
             $this->historicalPriceService
