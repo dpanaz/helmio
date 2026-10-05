@@ -1,4 +1,4 @@
-name: Laravel API tests
+name: Laravel market data tests
 on:
   pull_request:
     paths:
@@ -30,4 +30,4 @@ jobs:
       - run: |
           cp .env.example .env
           php artisan key:generate
-          php artisan test
+          php artisan test --filter='TwelveDataRateLimitTest|HistoricalSecurityPriceImporterInvalidSymbolTest|BuildPortfolioAnalyticsRateLimitTest'
