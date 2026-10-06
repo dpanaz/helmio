@@ -10,7 +10,7 @@
     <div class="min-h-screen bg-slate-950 text-slate-100">
         <div class="mx-auto max-w-[1500px] px-4 py-8 sm:px-6 lg:px-8">
             <header class="mb-8 flex flex-col gap-4 border-b border-slate-800 pb-6 sm:flex-row sm:items-end sm:justify-between">
-                <div><p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-400">Helmio operations</p><h1 class="mt-2 text-3xl font-semibold text-white">Operations Health</h1><p class="mt-2 text-sm text-slate-400">Investigate queue, brokerage, AI, and marketing delivery failures.</p></div>
+                <div><p class="text-xs font-bold uppercase tracking-[0.2em] text-blue-400">Helmio operations</p><h1 class="mt-2 text-3xl font-semibold text-white">Operations Health</h1><p class="mt-2 text-sm text-slate-400">Check completed work, queue progress, and delivery failures.</p></div>
                 <a href="{{ route('admin.dashboard') }}" class="text-sm font-semibold text-blue-400 hover:text-blue-300">← Business dashboard</a>
             </header>
 
@@ -20,13 +20,93 @@
             <section class="grid gap-4 sm:grid-cols-2 lg:grid-cols-5">
                 @foreach ([
                     ['Queued jobs', $queuedJobs],
-                    ['Failed jobs', $failedJobCount],
+                    ['Retained failed jobs', $failedJobCount],
                     ['Sync failures', $syncFailures->count()],
                     ['AI failures', $askFailures->count() + $insightFailures->count()],
                     ['Reddit failures', $redditFailures->count()],
                 ] as [$label, $value])
                     <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5"><p class="text-xs font-bold uppercase tracking-wider text-slate-500">{{ $label }}</p><p class="mt-3 text-3xl font-semibold {{ $value > 0 ? 'text-amber-300' : 'text-emerald-300' }}">{{ $value }}</p></article>
                 @endforeach
+            </section>
+
+            <section class="mt-8">
+                <div class="mb-4"><h2 class="text-xl font-semibold text-white">Activity in the last 24 hours</h2><p class="mt-1 text-sm text-slate-400">Completed runs prove work is finishing. Zero failures alone does not confirm healthy processing.</p><p class="mt-1 text-xs text-slate-500">{{ $activitySince->utc()->format('M j, H:i') }}–{{ $checkedAt->utc()->format('M j, H:i') }} UTC · Refresh this page to update.</p></div>
+                <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                    @foreach ([
+                        ['Successful syncs', $successfulSyncCount, 'text-emerald-300'],
+                        ['Completed analyses', $successfulAnalysisCount, 'text-emerald-300'],
+                        ['New failed queue jobs', $recentFailedJobCount, $recentFailedJobCount > 0 ? 'text-red-300' : 'text-slate-100'],
+                        ['Older failed queue jobs', $historicalFailedJobCount, 'text-slate-300'],
+                    ] as [$label, $value, $color])
+                        <article class="rounded-2xl border border-slate-800 bg-slate-900 p-5"><p class="text-xs font-bold uppercase tracking-wider text-slate-500">{{ $label }}</p><p class="mt-3 text-3xl font-semibold {{ $color }}">{{ $value }}</p></article>
+                    @endforeach
+                </div>
+                <p class="mt-3 text-xs text-slate-400">Failure counts are retained queue records. Clearing a record removes it from these counts. Successes are brokerage syncs and portfolio analyses, not every queue job.</p>
+                <div class="mt-4 grid gap-4 xl:grid-cols-2">
+                    <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+                        <div class="border-b border-slate-800 px-5 py-4"><h3 class="font-semibold text-white">Recent successful syncs</h3><p class="mt-1 text-xs text-slate-400">Latest {{ $recentSyncs->count() }} of {{ $successfulSyncCount }} in this period.</p></div>
+                        <div class="divide-y divide-slate-800">
+                            @forelse ($recentSyncs as $run)
+                                <div class="px-5 py-4"><p class="break-words font-semibold text-white">{{ $run->user?->name ?? 'Unknown customer' }} · {{ $run->brokerageConnection?->brokerage_name ?? $run->provider }}</p><p class="mt-1 break-all text-xs text-slate-400">{{ $run->user?->email }}</p><p class="mt-2 text-sm text-emerald-300">Completed {{ $run->finished_at->utc()->format('M j, H:i:s') }} UTC</p><p class="mt-1 text-xs text-slate-400">{{ $run->accounts_imported }} accounts · {{ $run->positions_imported }} positions · {{ $run->transactions_imported }} transactions</p></div>
+                            @empty
+                                <p class="px-5 py-6 text-sm text-slate-400">No successful syncs recorded in the last 24 hours.</p>
+                            @endforelse
+                        </div>
+                    </section>
+                    <section class="overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+                        <div class="border-b border-slate-800 px-5 py-4"><h3 class="font-semibold text-white">Recent completed analyses</h3><p class="mt-1 text-xs text-slate-400">Latest {{ $recentAnalyses->count() }} of {{ $successfulAnalysisCount }} in this period.</p></div>
+                        <div class="divide-y divide-slate-800">
+                            @forelse ($recentAnalyses as $run)
+                                <div class="px-5 py-4"><p class="break-words font-semibold text-white">{{ $run->user?->name ?? 'Unknown customer' }}</p><p class="mt-1 break-all text-xs text-slate-400">{{ $run->user?->email }}</p><p class="mt-2 text-sm text-emerald-300">Completed {{ $run->completed_at->utc()->format('M j, H:i:s') }} UTC · Run #{{ $run->id }}</p></div>
+                            @empty
+                                <p class="px-5 py-6 text-sm text-slate-400">No completed analyses recorded in the last 24 hours.</p>
+                            @endforelse
+                        </div>
+                    </section>
+                </div>
+            </section>
+
+            <section class="mt-8 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+                <div class="border-b border-slate-800 px-5 py-4"><h2 class="text-lg font-semibold text-white">Latest completion by customer</h2><p class="mt-1 text-sm text-slate-400">Customers with a brokerage connection or analysis run. Dates show their latest recorded success across all history; a newer failure may still need attention.</p></div>
+                <div class="divide-y divide-slate-800">
+                    @forelse ($customerActivity as $customer)
+                        <div class="grid gap-3 px-5 py-4 md:grid-cols-3">
+                            <div><p class="break-words font-semibold text-white">{{ $customer->name }}</p><p class="mt-1 break-all text-xs text-slate-400">{{ $customer->email }}</p></div>
+                            @foreach (['Last successful sync' => $customer->last_sync_at, 'Last completed analysis' => $customer->last_analysis_at] as $label => $completedAt)
+                                <div><p class="text-xs text-slate-400">{{ $label }}</p><p class="mt-1 text-sm {{ $completedAt ? 'text-slate-100' : 'text-amber-300' }}">{{ $completedAt ? \Carbon\CarbonImmutable::parse($completedAt)->utc()->format('M j, Y H:i:s').' UTC' : 'No successful run recorded' }}</p></div>
+                            @endforeach
+                        </div>
+                    @empty
+                        <p class="px-5 py-6 text-sm text-slate-400">No customers with recorded brokerage or analysis activity.</p>
+                    @endforelse
+                </div>
+                @if ($customerActivity->hasPages())<div class="border-t border-slate-800 px-5 py-4">{{ $customerActivity->links() }}</div>@endif
+            </section>
+
+            <section class="mt-8 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">
+                <div class="border-b border-slate-800 px-5 py-4"><h2 class="text-lg font-semibold text-white">Queue activity</h2><p class="mt-1 text-sm text-slate-400">{{ $queueReadyCount }} ready · {{ $queueDelayedCount }} delayed · {{ $queueReservedCount }} reserved by workers</p><p class="mt-1 text-xs text-slate-500">Oldest {{ $pendingJobs->count() }} of {{ $queuedJobs }} queued jobs. Delayed jobs may be waiting for a retry or scheduled time. A reservation does not prove a worker is still running.</p></div>
+                <div class="divide-y divide-slate-800">
+                    @forelse ($pendingJobs as $job)
+                        @php
+                            $createdAt = \Carbon\CarbonImmutable::createFromTimestampUTC($job->created_at);
+                            $availableAt = \Carbon\CarbonImmutable::createFromTimestampUTC($job->available_at);
+                            $queueState = $job->reserved_at !== null ? 'Reserved by worker' : ($job->available_at > $checkedAt->timestamp ? 'Delayed' : 'Ready');
+                        @endphp
+                        <div class="grid gap-3 px-5 py-4 md:grid-cols-3">
+                            <div><p class="break-words font-semibold text-white">{{ $job->queue }} · Job #{{ $job->id }}</p><p class="mt-1 text-xs text-slate-400">Attempts: {{ $job->attempts }}</p></div>
+                            <div><p class="text-sm text-slate-100">{{ $queueState }}</p><p class="mt-1 text-xs text-slate-400">Queued {{ $createdAt->diffForHumans($checkedAt, true) }} ago</p></div>
+                            <div class="text-xs text-slate-400">
+                                @if ($job->reserved_at !== null)
+                                    Reserved {{ \Carbon\CarbonImmutable::createFromTimestampUTC($job->reserved_at)->format('M j, H:i:s') }} UTC
+                                @else
+                                    Available {{ $availableAt->format('M j, H:i:s') }} UTC
+                                @endif
+                            </div>
+                        </div>
+                    @empty
+                        <p class="px-5 py-6 text-sm text-slate-400">No queued jobs.</p>
+                    @endforelse
+                </div>
             </section>
 
             <section class="mt-8 overflow-hidden rounded-2xl border border-slate-800 bg-slate-900">

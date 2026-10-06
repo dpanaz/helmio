@@ -8,6 +8,7 @@ use App\Models\AskHelmioMessage;
 use App\Models\BrokerageSyncRun;
 use App\Models\MarketingConversion;
 use App\Models\StaffAuditLog;
+use App\Services\Operations\OperationsActivityService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
@@ -17,13 +18,14 @@ use Illuminate\View\View;
 
 class OperationsHealthController extends Controller
 {
-    public function index(): View
+    public function index(OperationsActivityService $activity): View
     {
         $failedJobs = Schema::hasTable('failed_jobs')
             ? DB::table('failed_jobs')->latest('failed_at')->limit(25)->get()
             : collect();
 
         return view('admin.operations.index', [
+            ...$activity->snapshot(),
             'failedJobs' => $failedJobs,
             'failedJobCount' => Schema::hasTable('failed_jobs') ? DB::table('failed_jobs')->count() : 0,
             'queuedJobs' => Schema::hasTable('jobs') ? DB::table('jobs')->count() : 0,

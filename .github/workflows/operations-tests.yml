@@ -1,0 +1,35 @@
+name: Laravel operations tests
+on:
+  pull_request:
+    paths:
+      - 'apps/api/app/Services/Operations/**'
+      - 'apps/api/app/Http/Controllers/Admin/OperationsHealthController.php'
+      - 'apps/api/resources/views/admin/operations/**'
+      - 'apps/api/tests/Feature/Operations*Test.php'
+      - '.github/workflows/operations-tests.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  operations-tests:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite3, pdo_sqlite
+          coverage: none
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: npm ci
+      - run: npm run build
+      - run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan test --filter='OperationsActivityTest|OperationsFailureAcknowledgementTest'
+          php artisan view:cache
