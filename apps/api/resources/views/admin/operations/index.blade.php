@@ -95,7 +95,13 @@
                         <div class="grid gap-3 px-5 py-4 md:grid-cols-3">
                             <div><p class="break-words font-semibold text-white">{{ $job->queue }} · Job #{{ $job->id }}</p><p class="mt-1 text-xs text-slate-400">Attempts: {{ $job->attempts }}</p></div>
                             <div><p class="text-sm text-slate-100">{{ $queueState }}</p><p class="mt-1 text-xs text-slate-400">Queued {{ $createdAt->diffForHumans($checkedAt, true) }} ago</p></div>
-                            <div class="text-xs text-slate-400">@if ($job->reserved_at !== null)Reserved {{ \Carbon\CarbonImmutable::createFromTimestampUTC($job->reserved_at)->format('M j, H:i:s') }} UTC@else Available {{ $availableAt->format('M j, H:i:s') }} UTC@endif</div>
+                            <div class="text-xs text-slate-400">
+                                @if ($job->reserved_at !== null)
+                                    Reserved {{ \Carbon\CarbonImmutable::createFromTimestampUTC($job->reserved_at)->format('M j, H:i:s') }} UTC
+                                @else
+                                    Available {{ $availableAt->format('M j, H:i:s') }} UTC
+                                @endif
+                            </div>
                         </div>
                     @empty
                         <p class="px-5 py-6 text-sm text-slate-400">No queued jobs.</p>
