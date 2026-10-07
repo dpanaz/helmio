@@ -112,10 +112,10 @@ class SimplifiedOnboardingTest extends TestCase
         foreach (range(1, 4) as $index) {
             AuditFinding::query()->create(['user_id' => $user->id, 'fingerprint' => 'f'.$index,
                 'category' => 'cost', 'title' => 'Finding '.$index, 'description' => 'Evidence '.$index,
-                'severity' => $index === 1 ? 'critical' : 'low', 'status' => 'open']);
+                'first_detected_at' => now(), 'last_detected_at' => now(), 'severity' => $index === 1 ? 'critical' : 'low', 'status' => 'open']);
         }
         $other = $this->customer();
-        AuditFinding::query()->create(['user_id' => $other->id, 'fingerprint' => 'other', 'category' => 'cost', 'title' => 'Private other finding', 'severity' => 'critical', 'status' => 'open']);
+        AuditFinding::query()->create(['user_id' => $other->id, 'fingerprint' => 'other', 'category' => 'cost', 'title' => 'Private other finding', 'description' => 'Other evidence', 'first_detected_at' => now(), 'last_detected_at' => now(), 'severity' => 'critical', 'status' => 'open']);
         $this->actingAs($user)->get(route('onboarding.complete'))->assertOk()
             ->assertSee('Not enough data to assess')->assertSee('Finding 1')
             ->assertDontSee('Finding 2')->assertDontSee('Private other finding');
