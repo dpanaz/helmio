@@ -13,7 +13,7 @@
                 <h2
                     class="mt-2 text-2xl font-semibold tracking-tight text-white"
                 >
-                    Advisor Action Center
+                    Your review
                 </h2>
 
                 <p
@@ -29,7 +29,7 @@
                     href="{{ route('advisor-audit.index') }}"
                     class="inline-flex items-center justify-center rounded-xl border border-slate-700 bg-slate-900 px-4 py-2.5 text-sm font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white"
                 >
-                    Advisor Audit
+                    Full review and evidence
                 </a>
 
                 <a

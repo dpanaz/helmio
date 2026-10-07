@@ -1,0 +1,36 @@
+name: Helmio onboarding and review
+on:
+  pull_request:
+    paths:
+      - 'apps/api/**'
+      - '.github/workflows/onboarding-tests.yml'
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  onboarding:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: mbstring, sqlite3, pdo_sqlite
+          coverage: none
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+          cache-dependency-path: apps/api/package-lock.json
+      - run: composer install --no-interaction --prefer-dist --no-progress
+      - run: npm ci
+      - run: npm run build
+      - run: node tests/js/review-preparation.mjs
+      - run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan test
+          php artisan view:cache

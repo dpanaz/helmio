@@ -8,6 +8,7 @@ use App\Models\AuditRun;
 use App\Models\HelmScoreSnapshot;
 use App\Models\InvestmentAccount;
 use App\Models\User;
+use App\Models\PortfolioAnalysisRun;
 use App\Services\Audit\AuditHistoryComparisonService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -213,6 +214,7 @@ class DashboardService
         );
 
         return [
+            'analysisRun' => PortfolioAnalysisRun::query()->where('user_id', $userId)->latest('id')->first(),
             'accounts' =>
                 $accounts,
 

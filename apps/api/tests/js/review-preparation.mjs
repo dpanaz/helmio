@@ -1,0 +1,15 @@
+import assert from 'node:assert/strict';
+import {reviewPreparation} from '../../resources/js/review-preparation.js';
+let navigated=null, callback=null;
+globalThis.window={location:{assign:url=>{navigated=url}}};
+globalThis.setTimeout=fn=>{callback=fn;return 1;};
+globalThis.clearTimeout=()=>{};
+const state={ready:false,failed:false,stage:0,message:'Connecting'};
+globalThis.fetch=async()=>({ok:true,redirected:false,json:async()=>({...state,stage:1})});
+const poll=reviewPreparation(state,'/status','/review');
+await poll.poll();assert.equal(poll.state.stage,1);assert.equal(navigated,null);assert.equal(typeof callback,'function');
+globalThis.fetch=async()=>{throw Error('Offline');};await poll.poll();assert.equal(poll.connectionError,true);assert.equal(poll.state.stage,1);assert.equal(navigated,null);
+globalThis.fetch=async()=>({ok:true,redirected:true});await poll.poll();assert.equal(navigated,null);
+globalThis.fetch=async()=>({ok:true,redirected:false,json:async()=>({...state,ready:true})});await poll.poll();assert.equal(navigated,'/review');
+poll.destroy();assert.equal(poll.stopped,true);
+console.log('Polling checks passed: actual readiness, offline retry, redirected-session handling, navigation and cleanup.');

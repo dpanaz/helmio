@@ -1,4 +1,6 @@
 import Alpine from 'alpinejs';
+import { reviewPreparation } from './review-preparation';
+Alpine.data('reviewPreparation', reviewPreparation);
 
 import './pwa-install';
 import './push-notifications';
