@@ -7,9 +7,21 @@ use App\Services\Analytics\Tax\WashSaleDetector;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
+use App\Models\Security;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class WashSaleDetectorTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Security::query()->create([
+            'symbol' => 'TEST', 'name' => 'Test stock', 'security_type' => 'stock', 'currency' => 'USD',
+        ]);
+    }
+
     public function test_it_detects_a_repurchase_after_a_loss_sale(): void
     {
         $transactions = new Collection([

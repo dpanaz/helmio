@@ -7,9 +7,21 @@ use App\Services\Analytics\Trading\RoundTripTradeDetector;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
+use App\Models\Security;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class RoundTripTradeDetectorTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Security::query()->create([
+            'symbol' => 'TEST', 'name' => 'Test stock', 'security_type' => 'stock', 'currency' => 'USD',
+        ]);
+    }
+
     public function test_it_matches_a_buy_and_sell(): void
     {
         $transactions = new Collection([

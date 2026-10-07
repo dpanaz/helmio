@@ -2,7 +2,6 @@
 
 namespace Tests\Feature;
 
-use Stripe\Webhook;
 use Tests\TestCase;
 
 class StripeWebhookTest extends TestCase
@@ -91,12 +90,8 @@ class StripeWebhookTest extends TestCase
         string $payload,
         string $secret,
     ) {
-        $signature = Webhook::generateTestHeaderString(
-            [
-                'payload' => $payload,
-                'secret' => $secret,
-            ],
-        );
+        $timestamp = time();
+        $signature = 't='.$timestamp.',v1='.hash_hmac('sha256', $timestamp.'.'.$payload, $secret);
 
         return $this->call(
             'POST',

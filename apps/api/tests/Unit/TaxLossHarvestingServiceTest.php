@@ -8,9 +8,21 @@ use App\Services\Analytics\Tax\TaxLossHarvestingService;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
+use App\Models\Security;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class TaxLossHarvestingServiceTest extends TestCase
 {
+    use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Security::query()->create([
+            'symbol' => 'TEST', 'name' => 'Test stock', 'security_type' => 'stock', 'currency' => 'USD',
+        ]);
+    }
+
     public function test_it_detects_a_harvestable_loss(): void
     {
         $holdings = new Collection([
