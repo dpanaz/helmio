@@ -58,7 +58,7 @@ class SimplifiedOnboardingTest extends TestCase
         $run = PortfolioAnalysisRun::query()->create(['user_id' => $user->id, 'status' => 'ready', 'current_step' => 'complete', 'completed_at' => now()->subMinute()]);
         AiInsightRun::query()->create(['user_id' => $user->id, 'provider' => 'test', 'model' => 'test',
             'status' => 'completed', 'context_version' => 'test', 'prompt_version' => 'test',
-            'summary' => 'Your calculated results explained.', 'generated_at' => now(), 'is_stale' => false]);
+            'context_snapshot' => [], 'summary' => 'Your calculated results explained.', 'generated_at' => now(), 'is_stale' => false]);
         return $run;
     }
 

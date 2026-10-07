@@ -10,11 +10,17 @@ permissions:
 jobs:
   onboarding:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        revision: [current, baseline]
     defaults:
       run:
         working-directory: apps/api
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ matrix.revision == 'baseline' && 'main' || github.sha }}
       - uses: shivammathur/setup-php@v2
         with:
           php-version: '8.4'
@@ -29,8 +35,14 @@ jobs:
       - run: npm ci
       - run: npm run build
       - run: node tests/js/review-preparation.mjs
+        if: matrix.revision == 'current'
       - run: |
           cp .env.example .env
           php artisan key:generate
-          php artisan test
-          php artisan view:cache
+      - name: Onboarding and support regressions
+        if: matrix.revision == 'current'
+        run: php artisan test --filter='SimplifiedOnboardingTest|SupportUnreadBadgeTest'
+      - name: Compile Blade views
+        run: php artisan view:cache
+      - name: Full regression suite
+        run: php artisan test
