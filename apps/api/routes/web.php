@@ -34,11 +34,7 @@ use App\Http\Controllers\TradingDisciplineAnalyticsController;
 use App\Http\Controllers\Webhooks\SnapTradeWebhookController;
 use App\Http\Controllers\Webhooks\StripeWebhookController;
 use App\Http\Controllers\OnboardingController;
-use App\Http\Controllers\Onboarding\HelmScoreRevealController;
-use App\Http\Controllers\Onboarding\PortfolioRevealController;
 use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\Onboarding\TopFindingsRevealController;
-use App\Http\Controllers\Onboarding\ExecutiveSummaryRevealController;
 use App\Http\Controllers\MarketingPageController;
 use App\Http\Controllers\Analytics\WhatIfController;
 use App\Http\Controllers\Analytics\WhatIfScenarioController;
@@ -245,6 +241,10 @@ Route::middleware([
                 ],
             )->name('profile');
 
+            Route::post('/profile', [OnboardingController::class, 'saveProfile'])->name('profile.save');
+            Route::get('/status', [OnboardingController::class, 'status'])->name('status');
+            Route::post('/retry', [OnboardingController::class, 'retry'])->middleware('throttle:6,1')->name('retry');
+
             Route::get(
                 '/connect',
                 [
@@ -264,32 +264,32 @@ Route::middleware([
             Route::get(
                 '/reveal',
                 [
-                    PortfolioRevealController::class,
-                    'index',
+                    OnboardingController::class,
+                    'complete',
                 ],
             )->name('reveal');
 
             Route::get(
                 '/score',
                 [
-                    HelmScoreRevealController::class,
-                    'index',
+                    OnboardingController::class,
+                    'complete',
                 ],
             )->name('score');
 
             Route::get(
                 '/findings',
                 [
-                    TopFindingsRevealController::class,
-                    'index',
+                    OnboardingController::class,
+                    'complete',
                 ],
             )->name('findings');
             
             Route::get(
                 '/executive-summary',
                 [
-                    ExecutiveSummaryRevealController::class,
-                    'index',
+                    OnboardingController::class,
+                    'complete',
                 ],
             )->name('executive-summary');
 

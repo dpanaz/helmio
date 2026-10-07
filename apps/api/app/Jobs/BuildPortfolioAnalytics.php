@@ -118,6 +118,7 @@ class BuildPortfolioAnalytics implements ShouldQueue
         $run->markReady(
             $result,
         );
+        GenerateAiPortfolioInsight::dispatch($run->user_id, 'analysis_ready');
     }
 
     public function failed(

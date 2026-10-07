@@ -48,6 +48,7 @@ class User extends Authenticatable
     protected function casts(): array
     {
         return [
+            'onboarding_completed_at' => 'datetime',
             'email_verified_at' =>
                 'datetime',
 

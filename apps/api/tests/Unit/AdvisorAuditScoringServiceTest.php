@@ -127,8 +127,9 @@ class AdvisorAuditScoringServiceTest extends TestCase
             PHP_ROUND_HALF_UP
         );
 
+        // Four categories cover 65% of the weight; the existing policy labels this provisional.
         $this->assertSame(
-            'complete',
+            'provisional',
             $result['status']
         );
 

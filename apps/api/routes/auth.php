@@ -10,6 +10,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\RegisteredUserController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use Illuminate\Http\Request;
+use App\Services\Support\WelcomeConversationService;
 use Illuminate\Support\Facades\Route;
 
 
@@ -56,7 +57,7 @@ Route::middleware('guest')->group(function () {
 
     Route::post(
         'register',
-        function (Request $request) {
+        function (Request $request, WelcomeConversationService $welcome) {
             abort_unless(
                 config('app.registration_open'),
                 403,
@@ -65,7 +66,7 @@ Route::middleware('guest')->group(function () {
 
             return app(
                 RegisteredUserController::class
-            )->store($request);
+            )->store($request, $welcome);
         }
     );
 

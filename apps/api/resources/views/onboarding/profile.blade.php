@@ -1,195 +1,43 @@
 <x-app-layout>
-    <x-slot name="header">
-        <div>
-            <p class="text-xs font-semibold uppercase tracking-[0.16em] text-blue-400">
-                Getting started
-            </p>
-
-            <h2 class="mt-2 text-2xl font-semibold tracking-tight text-white">
-                Investor Profile
-            </h2>
-        </div>
-    </x-slot>
-
-    <div class="min-h-screen bg-slate-950 py-8">
-        <div class="mx-auto max-w-4xl px-4 sm:px-6 lg:px-8">
-
-            <section
-                class="overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-xl"
-            >
-                <div class="p-6 sm:p-8 lg:p-10">
-
-                    <div
-                        class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between"
-                    >
+    <x-slot name="header"><h2 class="text-2xl font-semibold text-white">About you</h2></x-slot>
+    <div class="bg-slate-950 py-8">
+        <section class="mx-auto max-w-3xl rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-10">
+            <p class="text-sm font-semibold text-blue-400">Step 1 of 3 · About you</p>
+            <h1 class="mt-2 text-3xl font-semibold text-white">Welcome to Helmio.</h1>
+            <p class="mt-3 text-slate-400">Five answers help us review whether your investments fit your needs. You can update them later.</p>
+            <form method="POST" action="{{ route('onboarding.profile.save') }}" class="mt-8 space-y-6">
+                @csrf
+                @php
+                    $questions = [
+                        'primary_objective' => ['What is your main investment goal?', 'This gives your review a goal to compare against.', \App\Models\InvestorProfile::objectiveOptions()],
+                        'investment_experience' => ['How familiar are you with investing?', 'This helps put investment complexity in context.', ['beginner' => 'Beginner', 'intermediate' => 'Intermediate', 'advanced' => 'Advanced']],
+                        'liquidity_needs' => ['How much access to this money do you need?', 'This helps us review cash availability.', ['low' => 'Low — little near-term need', 'moderate' => 'Moderate — some planned withdrawals', 'high' => 'High — regular or significant withdrawals']],
+                        'risk_tolerance' => ['How much fluctuation are you comfortable with?', 'This helps us compare portfolio risk with your comfort level.', \App\Models\InvestorProfile::riskToleranceOptions()],
+                    ];
+                @endphp
+                @foreach ($questions as $field => [$label, $help, $options])
+                    <div>
+                        <label for="{{ $field }}" class="block font-medium text-white">{{ $label }}</label>
+                        <p id="{{ $field }}-help" class="mt-1 text-sm text-slate-400">{{ $help }}</p>
+                        <select id="{{ $field }}" name="{{ $field }}" required aria-describedby="{{ $field }}-help {{ $field }}-error" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-white">
+                            <option value="">Choose an answer</option>
+                            @foreach ($options as $value => $text)
+                                <option value="{{ $value }}" @selected(old($field, data_get($investorProfile, $field)) === $value)>{{ $text }}</option>
+                            @endforeach
+                        </select>
+                        <p id="{{ $field }}-error" class="mt-1 text-sm text-red-300">@error($field) {{ $message }} @enderror</p>
+                    </div>
+                    @if ($loop->first)
                         <div>
-                            <p class="text-sm font-semibold text-blue-400">
-                                Step 2 of 4
-                            </p>
-
-                            <h1
-                                class="mt-2 text-2xl font-semibold tracking-tight text-white sm:text-3xl"
-                            >
-                                Tell Helmio what matters to you.
-                            </h1>
-
-                            <p
-                                class="mt-3 max-w-2xl text-sm leading-7 text-slate-400"
-                            >
-                                Your age, goals, time horizon, liquidity needs,
-                                and risk tolerance help Helmio judge whether
-                                your portfolio fits your situation.
-                            </p>
+                            <label for="time_horizon_years" class="block font-medium text-white">When do you expect to need this money?</label>
+                            <p id="horizon-help" class="mt-1 text-sm text-slate-400">Enter years. This helps us review whether the investments fit your timeframe.</p>
+                            <input type="number" id="time_horizon_years" name="time_horizon_years" min="1" max="60" required value="{{ old('time_horizon_years', data_get($investorProfile, 'time_horizon_years')) }}" aria-describedby="horizon-help horizon-error" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-white">
+                            <p id="horizon-error" class="mt-1 text-sm text-red-300">@error('time_horizon_years') {{ $message }} @enderror</p>
                         </div>
-
-                        <span
-                            class="inline-flex w-fit rounded-full border border-violet-500/20 bg-violet-500/10 px-3 py-1 text-xs font-semibold text-violet-300"
-                        >
-                            Suitability
-                        </span>
-                    </div>
-
-                    <div class="mt-7 h-2 overflow-hidden rounded-full bg-slate-800">
-                        <div class="h-full w-2/4 rounded-full bg-blue-500"></div>
-                    </div>
-
-                    <div
-                        class="mt-8 rounded-2xl border border-slate-800 bg-slate-950 p-6"
-                    >
-                        @if ($investorProfile)
-                            <div class="flex items-start gap-4">
-                                <div
-                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-emerald-500/20 bg-emerald-500/10 text-emerald-300"
-                                >
-                                    <svg
-                                        class="h-5 w-5"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="m5 12 4 4L19 6"
-                                        />
-                                    </svg>
-                                </div>
-
-                                <div>
-                                    <p class="font-semibold text-white">
-                                        Your investor profile is already started.
-                                    </p>
-
-                                    <p class="mt-2 text-sm leading-6 text-slate-500">
-                                        Review it for accuracy before connecting your accounts.
-                                    </p>
-                                </div>
-                            </div>
-                        @else
-                            <div class="flex items-start gap-4">
-                                <div
-                                    class="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10 text-blue-300"
-                                >
-                                    <svg
-                                        class="h-5 w-5"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                        stroke-width="2"
-                                    >
-                                        <path
-                                            stroke-linecap="round"
-                                            stroke-linejoin="round"
-                                            d="M12 6v6m0 4h.01"
-                                        />
-                                    </svg>
-                                </div>
-
-                                <div>
-                                    <p class="font-semibold text-white">
-                                        Complete your investor profile.
-                                    </p>
-
-                                    <p class="mt-2 text-sm leading-6 text-slate-500">
-                                        This takes about one minute and improves
-                                        every suitability, risk, and advisor-audit result.
-                                    </p>
-                                </div>
-                            </div>
-                        @endif
-                    </div>
-
-                    <div
-                        class="mt-8 grid gap-4 sm:grid-cols-3"
-                    >
-                        @foreach ([
-                            [
-                                'title' => 'Goals',
-                                'text' => 'What the money is intended to accomplish.',
-                            ],
-                            [
-                                'title' => 'Time horizon',
-                                'text' => 'When you expect to need the money.',
-                            ],
-                            [
-                                'title' => 'Risk tolerance',
-                                'text' => 'How much volatility is appropriate for you.',
-                            ],
-                        ] as $item)
-                            <div
-                                class="rounded-2xl border border-slate-800 bg-slate-950/60 p-5"
-                            >
-                                <p class="font-semibold text-white">
-                                    {{ $item['title'] }}
-                                </p>
-
-                                <p class="mt-2 text-sm leading-6 text-slate-500">
-                                    {{ $item['text'] }}
-                                </p>
-                            </div>
-                        @endforeach
-                    </div>
-
-                    <div
-                        class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between"
-                    >
-                        <a
-                            href="{{ route('onboarding.welcome') }}"
-                            class="inline-flex w-full items-center justify-center rounded-xl border border-slate-700 bg-slate-950 px-5 py-3 font-semibold text-slate-300 transition hover:border-slate-600 hover:text-white sm:w-auto"
-                        >
-                            Back
-                        </a>
-
-                        <a
-                            href="{{ route('investor-profile.edit', [
-                                'return_to' => route('onboarding.connect'),
-                            ]) }}"
-                            class="inline-flex w-full items-center justify-center gap-2 rounded-xl bg-blue-600 px-5 py-3 font-semibold text-white transition hover:bg-blue-500 sm:w-auto"
-                        >
-                            {{ $investorProfile
-                                ? 'Review Profile'
-                                : 'Complete Profile' }}
-
-                            <svg
-                                class="h-5 w-5"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                                stroke="currentColor"
-                                stroke-width="2"
-                            >
-                                <path
-                                    stroke-linecap="round"
-                                    stroke-linejoin="round"
-                                    d="m9 18 6-6-6-6"
-                                />
-                            </svg>
-                        </a>
-                    </div>
-
-                </div>
-            </section>
-
-        </div>
+                    @endif
+                @endforeach
+                <button class="w-full rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-500">Continue to connect</button>
+            </form>
+        </section>
     </div>
 </x-app-layout>

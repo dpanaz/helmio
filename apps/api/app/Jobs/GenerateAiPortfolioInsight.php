@@ -4,6 +4,7 @@ namespace App\Jobs;
 
 use App\Models\AiInsightRun;
 use App\Models\User;
+use App\Models\PortfolioAnalysisRun;
 use App\Services\AI\AiPortfolioInsightService;
 use Illuminate\Contracts\Queue\ShouldBeUnique;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -18,7 +19,9 @@ class GenerateAiPortfolioInsight implements
 
     public int $uniqueFor = 300;
 
-    public int $tries = 3;
+    public int $tries = 120;
+
+    public int $maxExceptions = 3;
 
     public int $timeout = 300;
 
@@ -60,6 +63,14 @@ class GenerateAiPortfolioInsight implements
             return;
         }
 
+        $analysis = PortfolioAnalysisRun::query()->where('user_id', $this->userId)->latest('id')->first();
+        if ($analysis !== null && $analysis->status !== PortfolioAnalysisRun::STATUS_READY) {
+            if ($analysis->status !== PortfolioAnalysisRun::STATUS_FAILED) {
+                $this->release(15);
+            }
+            return;
+        }
+
         $latestInsight = AiInsightRun::query()
             ->where(
                 'user_id',
@@ -87,6 +98,8 @@ class GenerateAiPortfolioInsight implements
             ! $forceGeneration
             && $latestInsight !== null
             && ! $latestInsight->is_stale
+            && $latestInsight->status === AiInsightRun::STATUS_COMPLETED
+            && ($analysis?->completed_at === null || $latestInsight->generated_at?->gte($analysis->completed_at))
         ) {
             return;
         }

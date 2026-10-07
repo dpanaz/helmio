@@ -8,8 +8,8 @@
     @php
         $analyticsItems = [
             ['route' => 'analytics.helm-score', 'label' => 'Helm Score'],
-            ['route' => 'advisor-audit.index', 'label' => 'Advisor Audit'],
-            ['route' => 'advisor-action-center.index', 'label' => 'Action Center'],
+
+            ['route' => 'advisor-action-center.index', 'label' => 'Your review'],
             ['route' => 'ai-insights.index', 'label' => 'AI Insights'],
             ['route' => 'ask-helmio.index', 'label' => 'Ask Helmio'],
             ['route' => 'what-if.index', 'label' => 'What If'],
@@ -76,16 +76,9 @@
             ],
             [
                 'route' => 'advisor-action-center.index',
-                'label' => 'Action Center',
+                'label' => 'Your review',
                 'icon' => 'alert',
-                'active' => ['advisor-action-center.*'],
-                'premium' => true,
-            ],
-            [
-                'route' => 'advisor-audit.index',
-                'label' => 'Advisor Audit',
-                'icon' => 'shield',
-                'active' => ['advisor-audit.*'],
+                'active' => ['advisor-action-center.*', 'advisor-audit.*'],
                 'premium' => true,
             ],
             [

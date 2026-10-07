@@ -10,6 +10,24 @@ class RegistrationTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function setUp(): void
+    {
+        parent::setUp();
+        config()->set('app.registration_open', true);
+    }
+
+    public function test_closed_registration_redirects_and_rejects_new_accounts(): void
+    {
+        config()->set('app.registration_open', false);
+        $this->get('/register')->assertRedirect('/');
+        $this->post('/register', [
+            'name' => 'Test User', 'email' => 'test@example.com',
+            'password' => 'password', 'password_confirmation' => 'password',
+        ])->assertForbidden();
+        $this->assertGuest();
+        $this->assertDatabaseCount('users', 0);
+    }
+
     public function test_registration_screen_can_be_rendered(): void
     {
         $response = $this->get('/register');
