@@ -133,6 +133,21 @@ class SimplifiedOnboardingTest extends TestCase
         $this->get(route('onboarding.complete'))->assertOk()->assertDontSee('Your calculated results explained.');
     }
 
+    public function test_migration_preserves_existing_access_without_completing_unconnected_customers(): void
+    {
+        $existing = $this->customer();
+        InvestorProfile::query()->create(['user_id' => $existing->id, 'risk_tolerance' => 'moderate']);
+        $existing->investmentAccounts()->create(['name' => 'Existing account', 'account_type' => 'brokerage', 'currency' => 'USD']);
+        $unconnected = $this->customer();
+        $this->profile($unconnected);
+        $migration = require database_path('migrations/2026_10_07_070000_add_onboarding_completed_at_to_users_table.php');
+        $migration->down();
+        $migration->up();
+        $this->assertNotNull($existing->fresh()->onboarding_completed_at);
+        $this->assertNull($unconnected->fresh()->onboarding_completed_at);
+        $this->actingAs($existing->fresh())->get(route('dashboard'))->assertOk();
+    }
+
     public function test_retry_claims_failed_analysis_once(): void
     {
         $user = $this->customer();
