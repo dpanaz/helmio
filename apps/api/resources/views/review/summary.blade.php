@@ -12,15 +12,21 @@
     $updating = $analysis && ! in_array($analysis->status, ['ready', 'failed'], true);
     $syncDate = collect($review['accounts'] ?? [])->filter(fn ($a) => $a->last_synced_at)->min('last_synced_at');
 @endphp
-<section class="rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8" aria-labelledby="review-health">
+<section class="overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-[#152a4d] via-slate-900 to-slate-950 p-6 shadow-xl shadow-blue-950/20 sm:p-8" aria-labelledby="review-health">
     <h1 id="review-health" class="text-2xl font-semibold text-white">How are my investments doing?</h1>
     @if ($updating)
         <p role="status" class="mt-4 text-blue-300">Your review is updating. Results below are from the last completed review.</p>
     @elseif (data_get($analysis, 'status') === 'failed')
         <p role="alert" class="mt-4 text-amber-300">The latest review could not finish. Any results below are from an earlier review.</p>
     @endif
-    <div class="mt-6 flex flex-wrap items-end gap-4">
-        <div><p class="text-sm text-slate-400">Helm Score</p><p class="mt-1 text-5xl font-semibold text-white">{{ $scoreAvailable ? $score : '—' }}@if ($scoreAvailable)<span class="text-xl text-slate-400"> / 100</span>@endif</p></div>
+    <div class="mt-6 flex flex-wrap items-center gap-8">
+        <div class="relative flex h-40 w-40 shrink-0 items-center justify-center rounded-full p-3" style="background: conic-gradient(#3b82f6 {{ $scoreAvailable ? min(100, max(0, (float) $score)) : 0 }}%, #334155 0);">
+            <div class="flex h-full w-full flex-col items-center justify-center rounded-full bg-[#101c31] text-center">
+                <span class="text-xs uppercase tracking-wide text-slate-400">Helm Score</span>
+                <span class="mt-1 text-5xl font-semibold text-white">{{ $scoreAvailable ? $score : '—' }}</span>
+                <span class="text-xs text-slate-400">{{ $scoreAvailable ? 'out of 100' : 'Unavailable' }}</span>
+            </div>
+        </div>
         <p class="text-lg text-blue-300">{{ $scoreAvailable ? data_get($helm, 'overall_label', 'Based on available data') : 'Not enough data to assess' }}</p>
     </div>
     @if ($summaryAvailable && ! $updating)
@@ -36,11 +42,11 @@
         <p class="mt-2 text-sm text-amber-300">Some data is missing. Findings and scores reflect available information; unassessed areas are not a clean bill of health.</p>
     @endif
 </section>
-<section class="rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8" aria-labelledby="review-attention">
+<section class="rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8 shadow-lg" aria-labelledby="review-attention">
     <h2 id="review-attention" class="text-xl font-semibold text-white">What needs my attention?</h2>
-    <div class="mt-5 space-y-4">
+    <div class="mt-5 grid gap-4 lg:grid-cols-3">
         @forelse ($findings->take(3) as $finding)
-            <article class="rounded-2xl border border-slate-700 bg-slate-950 p-5">
+            <article class="rounded-2xl border border-slate-700 bg-slate-950 p-5 shadow-sm">
                 <p class="text-xs font-semibold uppercase text-amber-300">{{ str($finding->severity)->replace('_', ' ')->title() }}</p>
                 <h3 class="mt-2 font-semibold text-white">{{ $finding->title }}</h3>
                 <p class="mt-2 leading-6 text-slate-300">{{ $finding->description }}</p>
