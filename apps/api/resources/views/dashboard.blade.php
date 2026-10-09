@@ -24,6 +24,16 @@
                 $dashboardComparison = $dashboard['auditComparison'] ?? [];
             @endphp
 
+            @php
+                $dashboardAnalysis = $dashboard['analysisRun'] ?? null;
+                $dashboardUpdating = $dashboardAnalysis && ! in_array($dashboardAnalysis->status, ['ready', 'failed'], true);
+            @endphp
+            @if ($dashboardUpdating)
+                <p role="status" class="rounded-xl border border-blue-500/30 bg-blue-950/30 px-4 py-3 text-sm text-blue-200">Your review is updating. Results below are from the last completed review.</p>
+            @elseif (data_get($dashboardAnalysis, 'status') === 'failed')
+                <p role="alert" class="rounded-xl border border-amber-500/30 bg-amber-950/30 px-4 py-3 text-sm text-amber-200">The latest review could not finish. Any results below are from an earlier review.</p>
+            @endif
+
             {{-- Restore the classic top: Helm dial on the left, category health lines on the right. --}}
             <section aria-label="Helm Score and category health" class="grid overflow-hidden rounded-3xl border border-slate-800 bg-slate-900 shadow-xl lg:grid-cols-[minmax(270px,1fr)_minmax(0,2fr)]">
                 <div class="flex flex-col items-center justify-center border-b border-slate-800 bg-gradient-to-b from-[#14294c] to-slate-900 px-6 py-9 text-center lg:border-b-0 lg:border-r">
