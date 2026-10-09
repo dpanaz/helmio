@@ -99,7 +99,7 @@ class SimplifiedOnboardingTest extends TestCase
         }
         $this->post(route('onboarding.finish'))->assertRedirect(route('dashboard'));
         $this->assertNotNull($user->fresh()->onboarding_completed_at);
-        $this->get(route('dashboard'))->assertOk()->assertSee('What needs my attention?');
+        $this->get(route('dashboard'))->assertOk()->assertSee('What needs your attention?');
         PortfolioAnalysisRun::query()->create(['user_id' => $user->id, 'status' => 'analyzing']);
         $this->get(route('dashboard'))->assertOk()->assertSee('Your review is updating.');
     }
