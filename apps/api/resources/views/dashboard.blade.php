@@ -1,5 +1,26 @@
 <x-app-layout>
     <x-slot name="header"><h2 class="text-2xl font-semibold text-white">Your portfolio overview</h2></x-slot>
+    {{-- Server-rendered graphs appear on initial HTML load; animation needs no JavaScript or scroll event. --}}
+    <style>
+        @keyframes helmio-graph-reveal {
+            from { transform: scaleX(0); }
+            to { transform: scaleX(1); }
+        }
+        @keyframes helmio-dial-reveal {
+            from { opacity: .65; transform: scale(.96); }
+            to { opacity: 1; transform: scale(1); }
+        }
+        .helmio-category-graph {
+            transform-origin: left center;
+            animation: helmio-graph-reveal 650ms ease-out both;
+        }
+        .helmio-score-dial {
+            animation: helmio-dial-reveal 650ms ease-out both;
+        }
+        @media (prefers-reduced-motion: reduce) {
+            .helmio-category-graph, .helmio-score-dial { animation: none; }
+        }
+    </style>
     <div class="bg-[#080d18] min-h-screen py-8">
         <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6">
             @if (($unreadSupportCount ?? 0) > 0)
@@ -42,7 +63,7 @@
                         $dialColor = match (true) { ! is_numeric($dashboardScore) => '#64748b', (float) $dashboardScore >= 80 => '#22c55e', (float) $dashboardScore >= 70 => '#3b82f6', (float) $dashboardScore >= 60 => '#f59e0b', (float) $dashboardScore >= 40 => '#f97316', default => '#ef4444' };
                         $dialPercent = is_numeric($dashboardScore) ? min(100, max(0, (float) $dashboardScore)) : 0;
                     @endphp
-                    <div class="mt-6 flex h-52 w-52 items-center justify-center rounded-full p-3" style="background: conic-gradient({{ $dialColor }} {{ $dialPercent }}%, #334155 0)">
+                    <div class="helmio-score-dial mt-6 flex h-52 w-52 items-center justify-center rounded-full p-3" style="background: conic-gradient({{ $dialColor }} {{ $dialPercent }}%, #334155 0)">
                         <div class="flex h-full w-full flex-col items-center justify-center rounded-full bg-[#0f1b30]">
                             <span class="text-6xl font-bold tabular-nums text-white">{{ is_numeric($dashboardScore) ? round($dashboardScore) : '—' }}</span>
                             <span class="mt-1 text-sm text-slate-400">{{ is_numeric($dashboardScore) ? 'out of 100' : 'Not assessed' }}</span>
@@ -83,7 +104,7 @@
                                     </div>
                                     <div class="h-2.5 overflow-hidden rounded-full bg-slate-800" role="meter" aria-label="{{ str($key)->replace('_', ' ')->title() }} score" aria-valuemin="0" aria-valuemax="100" @if ($categoryHasScore) aria-valuenow="{{ round($categoryPercent) }}" @else aria-valuetext="Not assessed" @endif>
                                         @if ($categoryHasScore)
-                                            <div class="h-full rounded-full" style="width: {{ $categoryPercent }}%; background-color: {{ $categoryColor }}"></div>
+                                            <div class="helmio-category-graph h-full rounded-full" style="width: {{ $categoryPercent }}%; background-color: {{ $categoryColor }}"></div>
                                         @endif
                                     </div>
                                 </div>
