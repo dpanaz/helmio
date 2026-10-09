@@ -13,12 +13,13 @@
     $syncDate = collect($review['accounts'] ?? [])->filter(fn ($a) => $a->last_synced_at)->min('last_synced_at');
 @endphp
 <section class="overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-[#152a4d] via-slate-900 to-slate-950 p-6 shadow-xl shadow-blue-950/20 sm:p-8" aria-labelledby="review-health">
-    <h1 id="review-health" class="text-2xl font-semibold text-white">How are my investments doing?</h1>
+    <h2 id="review-health" class="text-2xl font-semibold text-white">{{ ($hideScoreDial ?? false) ? "Your review explained" : "How are my investments doing?" }}</h2>
     @if ($updating)
         <p role="status" class="mt-4 text-blue-300">Your review is updating. Results below are from the last completed review.</p>
     @elseif (data_get($analysis, 'status') === 'failed')
         <p role="alert" class="mt-4 text-amber-300">The latest review could not finish. Any results below are from an earlier review.</p>
     @endif
+    @if (! ($hideScoreDial ?? false))
     <div class="mt-6 flex flex-wrap items-center gap-8">
         <div class="relative flex h-40 w-40 shrink-0 items-center justify-center rounded-full p-3" style="background: conic-gradient(#3b82f6 {{ $scoreAvailable ? min(100, max(0, (float) $score)) : 0 }}%, #334155 0);">
             <div class="flex h-full w-full flex-col items-center justify-center rounded-full bg-[#101c31] text-center">
@@ -29,6 +30,7 @@
         </div>
         <p class="text-lg text-blue-300">{{ $scoreAvailable ? data_get($helm, 'overall_label', 'Based on available data') : 'Not enough data to assess' }}</p>
     </div>
+    @endif
     @if ($summaryAvailable && ! $updating)
         <p class="mt-6 whitespace-pre-line leading-7 text-slate-300">{{ data_get($insight, 'summary') }}</p>
         @foreach (collect(data_get($insight, 'limitations', []))->filter(fn ($v) => is_string($v)) as $limitation)
