@@ -63,8 +63,8 @@
                                     $categoryScore = data_get($category, 'score');
                                     $categoryHasScore = is_numeric($categoryScore);
                                     $categoryPercent = $categoryHasScore ? min(100, max(0, (float) $categoryScore)) : 0;
-                                    $categoryColor = ! $categoryHasScore ? '#64748b' : ($categoryPercent >= 80 ? '#22c55e' : ($categoryPercent >= 70 ? '#3b82f6' : ($categoryPercent >= 60 ? '#f59e0b' : ($categoryPercent >= 40 ? '#f97316' : '#ef4444'))));
-                                    $categoryStatus = ! $categoryHasScore ? 'Not assessed' : ($categoryPercent >= 80 ? 'Strong' : ($categoryPercent >= 70 ? 'Good' : ($categoryPercent >= 60 ? 'Watch' : ($categoryPercent >= 40 ? 'Concern' : 'Critical'))));
+                                    $categoryColor = match (true) { ! $categoryHasScore => '#64748b', $categoryPercent >= 80 => '#22c55e', $categoryPercent >= 70 => '#3b82f6', $categoryPercent >= 60 => '#f59e0b', $categoryPercent >= 40 => '#f97316', default => '#ef4444' };
+                                    $categoryStatus = match (true) { ! $categoryHasScore => 'Not assessed', $categoryPercent >= 80 => 'Strong', $categoryPercent >= 70 => 'Good', $categoryPercent >= 60 => 'Watch', $categoryPercent >= 40 => 'Concern', default => 'Critical' };
                                 @endphp
                                 <div>
                                     <div class="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
