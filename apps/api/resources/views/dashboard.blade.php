@@ -7,8 +7,17 @@
             to { transform: scaleX(1); }
         }
         @keyframes helmio-dial-reveal {
-            from { opacity: .65; transform: scale(.96); }
+            from { opacity: .55; transform: scale(.92); }
             to { opacity: 1; transform: scale(1); }
+        }
+        @keyframes helmio-dial-fill {
+            from { stroke-dashoffset: 565.49; }
+            to { stroke-dashoffset: var(--helmio-score-offset); }
+        }
+        .helmio-score-progress {
+            stroke-dasharray: 565.49;
+            stroke-dashoffset: var(--helmio-score-offset);
+            animation: helmio-dial-fill 1150ms cubic-bezier(.2,.75,.25,1) both;
         }
         .helmio-category-graph {
             transform-origin: left center;
@@ -18,7 +27,7 @@
             animation: helmio-dial-reveal 650ms ease-out both;
         }
         @media (prefers-reduced-motion: reduce) {
-            .helmio-category-graph, .helmio-score-dial { animation: none; }
+            .helmio-category-graph, .helmio-score-dial, .helmio-score-progress { animation: none; }
         }
     </style>
     <div class="bg-[#080d18] min-h-screen py-8">
@@ -63,10 +72,19 @@
                         $dialColor = match (true) { ! is_numeric($dashboardScore) => '#64748b', (float) $dashboardScore >= 80 => '#22c55e', (float) $dashboardScore >= 70 => '#3b82f6', (float) $dashboardScore >= 60 => '#f59e0b', (float) $dashboardScore >= 40 => '#f97316', default => '#ef4444' };
                         $dialPercent = is_numeric($dashboardScore) ? min(100, max(0, (float) $dashboardScore)) : 0;
                     @endphp
-                    <div class="helmio-score-dial mt-6 flex h-52 w-52 items-center justify-center rounded-full p-3" style="background: conic-gradient({{ $dialColor }} {{ $dialPercent }}%, #334155 0)">
-                        <div class="flex h-full w-full flex-col items-center justify-center rounded-full bg-[#0f1b30]">
-                            <span class="text-6xl font-bold tabular-nums text-white">{{ is_numeric($dashboardScore) ? round($dashboardScore) : '—' }}</span>
-                            <span class="mt-1 text-sm text-slate-400">{{ is_numeric($dashboardScore) ? 'out of 100' : 'Not assessed' }}</span>
+                    <div class="helmio-score-dial relative mt-5 flex h-60 w-60 items-center justify-center" role="img" aria-label="Helm Score: {{ is_numeric($dashboardScore) ? round($dashboardScore).' out of 100' : 'Not assessed' }}">
+                        <div aria-hidden="true" class="absolute inset-6 rounded-full blur-2xl opacity-25" style="background: {{ $dialColor }}"></div>
+                        <svg aria-hidden="true" viewBox="0 0 240 240" class="absolute inset-0 h-full w-full -rotate-90">
+                            <circle cx="120" cy="120" r="109" fill="none" stroke="#ffffff" stroke-opacity=".09" stroke-width="1" stroke-dasharray="2 10" />
+                            <circle cx="120" cy="120" r="90" fill="none" stroke="#25364e" stroke-width="16" />
+                            <circle cx="120" cy="120" r="90" fill="none" stroke="{{ $dialColor }}" stroke-opacity=".14" stroke-width="24" />
+                            <circle class="helmio-score-progress" cx="120" cy="120" r="90" fill="none" stroke="{{ $dialColor }}" stroke-width="16" stroke-linecap="round" style="--helmio-score-offset: {{ round(565.49 * (1 - $dialPercent / 100), 3) }};" />
+                            <circle cx="120" cy="120" r="73" fill="none" stroke="#ffffff" stroke-opacity=".08" stroke-width="1" />
+                        </svg>
+                        <div class="relative flex h-36 w-36 flex-col items-center justify-center rounded-full border border-white/10 bg-[#0f1b30] text-center shadow-2xl">
+                            <span class="text-[10px] font-semibold uppercase tracking-[.22em] text-slate-400">Helm Score</span>
+                            <span class="mt-1 text-6xl font-bold tracking-tight tabular-nums text-white">{{ is_numeric($dashboardScore) ? round($dashboardScore) : '—' }}</span>
+                            <span class="mt-1 text-xs text-slate-400">{{ is_numeric($dashboardScore) ? 'out of 100' : 'Not assessed' }}</span>
                         </div>
                     </div>
                     <p class="mt-5 text-lg font-semibold text-white">{{ is_numeric($dashboardScore) ? data_get($dashboardHelm, 'overall_label', 'Based on available data') : 'Building your score' }}</p>
