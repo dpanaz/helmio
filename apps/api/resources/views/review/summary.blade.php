@@ -12,6 +12,7 @@
     $updating = $analysis && ! in_array($analysis->status, ['ready', 'failed'], true);
     $syncDate = collect($review['accounts'] ?? [])->filter(fn ($a) => $a->last_synced_at)->min('last_synced_at');
 @endphp
+@if (! ($compactDashboard ?? false))
 <section class="overflow-hidden rounded-3xl border border-blue-500/20 bg-gradient-to-br from-[#152a4d] via-slate-900 to-slate-950 p-6 shadow-xl shadow-blue-950/20 sm:p-8" aria-labelledby="review-health">
     <h2 id="review-health" class="text-2xl font-semibold text-white">{{ ($hideScoreDial ?? false) ? "Your review explained" : "How are my investments doing?" }}</h2>
     @if ($updating)
@@ -44,8 +45,9 @@
         <p class="mt-2 text-sm text-amber-300">Some data is missing. Findings and scores reflect available information; unassessed areas are not a clean bill of health.</p>
     @endif
 </section>
+@endif
 <section class="rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8 shadow-lg" aria-labelledby="review-attention">
-    <h2 id="review-attention" class="text-xl font-semibold text-white">What needs my attention?</h2>
+    <h2 id="review-attention" class="text-xl font-semibold text-white">What needs your attention?</h2>
     <div class="mt-5 grid gap-4 lg:grid-cols-3">
         @forelse ($findings->take(3) as $finding)
             <article class="rounded-2xl border border-slate-700 bg-slate-950 p-5 shadow-sm">
@@ -87,6 +89,31 @@
         <p class="mt-4 text-slate-400">This is your starting point. Your next review will show what changed.</p>
     @endif
 </section>
+<details class="rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8">
+    <summary class="cursor-pointer font-semibold text-blue-300">{{ ($compactDashboard ?? false) ? "Explore detailed analysis and reports" : "View details" }}</summary>
+    <p class="mt-4 text-slate-300">Portfolio value: {{ money($review['portfolioValue'] ?? 0) }} · {{ $review['accountCount'] ?? 0 }} connected accounts</p>
+    <p class="mt-2 text-sm text-slate-400">Formula version: {{ data_get($helm, 'formula_version') ?? 'Not available' }}</p>
+    <div class="mt-4 grid gap-3 sm:grid-cols-2">
+        @foreach (data_get($helm, 'categories', []) as $key => $category)
+            <div class="rounded-xl border border-slate-700 p-4">
+                <p class="font-medium text-white">{{ str($key)->replace('_', ' ')->title() }}</p>
+                <p class="mt-1 text-slate-400">{{ is_numeric(data_get($category, 'score')) ? data_get($category, 'score').'/100 · '.data_get($category, 'label', '') : 'Not enough data to assess' }}</p>
+                @foreach (collect(data_get($category, 'warnings', []))->filter(fn ($v) => is_string($v)) as $warning)
+                    <p class="mt-2 text-sm text-amber-300">{{ $warning }}</p>
+                @endforeach
+            </div>
+        @endforeach
+    </div>
+    @if (! $isOnboarding)
+        <div class="mt-6 flex flex-wrap gap-4 text-blue-300">
+            <a class="underline" href="{{ route('advisor-audit.index') }}">Full review and evidence</a>
+            <a class="underline" href="{{ route('accounts.index') }}">Accounts and holdings</a>
+            <a class="underline" href="{{ route('monthly-reviews.index') }}">Monthly reports</a>
+            <a class="underline" href="{{ route('ask-helmio.index') }}">Ask Helmio</a>
+        </div>
+    @endif
+</details>@if (! ($compactDashboard ?? false))
+@endif
 <details class="rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-8">
     <summary class="cursor-pointer font-semibold text-blue-300">View details</summary>
     <p class="mt-4 text-slate-300">Portfolio value: {{ money($review['portfolioValue'] ?? 0) }} · {{ $review['accountCount'] ?? 0 }} connected accounts</p>
