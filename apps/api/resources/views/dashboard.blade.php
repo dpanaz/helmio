@@ -29,7 +29,7 @@
                 <div class="flex flex-col items-center justify-center border-b border-slate-800 bg-gradient-to-b from-[#14294c] to-slate-900 px-6 py-9 text-center lg:border-b-0 lg:border-r">
                     <p class="text-sm font-semibold uppercase tracking-[0.16em] text-blue-300">Your Helm Score</p>
                     @php
-                        $dialColor = ! is_numeric($dashboardScore) ? '#64748b' : ((float) $dashboardScore >= 80 ? '#22c55e' : ((float) $dashboardScore >= 70 ? '#3b82f6' : ((float) $dashboardScore >= 60 ? '#f59e0b' : ((float) $dashboardScore >= 40 ? '#f97316' : '#ef4444'));
+                        $dialColor = match (true) { ! is_numeric($dashboardScore) => '#64748b', (float) $dashboardScore >= 80 => '#22c55e', (float) $dashboardScore >= 70 => '#3b82f6', (float) $dashboardScore >= 60 => '#f59e0b', (float) $dashboardScore >= 40 => '#f97316', default => '#ef4444' };
                         $dialPercent = is_numeric($dashboardScore) ? min(100, max(0, (float) $dashboardScore)) : 0;
                     @endphp
                     <div class="mt-6 flex h-52 w-52 items-center justify-center rounded-full p-3" style="background: conic-gradient({{ $dialColor }} {{ $dialPercent }}%, #334155 0)">
