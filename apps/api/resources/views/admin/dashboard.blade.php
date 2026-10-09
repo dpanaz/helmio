@@ -1,7 +1,7 @@
 <x-app-layout>
     @php
         $cards = [
-            ['label' => 'MRR', 'value' => '$'.number_format($metrics['mrr'], 2), 'detail' => 'Estimated from active plan IDs'],
+            ['label' => 'MRR', 'value' => '$'.number_format($metrics['mrr'], 2), 'detail' => 'Based on current Stripe subscription prices'],
             ['label' => 'ARR', 'value' => '$'.number_format($metrics['arr'], 2), 'detail' => 'Current MRR annualized'],
             ['label' => 'Active subscriptions', 'value' => number_format($metrics['active_subscriptions']), 'detail' => $metrics['monthly_plans'].' monthly · '.$metrics['annual_plans'].' annual'],
             ['label' => 'Active trials', 'value' => number_format($metrics['trials']), 'detail' => $metrics['trials_ending'].' ending within 7 days'],
