@@ -8,8 +8,8 @@
             <div class="flex flex-wrap items-end justify-between gap-4 pb-2">
                 <div>
                     <p class="text-xs font-semibold uppercase tracking-[0.2em] text-blue-400">Helmio dashboard</p>
-                    <h1 class="mt-2 text-3xl font-semibold tracking-tight text-white">Your portfolio at a glance</h1>
-                    <p class="mt-2 text-sm text-slate-400">A clear view of your investments, priorities, and progress.</p>
+                    <h1 class="mt-2 text-3xl font-semibold tracking-tight text-white">Your investment overview</h1>
+                    <p class="mt-2 text-sm text-slate-400">Your portfolio health, priorities, and next steps in one place.</p>
                 </div>
                 <a href="{{ route('accounts.index') }}" class="rounded-xl border border-slate-700 bg-slate-900 px-4 py-2 text-sm font-medium text-blue-200 hover:border-blue-500">View accounts →</a>
             </div>
@@ -44,8 +44,8 @@
                 <div class="p-6 sm:p-8">
                     <div class="flex flex-wrap items-start justify-between gap-3">
                         <div>
-                            <h2 class="text-xl font-semibold text-white">Portfolio health by category</h2>
-                            <p class="mt-1 text-sm text-slate-400">Color shows which areas may need attention.</p>
+                            <h2 class="text-xl font-semibold text-white">Portfolio health</h2>
+                            <p class="mt-1 text-sm text-slate-400">See which areas need attention at a glance.</p>
                         </div>
                         <div class="flex flex-wrap gap-x-3 gap-y-1 text-xs text-slate-300" aria-label="Score color legend">
                             <span><span class="text-emerald-400">●</span> Strong 80+</span>
@@ -68,7 +68,7 @@
                                 @endphp
                                 <div>
                                     <div class="mb-2 flex flex-wrap items-center justify-between gap-2 text-sm">
-                                        <span class="font-semibold text-slate-100">{{ str($key)->replace('_', ' ')->title() }}</span>
+                                        <span class="font-semibold text-slate-100">{{ $key === 'risk' ? 'Risk Management' : str($key)->replace('_', ' ')->title() }}</span>
                                         <span class="font-medium tabular-nums" style="color: {{ $categoryColor }}">{{ $categoryStatus }} · {{ $categoryHasScore ? round($categoryScore).'/100' : '—' }}</span>
                                     </div>
                                     <div class="h-2.5 overflow-hidden rounded-full bg-slate-800" role="meter" aria-label="{{ str($key)->replace('_', ' ')->title() }} score" aria-valuemin="0" aria-valuemax="100" @if ($categoryHasScore) aria-valuenow="{{ round($categoryPercent) }}" @else aria-valuetext="Not assessed" @endif>
@@ -86,8 +86,8 @@
                 </div>
             </section>
 
-            {{-- Classic dashboard: at-a-glance portfolio cards. All values are persisted review data. --}}
-            <section aria-label="Portfolio snapshot" class="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {{-- Keep the homepage focused on the three numbers customers need first. --}}
+            <section aria-label="Portfolio snapshot" class="grid gap-4 sm:grid-cols-3">
                 <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg">
                     <p class="text-sm text-slate-400">Portfolio value</p>
                     <p class="mt-3 text-3xl font-semibold tracking-tight text-white">{{ money($dashboard['portfolioValue'] ?? 0) }}</p>
@@ -101,21 +101,11 @@
                 <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg">
                     <p class="text-sm text-slate-400">Items to review</p>
                     <p class="mt-3 text-3xl font-semibold text-white">{{ $dashboardFindings->count() }}</p>
-                    <p class="mt-2 text-xs text-slate-400">Priority findings currently shown</p>
-                </div>
-                <div class="rounded-2xl border border-slate-800 bg-slate-900 p-5 shadow-lg">
-                    <p class="text-sm text-slate-400">Since last review</p>
-                    @if (data_get($dashboardComparison, 'has_previous', false))
-                        <p class="mt-3 text-2xl font-semibold text-white">{{ collect(data_get($dashboardComparison, 'resolved_findings', []))->count() }} resolved</p>
-                        <p class="mt-2 text-xs text-slate-400">{{ collect(data_get($dashboardComparison, 'new_findings', []))->count() }} new findings</p>
-                    @else
-                        <p class="mt-3 text-2xl font-semibold text-white">First review</p>
-                        <p class="mt-2 text-xs text-slate-400">Changes will appear after your next review</p>
-                    @endif
+                    <p class="mt-2 text-xs text-slate-400">Open findings shown in this review</p>
                 </div>
             </section>
 
-            @include('review.summary', ['review' => $dashboard, 'isOnboarding' => false, 'hideScoreDial' => true])
+            @include('review.summary', ['review' => $dashboard, 'isOnboarding' => false, 'hideScoreDial' => true, 'compactDashboard' => true])
         </div>
     </div>
 </x-app-layout>
