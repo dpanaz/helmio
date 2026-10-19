@@ -151,7 +151,7 @@
 
                     <p class="mx-auto mt-4 max-w-lg text-sm leading-7 text-slate-400">
                         Stripe is confirming your subscription.
-                        Helmio will begin onboarding automatically as soon
+                        Helmio will continue to your review as soon
                         as activation is complete.
                     </p>
 
@@ -180,7 +180,7 @@
                         </p>
 
                         <p class="mt-2 text-sm leading-6 text-slate-400">
-                            Redirecting you to Helmio onboarding…
+                            Continuing to your Helmio review…
                         </p>
                     </div>
                 </div>

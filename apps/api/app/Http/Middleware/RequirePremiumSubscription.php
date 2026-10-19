@@ -25,11 +25,17 @@ class RequirePremiumSubscription
             || ! $this->accessService
                 ->hasPremiumAccess($user)
         ) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'message' => 'Complete checkout to unlock your Helmio results.',
+                    'code' => 'subscription_required',
+                ], 402);
+            }
             return redirect()
                 ->route('billing.pricing')
                 ->with(
                     'subscription_required',
-                    'Start your Helmio trial before connecting an investment account.',
+                    'Complete checkout to unlock your Helmio results.',
                 );
         }
 

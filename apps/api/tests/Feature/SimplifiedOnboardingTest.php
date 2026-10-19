@@ -158,4 +158,37 @@ class SimplifiedOnboardingTest extends TestCase
         Queue::assertPushed(BuildPortfolioAnalytics::class, fn ($job) => $job->analysisRunId === $run->id);
         $this->assertSame('pending', $run->fresh()->status);
     }
+
+    public function test_unsubscribed_customer_can_complete_profile_and_start_linking_before_payment(): void
+    {
+        $this->mock(SubscriptionAccessService::class, fn ($mock) => $mock->shouldReceive('hasPremiumAccess')->andReturn(false));
+        $user = $this->customer();
+        $this->actingAs($user)->get(route('dashboard'))->assertRedirect(route('onboarding.profile'));
+        $this->get(route('billing.pricing'))->assertRedirect(route('onboarding.profile'));
+        $this->get(route('brokerage-connections.create'))->assertRedirect(route('onboarding.profile'));
+        $this->post(route('onboarding.profile.save'), $this->answers())->assertRedirect(route('onboarding.connect'));
+        $this->get(route('onboarding.connect'))->assertOk();
+        $this->get(route('brokerage-connections.create', ['onboarding' => 1]))->assertOk();
+        $this->post(route('billing.checkout'), ['billing_period' => 'monthly'])->assertRedirect(route('onboarding.connect'));
+    }
+
+    public function test_unsubscribed_linked_customer_cannot_view_results_even_when_ready(): void
+    {
+        $this->mock(SubscriptionAccessService::class, function ($mock): void {
+            $mock->shouldReceive('hasPremiumAccess')->andReturn(false);
+            $mock->shouldReceive('status')->andReturn(['has_access' => false]);
+        });
+        $user = $this->customer();
+        $this->connected($user);
+        $this->ready($user);
+        $this->actingAs($user)->get(route('onboarding.connect'))->assertRedirect(route('onboarding.syncing'));
+        foreach (['dashboard', 'onboarding.syncing', 'onboarding.status', 'onboarding.complete', 'onboarding.score', 'analytics.helm-score'] as $route) {
+            $this->get(route($route))->assertRedirect(route('billing.pricing'));
+        }
+        $this->post(route('onboarding.finish'))->assertRedirect(route('billing.pricing'));
+        $this->getJson('/api/mobile/dashboard')->assertStatus(402)->assertJsonPath('code', 'subscription_required');
+        $this->getJson('/api/mobile/accounts')->assertStatus(402);
+        $this->get(route('billing.pricing'))->assertOk()->assertSee('enter payment details to unlock your results');
+        $this->assertNull($user->fresh()->onboarding_completed_at);
+    }
 }

@@ -171,10 +171,10 @@ class OnboardingController extends Controller
             return redirect()->route('dashboard');
         }
 
-        return $this->subscriptionAccess->hasPremiumAccess($user) ? null : redirect()->route('billing.pricing');
+        return null;
     }
 
-    private function prerequisiteRedirect(User $user, bool $requireConnection = true): ?RedirectResponse
+    public function prerequisiteRedirect(User $user, bool $requireConnection = true): ?RedirectResponse
     {
         if ($redirect = $this->accessRedirect($user)) {
             return $redirect;
@@ -184,6 +184,9 @@ class OnboardingController extends Controller
         }
         if ($requireConnection && ! $this->hasConnectedAccount($user)) {
             return redirect()->route('onboarding.connect');
+        }
+        if ($requireConnection && ! $this->subscriptionAccess->hasPremiumAccess($user)) {
+            return redirect()->route('billing.pricing');
         }
 
         return null;

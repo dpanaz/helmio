@@ -214,6 +214,41 @@ Route::middleware([
     |--------------------------------------------------------------------------
     */
 
+    Route::middleware(\App\Http\Middleware\EnsureInvestorProfileComplete::class)->group(function (): void {
+        Route::get(
+            '/brokerage-connections/create',
+            [
+                BrokerageConnectionController::class,
+                'create',
+            ],
+        )->name('brokerage-connections.create');
+
+        Route::post(
+            '/brokerage-connections',
+            [
+                BrokerageConnectionController::class,
+                'connect',
+            ],
+        )->name('brokerage-connections.connect');
+
+        Route::get(
+            '/brokerage-connections/{brokerageConnection}/callback',
+            [
+                BrokerageConnectionController::class,
+                'callback',
+            ],
+        )->name('brokerage-connections.callback');
+
+        Route::get(
+            '/brokerage-connections/{brokerageConnection}/fake-complete',
+            [
+                BrokerageConnectionController::class,
+                'fakeComplete',
+            ],
+        )->name('brokerage-connections.fake-complete');
+
+    });
+
     Route::prefix('onboarding')
         ->name('onboarding.')
         ->group(function (): void {
@@ -512,7 +547,7 @@ Route::get(
 |--------------------------------------------------------------------------
 |
 | Customers must have an active Stripe subscription, valid trial, or grace
-| period before they can connect accounts or use Helmio's premium features.
+| period before they can view results or use Helmio's premium features.
 |
 */
 
@@ -736,38 +771,6 @@ Route::middleware('auth')
             'index',
         ],
     )->name('brokerage-connections.index');
-
-    Route::get(
-        '/brokerage-connections/create',
-        [
-            BrokerageConnectionController::class,
-            'create',
-        ],
-    )->name('brokerage-connections.create');
-
-    Route::post(
-        '/brokerage-connections',
-        [
-            BrokerageConnectionController::class,
-            'connect',
-        ],
-    )->name('brokerage-connections.connect');
-
-    Route::get(
-        '/brokerage-connections/{brokerageConnection}/callback',
-        [
-            BrokerageConnectionController::class,
-            'callback',
-        ],
-    )->name('brokerage-connections.callback');
-
-    Route::get(
-        '/brokerage-connections/{brokerageConnection}/fake-complete',
-        [
-            BrokerageConnectionController::class,
-            'fakeComplete',
-        ],
-    )->name('brokerage-connections.fake-complete');
 
     Route::post(
         '/brokerage-connections/{brokerageConnection}/sync',

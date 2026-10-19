@@ -5,7 +5,7 @@
             <p class="text-sm font-semibold text-blue-400">Step 2 of 3 · Connect</p>
             <h1 class="mt-2 text-3xl font-semibold text-white">Connect your first investment account.</h1>
             <p class="mt-4 leading-7 text-slate-400">Helmio reviews balances, holdings, and transactions to help you understand costs, risk, and portfolio changes.</p>
-            <p class="mt-6 rounded-xl border border-blue-500/20 bg-blue-500/10 p-4 text-blue-200">Read-only access. Helmio cannot move money or trade.</p>
+            <p class="mt-6 rounded-xl border border-blue-500/20 bg-blue-500/10 p-4 text-blue-200">Read-only access. Helmio cannot move money or trade. After linking, choose a plan and enter payment details to unlock your results.</p>
             @if (session('error')) <p role="alert" class="mt-4 text-red-300">{{ session('error') }}</p> @endif
             <div class="mt-8 flex flex-col gap-3 sm:flex-row sm:justify-between">
                 <a href="{{ route('onboarding.profile') }}" class="rounded-xl border border-slate-700 px-5 py-3 text-center text-slate-300">Back</a>
