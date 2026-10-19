@@ -1,43 +1,61 @@
-<x-app-layout>
-    <x-slot name="header"><h2 class="text-2xl font-semibold text-white">About you</h2></x-slot>
-    <div class="bg-slate-950 py-8">
-        <section class="mx-auto max-w-3xl rounded-3xl border border-slate-800 bg-slate-900 p-6 sm:p-10">
-            <p class="text-sm font-semibold text-blue-400">Step 1 of 3 · About you</p>
-            <h1 class="mt-2 text-3xl font-semibold text-white">Welcome to Helmio.</h1>
-            <p class="mt-3 text-slate-400">Five answers help us review whether your investments fit your needs. You can update them later.</p>
-            <form method="POST" action="{{ route('onboarding.profile.save') }}" class="mt-8 space-y-6">
+@extends('layouts.onboarding')
+
+@section('content')
+    <nav aria-label="Setup progress">
+        <ol class="setup-steps">
+            <li aria-current="step"><span class="setup-step-number">1</span>About you</li>
+            <li><span class="setup-step-number">2</span>Link accounts</li>
+            <li><span class="setup-step-number">3</span>Choose a plan</li>
+        </ol>
+    </nav>
+    <div class="setup-grid">
+        <aside class="setup-intro">
+            <p class="setup-eyebrow">Step 1 of 3 · About you</p>
+            <h1>Welcome, {{ \Illuminate\Support\Str::before(trim(auth()->user()->name), ' ') }}.<br>Let’s make this<br><span>about you.</span></h1>
+            <p class="setup-lead">Your goals are the starting point. Tell us about you as an investor. We’ll ask about the purpose and timeframe of each account after you link it.</p>
+            <div class="setup-reassurance">
+                <div class="setup-note">
+                    <span class="setup-note-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m12 3 8 4v5c0 5-8 9-8 9S4 17 4 12V7l8-4Z"/><path d="m8 12 3 3 5-6"/></svg></span>
+                    <div><strong>A review that fits your life</strong><p>We’ll compare your portfolio with your overall goals and comfort with risk.</p></div>
+                </div>
+                <div class="setup-note">
+                    <span class="setup-note-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+                    <div><strong>A few simple answers</strong><p>Go with what feels right today. You can update your answers as life changes.</p></div>
+                </div>
+                <p class="setup-next"><strong>Up next: link your accounts.</strong><br>Connections are read-only. Helmio cannot move money or place trades.</p>
+            </div>
+        </aside>
+        <section class="setup-card" aria-labelledby="profile-heading">
+            <div class="setup-card-heading"><h2 id="profile-heading">Your investor profile</h2><span class="setup-time">3 quick questions</span></div>
+            <p class="setup-card-description">A little context helps us make your review more useful.</p>
+            <form method="POST" action="{{ route('onboarding.profile.save') }}">
                 @csrf
                 @php
                     $questions = [
-                        'primary_objective' => ['What is your main investment goal?', 'This gives your review a goal to compare against.', \App\Models\InvestorProfile::objectiveOptions()],
-                        'investment_experience' => ['How familiar are you with investing?', 'This helps put investment complexity in context.', ['beginner' => 'Beginner', 'intermediate' => 'Intermediate', 'advanced' => 'Advanced']],
-                        'liquidity_needs' => ['How much access to this money do you need?', 'This helps us review cash availability.', ['low' => 'Low — little near-term need', 'moderate' => 'Moderate — some planned withdrawals', 'high' => 'High — regular or significant withdrawals']],
-                        'risk_tolerance' => ['How much fluctuation are you comfortable with?', 'This helps us compare portfolio risk with your comfort level.', \App\Models\InvestorProfile::riskToleranceOptions()],
+                        'primary_objective' => ['What would you like your investments to do?', 'Choose the goal that matters most to you.', \App\Models\InvestorProfile::objectiveOptions()],
+                        'investment_experience' => ['How familiar are you with investing?', 'Every experience level is welcome.', ['beginner' => 'Beginner', 'intermediate' => 'Intermediate', 'advanced' => 'Advanced']],
+                        'risk_tolerance' => ['How comfortable are you with market ups and downs?', 'This helps us put your portfolio’s risk in context.', \App\Models\InvestorProfile::riskToleranceOptions()],
                     ];
                 @endphp
-                @foreach ($questions as $field => [$label, $help, $options])
-                    <div>
-                        <label for="{{ $field }}" class="block font-medium text-white">{{ $label }}</label>
-                        <p id="{{ $field }}-help" class="mt-1 text-sm text-slate-400">{{ $help }}</p>
-                        <select id="{{ $field }}" name="{{ $field }}" required aria-describedby="{{ $field }}-help {{ $field }}-error" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-white">
-                            <option value="">Choose an answer</option>
-                            @foreach ($options as $value => $text)
-                                <option value="{{ $value }}" @selected(old($field, data_get($investorProfile, $field)) === $value)>{{ $text }}</option>
-                            @endforeach
-                        </select>
-                        <p id="{{ $field }}-error" class="mt-1 text-sm text-red-300">@error($field) {{ $message }} @enderror</p>
-                    </div>
-                    @if ($loop->first)
-                        <div>
-                            <label for="time_horizon_years" class="block font-medium text-white">When do you expect to need this money?</label>
-                            <p id="horizon-help" class="mt-1 text-sm text-slate-400">Enter years. This helps us review whether the investments fit your timeframe.</p>
-                            <input type="number" id="time_horizon_years" name="time_horizon_years" min="1" max="60" required value="{{ old('time_horizon_years', data_get($investorProfile, 'time_horizon_years')) }}" aria-describedby="horizon-help horizon-error" class="mt-2 w-full rounded-xl border-slate-700 bg-slate-950 text-white">
-                            <p id="horizon-error" class="mt-1 text-sm text-red-300">@error('time_horizon_years') {{ $message }} @enderror</p>
+                <div class="setup-fields">
+                    @foreach ($questions as $field => [$label, $help, $options])
+                        <div class="setup-field {{ $loop->last ? 'setup-field-wide' : '' }}">
+                            <label for="{{ $field }}">{{ $label }}</label>
+                            <select id="{{ $field }}" name="{{ $field }}" required aria-invalid="{{ $errors->has($field) ? 'true' : 'false' }}" aria-describedby="{{ $field }}-help{{ $errors->has($field) ? ' '.$field.'-error' : '' }}">
+                                <option value="">Choose what fits you</option>
+                                @foreach ($options as $value => $text)
+                                    <option value="{{ $value }}" @selected(old($field, data_get($investorProfile, $field)) === $value)>{{ $text }}</option>
+                                @endforeach
+                            </select>
+                            <p id="{{ $field }}-help" class="setup-help">{{ $help }}</p>
+                            @error($field)<p id="{{ $field }}-error" class="setup-error" role="alert">{{ $message }}</p>@enderror
                         </div>
-                    @endif
-                @endforeach
-                <button class="w-full rounded-xl bg-blue-600 px-6 py-3 font-semibold text-white hover:bg-blue-500">Continue to connect</button>
+
+                    @endforeach
+                </div>
+                <button type="submit" class="setup-submit">Continue to link accounts <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>
+                <p class="setup-footer-note">You can revisit these answers anytime in your profile.</p>
             </form>
         </section>
     </div>
-</x-app-layout>
+@endsection

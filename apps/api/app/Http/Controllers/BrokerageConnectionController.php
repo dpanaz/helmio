@@ -216,7 +216,7 @@ class BrokerageConnectionController extends Controller
                     redirectUrl:
                         $this->isOnboarding($request)
                             ? route(
-                                'onboarding.syncing',
+                                'onboarding.accounts',
                             )
                             : route(
                                 'brokerage-connections.index',
@@ -860,30 +860,9 @@ class BrokerageConnectionController extends Controller
         Request $request,
         string $message,
     ): RedirectResponse {
-        if (
-            $request->session()->pull(
-                'brokerage_onboarding',
-                false,
-            )
-        ) {
-            return redirect()
-                ->route(
-                    'onboarding.syncing',
-                )
-                ->with(
-                    'success',
-                    $message,
-                );
-        }
+        $request->session()->forget('brokerage_onboarding');
 
-        return redirect()
-            ->route(
-                'brokerage-connections.index',
-            )
-            ->with(
-                'success',
-                $message,
-            );
+        return redirect()->route('onboarding.accounts')->with('success', $message);
     }
 
     private function redirectAfterFailure(

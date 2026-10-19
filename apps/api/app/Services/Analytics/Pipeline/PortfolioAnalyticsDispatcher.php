@@ -13,6 +13,7 @@ class PortfolioAnalyticsDispatcher
         User $user,
         string $trigger,
         ?BrokerageConnection $connection = null,
+        bool $force = false,
     ): PortfolioAnalysisRun {
         /*
          * Avoid creating multiple simultaneous portfolio analysis
@@ -36,7 +37,7 @@ class PortfolioAnalyticsDispatcher
                 ->latest()
                 ->first();
 
-        if ($existing !== null) {
+        if ($existing !== null && ! $force) {
             return $existing;
         }
 
