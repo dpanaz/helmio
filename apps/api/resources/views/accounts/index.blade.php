@@ -51,6 +51,14 @@
 
     <div class="min-h-screen bg-slate-950 py-8">
         <div class="mx-auto max-w-7xl space-y-6 px-4 sm:px-6 lg:px-8">
+            @if (app(\App\Services\Onboarding\AccountProfileSetupService::class)->nextAccount(auth()->user()))
+                <div class="rounded-2xl border border-blue-500/20 bg-blue-500/10 p-5 text-blue-200">
+                    <p class="font-semibold">Give each account its own plan.</p>
+                    <p class="mt-2 text-sm">Set the purpose, timeframe, and withdrawal needs for your linked accounts.</p>
+                    <a href="{{ route('onboarding.accounts') }}" class="mt-3 inline-block font-semibold underline">Complete account profiles →</a>
+                </div>
+            @endif
+
 
             @if (session('success'))
                 <div

@@ -12,11 +12,11 @@
         <aside class="setup-intro">
             <p class="setup-eyebrow">Step 1 of 3 · About you</p>
             <h1>Welcome, {{ \Illuminate\Support\Str::before(trim(auth()->user()->name), ' ') }}.<br>Let’s make this<br><span>about you.</span></h1>
-            <p class="setup-lead">Your goals are the starting point. Tell us a little about yourself so Helmio can put your investments in perspective.</p>
+            <p class="setup-lead">Your goals are the starting point. Tell us about you as an investor. We’ll ask about the purpose and timeframe of each account after you link it.</p>
             <div class="setup-reassurance">
                 <div class="setup-note">
                     <span class="setup-note-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><path d="m12 3 8 4v5c0 5-8 9-8 9S4 17 4 12V7l8-4Z"/><path d="m8 12 3 3 5-6"/></svg></span>
-                    <div><strong>A review that fits your life</strong><p>We’ll compare your portfolio with your goals, timeframe, and comfort with risk.</p></div>
+                    <div><strong>A review that fits your life</strong><p>We’ll compare your portfolio with your overall goals and comfort with risk.</p></div>
                 </div>
                 <div class="setup-note">
                     <span class="setup-note-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
@@ -26,7 +26,7 @@
             </div>
         </aside>
         <section class="setup-card" aria-labelledby="profile-heading">
-            <div class="setup-card-heading"><h2 id="profile-heading">Your investor profile</h2><span class="setup-time">5 quick questions</span></div>
+            <div class="setup-card-heading"><h2 id="profile-heading">Your investor profile</h2><span class="setup-time">3 quick questions</span></div>
             <p class="setup-card-description">A little context helps us make your review more useful.</p>
             <form method="POST" action="{{ route('onboarding.profile.save') }}">
                 @csrf
@@ -34,7 +34,6 @@
                     $questions = [
                         'primary_objective' => ['What would you like your investments to do?', 'Choose the goal that matters most to you.', \App\Models\InvestorProfile::objectiveOptions()],
                         'investment_experience' => ['How familiar are you with investing?', 'Every experience level is welcome.', ['beginner' => 'Beginner', 'intermediate' => 'Intermediate', 'advanced' => 'Advanced']],
-                        'liquidity_needs' => ['How often will you need to withdraw money?', 'Think about planned spending and regular income.', ['low' => 'Rarely — little near-term need', 'moderate' => 'Sometimes — planned withdrawals', 'high' => 'Often — regular or larger withdrawals']],
                         'risk_tolerance' => ['How comfortable are you with market ups and downs?', 'This helps us put your portfolio’s risk in context.', \App\Models\InvestorProfile::riskToleranceOptions()],
                     ];
                 @endphp
@@ -51,14 +50,7 @@
                             <p id="{{ $field }}-help" class="setup-help">{{ $help }}</p>
                             @error($field)<p id="{{ $field }}-error" class="setup-error" role="alert">{{ $message }}</p>@enderror
                         </div>
-                        @if ($loop->first)
-                            <div class="setup-field">
-                                <label for="time_horizon_years">When might you need this money?</label>
-                                <input type="number" id="time_horizon_years" name="time_horizon_years" min="1" max="60" required placeholder="Years from now, e.g. 10" value="{{ old('time_horizon_years', data_get($investorProfile, 'time_horizon_years')) }}" aria-invalid="{{ $errors->has('time_horizon_years') ? 'true' : 'false' }}" aria-describedby="horizon-help{{ $errors->has('time_horizon_years') ? ' horizon-error' : '' }}">
-                                <p id="horizon-help" class="setup-help">Your best estimate, from 1 to 60 years.</p>
-                                @error('time_horizon_years')<p id="horizon-error" class="setup-error" role="alert">{{ $message }}</p>@enderror
-                            </div>
-                        @endif
+
                     @endforeach
                 </div>
                 <button type="submit" class="setup-submit">Continue to link accounts <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M5 12h14m-6-6 6 6-6 6"/></svg></button>

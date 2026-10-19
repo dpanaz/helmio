@@ -277,6 +277,8 @@ Route::middleware([
             )->name('profile');
 
             Route::post('/profile', [OnboardingController::class, 'saveProfile'])->name('profile.save');
+            Route::get('/accounts', [\App\Http\Controllers\OnboardingAccountProfileController::class, 'index'])->name('accounts');
+            Route::put('/accounts/{investmentAccount}', [\App\Http\Controllers\OnboardingAccountProfileController::class, 'update'])->middleware(\App\Http\Middleware\EnsureInvestorProfileComplete::class)->name('accounts.update');
             Route::get('/status', [OnboardingController::class, 'status'])->name('status');
             Route::post('/retry', [OnboardingController::class, 'retry'])->middleware('throttle:6,1')->name('retry');
 

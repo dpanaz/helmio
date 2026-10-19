@@ -43,7 +43,8 @@ class EmbeddedCheckoutTest extends TestCase
         $user = User::factory()->create();
         InvestorProfile::query()->create(['user_id' => $user->id, 'primary_objective' => 'growth', 'time_horizon_years' => 10,
             'investment_experience' => 'beginner', 'liquidity_needs' => 'low', 'risk_tolerance' => 'moderate']);
-        $user->investmentAccounts()->create(['name' => 'Linked account', 'account_type' => 'brokerage', 'currency' => 'USD']);
+        $account = $user->investmentAccounts()->create(['name' => 'Linked account', 'account_type' => 'brokerage', 'currency' => 'USD']);
+        $account->profile()->create(['purpose' => 'retirement', 'time_horizon_years_override' => 10, 'liquidity_needs_override' => 'low']);
         $this->mock(BillingPlanService::class, fn ($mock) => $mock->shouldReceive('priceId')->with('monthly')->andReturn('price_monthly'));
         $checkout = new Checkout($user, Session::constructFrom(['id' => 'cs_test', 'client_secret' => 'secret_test']));
         $this->mock(EmbeddedSubscriptionCheckout::class, fn ($mock) => $mock->shouldReceive('create')->once()

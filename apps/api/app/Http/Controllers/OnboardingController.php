@@ -52,9 +52,7 @@ class OnboardingController extends Controller
 
         $validated = $request->validate([
             'primary_objective' => ['required', Rule::in(array_keys(InvestorProfile::objectiveOptions()))],
-            'time_horizon_years' => ['required', 'integer', 'min:1', 'max:60'],
             'investment_experience' => ['required', Rule::in(['beginner', 'intermediate', 'advanced'])],
-            'liquidity_needs' => ['required', Rule::in(['low', 'moderate', 'high'])],
             'risk_tolerance' => ['required', Rule::in(array_keys(InvestorProfile::riskToleranceOptions()))],
         ]);
         InvestorProfile::updateOrCreate(['user_id' => $request->user()->id], $validated);
@@ -186,6 +184,11 @@ class OnboardingController extends Controller
         if ($requireConnection && ! $this->hasConnectedAccount($user)) {
             return redirect()->route('onboarding.connect');
         }
+        if ($requireConnection && $user->onboarding_completed_at === null
+            && (! $user->investmentAccounts()->exists()
+                || app(\App\Services\Onboarding\AccountProfileSetupService::class)->nextAccount($user) !== null)) {
+            return redirect()->route('onboarding.accounts');
+        }
         if ($requireConnection && ! $this->subscriptionAccess->hasPremiumAccess($user)) {
             return redirect()->route('billing.pricing');
         }
@@ -196,10 +199,10 @@ class OnboardingController extends Controller
     private function hasCompletedInvestorProfile(User $user): bool
     {
         $profile = $user->investorProfile;
-        // Preserve access for existing customers; new profiles require all five answers.
+        // Account timeframes and withdrawal needs are collected after linking.
         return $profile !== null && ($user->onboarding_completed_at !== null || (
-            filled($profile->primary_objective) && $profile->time_horizon_years !== null
-            && filled($profile->investment_experience) && filled($profile->liquidity_needs)
+            filled($profile->primary_objective)
+            && filled($profile->investment_experience)
             && filled($profile->risk_tolerance)
         ));
     }

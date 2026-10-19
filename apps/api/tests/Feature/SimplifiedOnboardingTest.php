@@ -40,14 +40,14 @@ class SimplifiedOnboardingTest extends TestCase
 
     private function answers(): array
     {
-        return ['primary_objective' => 'growth', 'time_horizon_years' => 10,
-            'investment_experience' => 'beginner', 'liquidity_needs' => 'low', 'risk_tolerance' => 'moderate'];
+        return ['primary_objective' => 'growth', 'investment_experience' => 'beginner', 'risk_tolerance' => 'moderate'];
     }
 
     private function connected(User $user): void
     {
         $this->profile($user);
-        $user->investmentAccounts()->create(['name' => 'Test account', 'account_type' => 'brokerage', 'currency' => 'USD', 'current_value' => 1000]);
+        $account = $user->investmentAccounts()->create(['name' => 'Test account', 'account_type' => 'brokerage', 'currency' => 'USD', 'current_value' => 1000]);
+        $account->profile()->create(['purpose' => 'retirement', 'time_horizon_years_override' => 10, 'liquidity_needs_override' => 'low']);
     }
 
     private function ready(User $user, ?int $score = 47): PortfolioAnalysisRun
@@ -62,13 +62,13 @@ class SimplifiedOnboardingTest extends TestCase
         return $run;
     }
 
-    public function test_welcome_goes_directly_to_five_question_profile(): void
+    public function test_welcome_goes_directly_to_investor_profile(): void
     {
         $this->actingAs($this->customer())->get(route('onboarding.welcome'))->assertRedirect(route('onboarding.profile'));
-        $this->get(route('onboarding.profile'))->assertOk()->assertSee('Step 1 of 3')->assertSee('time_horizon_years');
+        $this->get(route('onboarding.profile'))->assertOk()->assertSee('Step 1 of 3')->assertSee('Your investor profile')->assertDontSee('name="time_horizon_years"', false);
     }
 
-    public function test_profile_requires_all_five_valid_answers_and_saves_them(): void
+    public function test_profile_requires_investor_answers_and_saves_them(): void
     {
         $user = $this->customer();
         $this->actingAs($user)->post(route('onboarding.profile.save'), ['risk_tolerance' => 'invented'])
