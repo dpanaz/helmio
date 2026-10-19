@@ -4,11 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Services\Billing\SubscriptionAccessService;
 use App\Services\Billing\BillingPlanService;
+use App\Services\Billing\EmbeddedSubscriptionCheckout;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
-use Laravel\Cashier\Checkout;
 use Symfony\Component\HttpFoundation\Response;
 
 class BillingController extends Controller
@@ -48,8 +48,16 @@ class BillingController extends Controller
         Request $request,
         SubscriptionAccessService $accessService,
         BillingPlanService $plans,
-    ): View {
+        OnboardingController $onboarding,
+    ): View|RedirectResponse {
         $user = $request->user();
+
+        if ($user && ! $accessService->hasPremiumAccess($user)) {
+            $next = $onboarding->redirectToNextStep($user);
+            if ($next->getTargetUrl() !== route('billing.pricing')) {
+                return $next;
+            }
+        }
 
         $billingStatus = $user
             ? $accessService->status($user)
@@ -80,7 +88,9 @@ class BillingController extends Controller
         Request $request,
         SubscriptionAccessService $accessService,
         BillingPlanService $plans,
-    ): Checkout|RedirectResponse {
+        EmbeddedSubscriptionCheckout $checkout,
+        OnboardingController $onboarding,
+    ): View|RedirectResponse {
         $validated = $request->validate([
             'billing_period' => [
                 'required',
@@ -99,6 +109,15 @@ class BillingController extends Controller
                 );
         }
 
+        if ($redirect = $onboarding->prerequisiteRedirect($user, false)) {
+            return $redirect;
+        }
+        // Do not collect payment until the customer has linked an account.
+        $next = $onboarding->redirectToNextStep($user);
+        if ($next->getTargetUrl() !== route('billing.pricing')) {
+            return $next;
+        }
+
         $priceId = $plans->priceId($validated['billing_period']);
 
         abort_if(
@@ -107,25 +126,12 @@ class BillingController extends Controller
             'The selected Stripe price is not configured.',
         );
 
-        return $user
-            ->newSubscription(
-                'default',
-                $priceId,
-            )
-            ->trialDays(
-                (int) config(
-                    'services.stripe.trial_days',
-                    14,
-                ),
-            )
-            ->checkout([
-                'success_url' =>
-                    route('billing.success')
-                    .'?session_id={CHECKOUT_SESSION_ID}',
+        abort_if(blank(config('services.stripe.key')), 503, 'Payment is temporarily unavailable. Please try again later.');
 
-                'cancel_url' =>
-                    route('billing.pricing'),
-            ]);
+        return view('billing.checkout', [
+            'clientSecret' => $checkout->create($user, $priceId)->asStripeCheckoutSession()->client_secret,
+            'stripeKey' => config('services.stripe.key'),
+        ]);
     }
 
     public function success(

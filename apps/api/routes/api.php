@@ -53,33 +53,33 @@ Route::prefix('mobile')
                 Route::get(
                     '/dashboard',
                     [MobileDashboardController::class, 'show'],
-                );
+                )->middleware('subscribed');
 
                 Route::get(
                     '/ask-helmio',
                     [MobileAskHelmioController::class, 'index'],
-                );
+                )->middleware('subscribed');
 
                 Route::post(
                     '/ask-helmio',
                     [MobileAskHelmioController::class, 'ask'],
-                );
+                )->middleware('subscribed');
 
                 Route::get(
                     '/ask-helmio/{conversation}',
                     [MobileAskHelmioController::class, 'show'],
-                );
+                )->middleware('subscribed');
 
                 Route::get(
                     '/ask-helmio/{conversation}/status',
                     [MobileAskHelmioController::class, 'status'],
-                );
+                )->middleware('subscribed');
 
                 Route::post(
                     '/logout',
                     [MobileAuthController::class, 'logout'],
                 );
-                Route::get('/accounts', [MobileAccountController::class, 'index']);
-                Route::get('/accounts/{account}', [MobileAccountController::class, 'show']);
+                Route::get('/accounts', [MobileAccountController::class, 'index'])->middleware('subscribed');
+                Route::get('/accounts/{account}', [MobileAccountController::class, 'show'])->middleware('subscribed');
             });
     });

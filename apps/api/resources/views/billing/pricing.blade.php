@@ -72,6 +72,12 @@
                 </div>
             @endif
 
+            @auth
+                @unless ($hasAccess)
+                    <p class="text-sm text-blue-300">Step 3 of 3 · Choose a plan and enter payment details to unlock your results. Your free trial starts after checkout.</p>
+                @endunless
+            @endauth
+
             <div class="grid gap-6 lg:grid-cols-2">
 
                 {{-- Monthly --}}
@@ -156,7 +162,7 @@
                             <form
                                 method="POST"
                                 action="{{ route('billing.checkout') }}"
-                                data-external-checkout
+                                data-embedded-checkout
                             >
                                 @csrf
 
@@ -271,7 +277,7 @@
                             <form
                                 method="POST"
                                 action="{{ route('billing.checkout') }}"
-                                data-external-checkout
+                                data-embedded-checkout
                             >
                                 @csrf
 
@@ -312,7 +318,7 @@
                         ],
                         [
                             'title' => 'Secure checkout',
-                            'text' => 'Payment details are collected and managed by Stripe’s hosted checkout.',
+                            'text' => 'Payment details are securely collected by Stripe within Helmio.',
                         ],
                         [
                             'title' => 'App compatible',

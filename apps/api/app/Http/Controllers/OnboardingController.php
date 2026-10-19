@@ -58,6 +58,7 @@ class OnboardingController extends Controller
             'risk_tolerance' => ['required', Rule::in(array_keys(InvestorProfile::riskToleranceOptions()))],
         ]);
         InvestorProfile::updateOrCreate(['user_id' => $request->user()->id], $validated);
+        $request->user()->unsetRelation('investorProfile');
         $dashboard->clearAdvisorAuditCache($request->user()->id);
         RecalculateAdvisorAuditForUser::dispatch($request->user()->id)->onQueue('analytics');
 
@@ -171,10 +172,10 @@ class OnboardingController extends Controller
             return redirect()->route('dashboard');
         }
 
-        return $this->subscriptionAccess->hasPremiumAccess($user) ? null : redirect()->route('billing.pricing');
+        return null;
     }
 
-    private function prerequisiteRedirect(User $user, bool $requireConnection = true): ?RedirectResponse
+    public function prerequisiteRedirect(User $user, bool $requireConnection = true): ?RedirectResponse
     {
         if ($redirect = $this->accessRedirect($user)) {
             return $redirect;
@@ -184,6 +185,9 @@ class OnboardingController extends Controller
         }
         if ($requireConnection && ! $this->hasConnectedAccount($user)) {
             return redirect()->route('onboarding.connect');
+        }
+        if ($requireConnection && ! $this->subscriptionAccess->hasPremiumAccess($user)) {
+            return redirect()->route('billing.pricing');
         }
 
         return null;
