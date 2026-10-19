@@ -58,6 +58,7 @@ class OnboardingController extends Controller
             'risk_tolerance' => ['required', Rule::in(array_keys(InvestorProfile::riskToleranceOptions()))],
         ]);
         InvestorProfile::updateOrCreate(['user_id' => $request->user()->id], $validated);
+        $request->user()->unsetRelation('investorProfile');
         $dashboard->clearAdvisorAuditCache($request->user()->id);
         RecalculateAdvisorAuditForUser::dispatch($request->user()->id)->onQueue('analytics');
 
